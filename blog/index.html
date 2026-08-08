@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>博客 | YHSZ Game</title>
+  <link rel="stylesheet" href="../assets/site.css">
+  <script src="../data/posts.js" defer></script>
+  <script src="../assets/site.js" defer></script>
+</head>
+<body data-page="blog">
+  <header class="topbar">
+    <nav class="shell nav" aria-label="主导航">
+      <a class="brand" href="../index.html" aria-label="返回首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>YHSZ Game</span>
+      </a>
+      <div class="nav-links">
+        <a data-nav="home" href="../index.html">游戏</a>
+        <a data-nav="blog" href="./">博客</a>
+        <a data-nav="about" href="../about/">个人</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="shell page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Dev Blog</p>
+        <h1>博客</h1>
+        <p class="lead">记录游戏想法、更新日志和开发过程。</p>
+      </div>
+      <aside class="hero-panel">
+        <strong>记录内容</strong>
+        <p>这里保留开发日志、玩法笔记和后续路线图，方便回看每次迭代。</p>
+      </aside>
+    </section>
+
+    <section class="two-col">
+      <aside id="postList" class="post-list" aria-label="文章列表"></aside>
+      <article id="postView" class="markdown-card"></article>
+    </section>
+  </main>
+
+  <footer class="shell footer">
+    <span>Development notes.</span>
+    <span>Game ideas archive.</span>
+  </footer>
+</body>
+</html>

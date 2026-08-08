@@ -1,0 +1,3319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素精灵帧工坊 | 智能变换版</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root { --bg-dark: #1e1e24; --bg-panel: #2b2b36; --accent: #6c5ce7; --accent-hover: #5649c0; --text-main: #e0e0e0; --text-sub: #a0a0a0; --border: #3f3f4f; --checker-dark: #999999; }
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        header { padding: 12px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        h1 { font-size: 18px; font-weight: 600; letter-spacing: 1px; }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 340px; min-width: 340px; background: var(--bg-panel); border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+        .panel-section { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
+        .panel-title { font-size: 13px; font-weight: bold; color: var(--accent); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 4px; margin-top: 8px; }
+        input[type="text"], input[type="number"], select, textarea { width: 100%; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-main); padding: 6px 8px; border-radius: 4px; font-size: 12px; font-family: monospace; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); }
+        textarea { resize: vertical; min-height: 60px; }
+        button { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; width: 100%; margin-top: 8px; }
+        button:hover { background: var(--accent-hover); }
+        button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-sub); }
+        button.secondary:hover { border-color: var(--accent); color: var(--text-main); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-area { flex: 1; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; user-select: none; overflow: hidden; background-image: linear-gradient(45deg, var(--checker-dark) 25%, transparent 25%), linear-gradient(-45deg, var(--checker-dark) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--checker-dark) 75%), linear-gradient(-45deg, transparent 75%, var(--checker-dark) 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
+        canvas#mainCanvas { image-rendering: pixelated; width: 0; height: 0; border: 2px solid var(--border); box-shadow: 0 0 20px rgba(0,0,0,0.5); cursor: grab; touch-action: none; will-change: transform, width, height; transform-origin: center center; flex-shrink: 0; }
+        canvas#mainCanvas:active { cursor: grabbing; }
+        .view-toolbar { position: absolute; top: 10px; right: 10px; display: flex; align-items: center; gap: 6px; background: rgba(43,43,54,0.85); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; z-index: 10; backdrop-filter: blur(4px); }
+        .view-toolbar button { width: auto; margin: 0; padding: 4px 10px; font-size: 15px; line-height: 1; font-weight: 700; }
+        .view-toolbar .zoom-label { font-size: 12px; color: var(--text-main); min-width: 46px; text-align: center; font-family: monospace; }
+        .view-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--text-sub); background: rgba(43,43,54,0.7); padding: 4px 10px; border-radius: 6px; pointer-events: none; }
+        .timeline { height: 140px; background: var(--bg-panel); border-top: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .timeline-controls { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+        .frames-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; flex: 1; align-items: center; }
+        .frame-thumb { width: 64px; height: 64px; min-width: 64px; background: var(--bg-dark); border: 2px solid var(--border); image-rendering: pixelated; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+        .frame-thumb.active { border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+        .frame-thumb img { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+        .frame-thumb .idx { position: absolute; top: 2px; left: 4px; font-size: 9px; color: var(--text-sub); pointer-events: none; }
+        .frame-thumb .status { position: absolute; bottom: 2px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: #444; }
+        .frame-thumb .status.done { background: #00b894; }
+        .frame-thumb .status.loading { background: #fdcb6e; animation: pulse 1s infinite; }
+        .frame-thumb .frame-sel { position: absolute; top: 3px; right: 3px; z-index: 3; width: 13px; height: 13px; cursor: pointer; accent-color: var(--accent); }
+        .cloud-mode-btn.active { border-color: var(--accent) !important; background: rgba(108,92,231,0.2) !important; color: var(--text-main) !important; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .toast { position: fixed; top: 20px; right: 20px; background: var(--bg-panel); border: 1px solid var(--border); padding: 10px 16px; border-radius: 6px; font-size: 13px; z-index: 999; transform: translateY(-20px); opacity: 0; transition: 0.3s; pointer-events: none; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: #d63031; color: #ff7675; }
+
+        /* === 像素化缩放模块样式 === */
+        .preset-row { display: flex; gap: 6px; margin-top: 6px; }
+        .preset-btn { flex: 1; padding: 6px 4px; font-size: 11px; text-align: center; background: transparent; border: 1px solid var(--border); color: var(--text-sub); border-radius: 4px; cursor: pointer; transition: 0.2s; margin-top: 0; font-weight: 600; }
+        .preset-btn:hover, .preset-btn.active { border-color: var(--accent); color: var(--text-main); background: rgba(108,92,231,0.15); }
+        .size-row { display: flex; gap: 8px; align-items: center; }
+        .size-row input[type="number"] { flex: 1; }
+        .size-row .sep { color: var(--text-sub); font-size: 14px; }
+        .checkbox-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+        .checkbox-row label { margin: 0; }
+        .info-badge { display: inline-block; background: rgba(108,92,231,0.2); color: var(--accent); padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-top: 6px; }
+        .algo-desc { font-size: 11px; color: var(--text-sub); margin-top: 4px; line-height: 1.4; }
+        
+        .pixel-art-mode { border-color: #00b894 !important; background: rgba(0, 184, 148, 0.1) !important; }
+
+        /* ===== 新增：本地/AI 动画生成模块样式 ===== */
+        .gen-mode-row { display: flex; gap: 6px; margin-bottom: 10px; }
+        .gen-mode-row button { margin: 0; flex: 1; background: transparent; border: 1px solid var(--border); color: var(--text-sub); }
+        .gen-mode-row button:hover { border-color: var(--accent); color: var(--text-main); }
+        .gen-mode-row button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+
+        .ai-palette-box { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; min-height: 24px; }
+        .ai-palette-swatch { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
+        .ai-palette-empty { font-size: 11px; color: var(--text-sub); line-height: 20px; }
+
+        /* ===== 新增：云端生图模块样式 ===== */
+        .cloud-size-btn { flex: 1; padding: 6px 4px; font-size: 11px; text-align: center; background: transparent; border: 1px solid var(--border); color: var(--text-sub); border-radius: 4px; cursor: pointer; transition: 0.2s; margin-top: 0; font-weight: 600; }
+        .cloud-size-btn:hover, .cloud-size-btn.active { border-color: var(--accent); color: var(--text-main); background: rgba(108,92,231,0.15); }
+        .cloud-prompt-area { width: 100%; background: #0b0b10; color: #d6e2ff; border: 1px solid #333; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 11px; line-height: 1.5; padding: 6px 8px; resize: vertical; }
+        .cloud-seed-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+        .cloud-seed-row input[type=number] { flex: 1; }
+        .cloud-seed-row button { width: auto; margin: 0; padding: 6px 10px; }
+        .cloud-seed-row label { margin: 0; font-size: 11px; color: var(--text-sub); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .cloud-progress { height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+        .cloud-progress > div { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s; }
+        .cloud-warn { background: rgba(255,210,63,0.06); border: 1px solid rgba(255,210,63,0.25); border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #ffd23f; margin-top: 8px; }
+
+        .ai-code-bar { background: #0b0b10; border-top: 2px solid var(--accent); font-family: 'Consolas', 'Courier New', monospace; }
+        .ai-code-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; cursor: pointer; user-select: none; font-family: 'Segoe UI', sans-serif; border-bottom: 1px solid #222; }
+        .ai-code-head:hover { background: rgba(108, 92, 231, 0.12); }
+        .ai-code-title { font-size: 12px; font-weight: bold; color: #00e676; }
+        .ai-code-body { padding: 10px 14px 12px; }
+        #aiCodeEditorTextarea { width: 100%; min-height: 150px; background: #0b0b10; color: #d6e2ff; border: 1px solid #333; border-radius: 4px; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.5; white-space: pre; tab-size: 2; padding: 8px; resize: vertical; }
+
+        /* ===== 新增：切片可视化 / 特效开关 / 微调控件 ===== */
+        .fx-toggle-row { display: flex; align-items: center; gap: 6px; margin: 8px 0; padding: 8px; background: rgba(255, 210, 63, 0.06); border-radius: 4px; border: 1px solid rgba(255, 210, 63, 0.25); }
+        .fx-toggle-row label { margin: 0; }
+        .slice-overlay-box { margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 1px dashed var(--border); }
+        .slice-overlay-box .checkbox-row { margin-top: 4px; }
+        .slice-tune-row { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+        .slice-tune-row label { margin: 0; min-width: 78px; font-size: 11px; }
+        .slice-tune-row input[type="range"] { flex: 1; }
+        .slice-tune-row input[type="number"] { max-width: 54px; }
+        .part-legend { font-size: 10px; color: var(--text-sub); margin-top: 6px; line-height: 1.6; }
+        .part-legend span { margin-right: 8px; }
+        .pc-body { color: #5fd3ff; } .pc-leg { color: #ffd23f; } .pc-arm { color: #ff5d8f; } .pc-weapon { color: #7dff8a; }
+
+        /* ===== 顶层模式切换 (工坊 / 画布) ===== */
+        .app-mode-row { display: flex; gap: 6px; }
+        .app-mode-row button { width: auto; margin: 0; padding: 6px 14px; background: transparent; border: 1px solid var(--border); color: var(--text-sub); font-size: 12px; font-weight: 600; }
+        .app-mode-row button:hover { border-color: var(--accent); color: var(--text-main); }
+        .app-mode-row button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        /* ===== 128×128 像素画布编辑器 (模板B) ===== */
+        #canvasView { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+        .cv-body { display: flex; flex: 1; overflow: hidden; }
+        .cv-tools { width: 56px; min-width: 56px; background: var(--bg-panel); border-right: 1px solid var(--border); padding: 8px 6px; display: flex; flex-direction: column; gap: 6px; }
+        .cv-tool { width: 44px; height: 44px; min-width: 44px; background: transparent; border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; cursor: pointer; font-size: 18px; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; }
+        .cv-tool:hover { border-color: var(--accent); }
+        .cv-tool.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .cv-stage { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background-color: #f4f1ea; background-image: radial-gradient(#c7c2b6 1.2px, transparent 1.2px); background-size: 18px 18px; user-select: none; }
+        .cv-canvas-wrap { position: relative; image-rendering: pixelated; line-height: 0; outline: 2px solid #000; outline-offset: 0px; }
+        #cvCanvas { position: relative; z-index: 2; image-rendering: pixelated; cursor: crosshair; touch-action: none; display: block; background: transparent; }
+        #cvGridOverlay { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; image-rendering: pixelated; }
+        #cvOnionLayer { position: absolute; left: 0; top: 0; z-index: 1; pointer-events: none; image-rendering: pixelated; opacity: 0.35; }
+        .cv-side { width: 280px; min-width: 280px; background: var(--bg-panel); border-left: 1px solid var(--border); padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .cv-palette-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-top: 6px; }
+        .cv-swatch { width: 100%; aspect-ratio: 1; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
+        .cv-swatch.active { border: 2px solid #fff; box-shadow: 0 0 0 2px var(--accent); }
+        .cv-color-row { display: flex; gap: 6px; align-items: center; }
+        .cv-color-row input[type="color"] { width: 40px; height: 28px; padding: 0; border: none; background: transparent; cursor: pointer; }
+        .cv-frames-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+        .cv-frame-item { display: flex; align-items: center; gap: 8px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
+        .cv-frame-item.active { border-color: var(--accent); box-shadow: 0 0 6px var(--accent); }
+        .cv-frame-item canvas { width: 40px; height: 40px; image-rendering: pixelated; border: 1px solid var(--border); border-radius: 2px; }
+        .cv-frame-item .fv { font-size: 11px; color: var(--text-sub); min-width: 24px; }
+        .cv-frame-item .fdel { margin-left: auto; width: auto; padding: 2px 6px; font-size: 12px; background: transparent; border: 1px solid var(--border); color: var(--text-sub); }
+        .cv-frame-item .fdel:hover { color: #ff7675; border-color: #d63031; }
+        .cv-btn-row { display: flex; gap: 6px; }
+        .cv-btn-row button { margin: 0; flex: 1; }
+        .cv-zoom-row { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; align-items: center; background: rgba(43,43,54,0.85); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; z-index: 10; }
+        .cv-zoom-row button { width: auto; margin: 0; padding: 2px 8px; }
+        .cv-zoom-row .zlabel { font-size: 12px; min-width: 44px; text-align: center; font-family: monospace; }
+        .cv-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--text-sub); background: rgba(43,43,54,0.7); padding: 4px 10px; border-radius: 6px; pointer-events: none; }
+        .cv-checkbox-row { display: flex; align-items: center; gap: 6px; }
+        .cv-checkbox-row label { margin: 0; }
+        .cv-ai-bar { background: #0b0b10; border-top: 2px solid #00b894; }
+        .cv-ai-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; cursor: pointer; user-select: none; border-bottom: 1px solid #222; }
+        .cv-ai-head:hover { background: rgba(0,184,148,0.12); }
+        .cv-ai-title { font-size: 12px; font-weight: bold; color: #00e676; }
+        .cv-ai-body { padding: 10px 14px 12px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+        .cv-ai-fields { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+        .cv-ai-fields .field { display: flex; flex-direction: column; gap: 3px; }
+        .cv-ai-fields .field label { margin: 0; font-size: 11px; }
+        .cv-ai-fields .field input, .cv-ai-fields .field select { width: auto; min-width: 90px; }
+        .cv-ai-note { width: 100%; background: #11151c; color: #b9f6ca; border: 1px solid #234; border-radius: 4px; padding: 8px 10px; font-size: 12px; min-height: 40px; font-family: 'Consolas', monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🎮 像素精灵帧工坊 (智能变换版)</h1>
+    <div class="app-mode-row">
+        <button type="button" id="appModeWorkshop" class="active">🛠 工坊模式</button>
+        <button type="button" id="appModeCanvas">🎨 画布模式</button>
+    </div>
+    <div style="font-size: 12px; color: var(--text-sub);">AI 动作规划 · 整体挤压拉伸 · 硬编码特效 · 纯前端渲染</div>
+</header>
+
+<div class="main-container">
+    <div class="sidebar">
+        <!-- 1. 上传与去背景 -->
+        <div class="panel-section">
+            <div class="panel-title">📥 参考图 & 去背景</div>
+            <input type="file" id="uploadInput" accept="image/png,image/jpeg,image/webp" style="display:none">
+            <button onclick="document.getElementById('uploadInput').click()">📁 上传像素参考图</button>
+            <label>去背景容差 (0-100)</label>
+            <input type="range" id="toleranceSlider" min="0" max="100" value="30">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-sub);"><span>精确</span><span id="tolVal">30</span><span>宽松</span></div>
+            <button class="secondary" id="btnRemoveBg" disabled>✨ 执行去背景</button>
+            <button class="secondary" id="btnRestoreBg" disabled>↩ 还原去背景</button>
+        </div>
+
+        <!-- 1.5 像素化缩放 -->
+        <div class="panel-section">
+            <div class="panel-title">🔬 像素化缩放</div>
+            
+            <div class="checkbox-row" style="margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                <input type="checkbox" id="pixelArtModeToggle" checked>
+                <label for="pixelArtModeToggle" style="margin:0; color: #00b894; font-weight: bold;">🎮 像素画模式 (推荐!)</label>
+            </div>
+            <div class="algo-desc" style="margin-top:0; margin-bottom:8px; color:#00b894;">
+                勾选后：使用<b>最近邻插值</b>，保持硬边缘，颜色不混合。<br>
+                不勾选：使用下方的复杂算法，适合<b>照片/高清图</b>转像素。
+            </div>
+
+            <label>目标尺寸 (宽 × 高)</label>
+            <div class="size-row">
+                <input type="number" id="targetW" value="32" min="1" max="256">
+                <span class="sep">×</span>
+                <input type="number" id="targetH" value="32" min="1" max="256">
+            </div>
+            <div class="preset-row">
+                <div class="preset-btn" data-size="16">16²</div>
+                <div class="preset-btn active" data-size="32">32²</div>
+                <div class="preset-btn" data-size="48">48²</div>
+                <div class="preset-btn" data-size="64">64²</div>
+            </div>
+            
+            <div id="advancedAlgoOptions" style="opacity: 0.5; pointer-events: none; transition: 0.3s;">
+                <label>降采样算法 (仅照片模式)</label>
+                <select id="downscaleAlgo">
+                    <option value="area">面积平均 (Area Average)</option>
+                    <option value="edge" selected>边缘感知 (Edge-Aware) ⭐</option>
+                    <option value="bilinear">双线性插值 (Bilinear)</option>
+                </select>
+                <div class="algo-desc" id="algoDesc">结合 Sobel 边缘检测，在降采样时加权保护轮廓清晰度。</div>
+
+                <label>颜色量化 (0=不量化)</label>
+                <input type="range" id="quantizeSlider" min="0" max="64" value="0">
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-sub);"><span>关闭</span><span id="quantVal">关闭</span><span>64色</span></div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="ditherToggle">
+                    <label for="ditherToggle" style="margin:0;">Floyd-Steinberg 抖动</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="edgeEnhanceToggle" checked>
+                    <label for="edgeEnhanceToggle" style="margin:0;">边缘锐化增强</label>
+                </div>
+            </div>
+
+            <button class="secondary" id="btnPixelate" disabled>🔬 执行缩放</button>
+            <button class="secondary" id="btnResetSize" disabled style="margin-top:4px;">↩ 恢复原始尺寸</button>
+            <div id="pixelInfo" class="info-badge" style="display:none;"></div>
+        </div>
+
+        <!-- 4. 动画生成 (本地 / AI / 云端) -->
+        <div class="panel-section">
+            <div class="panel-title">🎬 动画生成 (本地 / AI / 云端)</div>
+
+            <div class="gen-mode-row">
+                <button type="button" id="genModeLocal" class="active">🛠 本地生成</button>
+                <button type="button" id="genModeAi">⚡ AI 生成</button>
+                <button type="button" id="genModeCloud">☁️ 云端生图</button>
+            </div>
+
+            <!-- 以下新增控件仅在 AI 生成模式显示 (setGenMode 控制) -->
+            <div id="genExtraControls" style="display:none;">
+                <div class="fx-toggle-row">
+                    <input type="checkbox" id="fxEnhanceToggle" checked>
+                    <label for="fxEnhanceToggle" style="margin:0; color:#ffd23f; font-weight:bold;">✨ 启用特效增强层 (大幅度动作)</label>
+                </div>
+
+                <!-- 切片可视化与手动微调 -->
+                <div class="slice-overlay-box">
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="partShowSlice">
+                        <label for="partShowSlice" style="margin:0;">显示切片 (叠加部件边界与锚点)</label>
+                    </div>
+                    <div class="slice-tune-row">
+                        <label>躯干/腿 分割 Y</label>
+                        <input type="range" id="partBodyLegY" min="0" max="256" value="0">
+                        <input type="number" id="partBodyLegYNum" min="0" max="256" value="0">
+                    </div>
+                    <div class="slice-tune-row">
+                        <label>左/右腿 分割 X</label>
+                        <input type="range" id="partLegSplitX" min="0" max="256" value="0">
+                        <input type="number" id="partLegSplitXNum" min="0" max="256" value="0">
+                    </div>
+                    <div class="part-legend">
+                        <span class="pc-body">■ body</span><span class="pc-leg">■ legL/legR</span><span class="pc-arm">■ armL/armR</span><span class="pc-weapon">■ weapon</span>
+                    </div>
+                    <div id="partInfo" class="algo-desc" style="margin-top:4px;">未切片</div>
+                </div>
+            </div>
+
+            <!-- 本地生成控制区 -->
+            <div id="localGenControls">
+                <label>动作</label>
+                <select id="localActionSelect">
+                    <option value="idle">待机 (呼吸浮动)</option>
+                    <option value="walk">行走 (迈步弹跳)</option>
+                    <option value="attack">攻击 (挥砍)</option>
+                    <option value="skill">技能 (火焰特效)</option>
+                    <option value="hurt">受击 (闪白)</option>
+                    <option value="death">死亡 (倒地消散)</option>
+                    <option value="jump">跳跃 (抛物线)</option>
+                </select>
+                <label>帧数: <span id="localFrameCountVal">4</span></label>
+                <input type="range" id="localFrameCount" min="2" max="12" value="4">
+                <button id="btnLocalGenerate">🛠 生成动画</button>
+                <div class="algo-desc" style="margin-top:6px;">基于自动切片逐部件变换：Tier1 纯变换保真，Tier2 叠加程序化特效。</div>
+            </div>
+
+            <!-- AI 生成控制区 (默认隐藏) -->
+            <div id="aiGenControls" style="display:none;">
+                <div class="panel-section" style="padding:10px; margin-bottom:10px;">
+                    <div class="panel-title">AI 配置</div>
+                    <label>API Base URL</label>
+                    <input type="text" id="aiApiBase" value="https://dashscope.aliyuncs.com/compatible-mode/v1">
+                    <label>API Key</label>
+                    <input type="password" id="aiApiKey" placeholder="sk-...">
+                    <label>Model</label>
+                    <input type="text" id="aiModel" value="qwen-vl-max">
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <button class="secondary" id="btnAiTestApi" style="margin-top:0; flex:1;">🔌 测试</button>
+                        <button id="btnAiSaveCfg" style="margin-top:0; flex:1;">💾 保存</button>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-sub); margin-top:6px;" id="aiCfgStatus">未保存</div>
+                </div>
+
+                <label>提取的调色板</label>
+                <div class="ai-palette-box" id="aiPaletteBox"><span class="ai-palette-empty">上传并处理后自动提取</span></div>
+
+                <label>动作</label>
+                <select id="aiActionSelect">
+                    <option value="idle">idle (待机)</option>
+                    <option value="walk">walk (行走)</option>
+                    <option value="attack">attack (攻击)</option>
+                    <option value="skill">skill (技能)</option>
+                    <option value="hurt">hurt (受击)</option>
+                    <option value="death">death (死亡)</option>
+                    <option value="custom">custom (自定义)</option>
+                </select>
+                <textarea id="aiCustomAction" placeholder="描述自定义动作，例如：施法、吃东西..." style="display:none; margin-top:8px; min-height:45px;"></textarea>
+
+                <label>帧数: <span id="aiFrameCountVal">4</span></label>
+                <input type="range" id="aiFrameCount" min="2" max="12" value="4">
+
+                <label>额外指令 (可选)</label>
+                <textarea id="aiExtraPrompt" placeholder="例如：添加刀光特效 / 动作要夸张..." style="min-height:45px;"></textarea>
+
+                <button id="btnAiGenerate">⚡ AI 生成变换并应用</button>
+                <div class="algo-desc" style="margin-top:6px;">AI 只输出每帧变换+特效 JSON，前端用原图切片渲染，角色绝不变样。</div>
+            </div>
+
+            <!-- 云端生图控制区 (默认隐藏) -->
+            <div id="cloudGenControls" style="display:none;">
+                <!-- 云端模式切换：参考图模式 / 直接生成模式 -->
+                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                    <button type="button" class="cloud-mode-btn active" data-cmode="ref" style="flex:1; padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:transparent; color:var(--text-sub); cursor:pointer; font-weight:600;">📷 参考图模式</button>
+                    <button type="button" class="cloud-mode-btn" data-cmode="direct" style="flex:1; padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:transparent; color:var(--text-sub); cursor:pointer; font-weight:600;">🎨 直接生成模式</button>
+                </div>
+                <div class="algo-desc" id="cloudModeHint" style="margin-bottom:8px;">📷 参考图模式：需先上传参考图，「识图写提示词」可辅助，一致性更好。</div>
+                <div class="panel-section" style="padding:10px; margin-bottom:10px;">
+                    <div class="panel-title">☁️ 云端生图配置</div>
+                    <label>服务商预设 (仅填充，不锁定)</label>
+                    <select id="cloudPreset">
+                        <option value="custom">自定义</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="aliyun">阿里云百炼</option>
+                        <option value="siliconflow">SiliconFlow</option>
+                        <option value="zhipu">智谱AI</option>
+                    </select>
+                    <label>Base URL (必填)</label>
+                    <input type="text" id="cloudApiBase" placeholder="https://api.openai.com/v1">
+                    <label>API Key (必填)</label>
+                    <input type="password" id="cloudApiKey" placeholder="sk-...">
+                    <label>模型名 (必填)</label>
+                    <input type="text" id="cloudModel" placeholder="dall-e-3 / wanx2.1-t2i-turbo / FLUX.1-schnell / cogview-4">
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <button class="secondary" id="btnCloudTest" style="margin-top:0; flex:1;">🔌 测试连接</button>
+                        <button id="btnCloudSave" style="margin-top:0; flex:1;">💾 保存</button>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-sub); margin-top:6px;" id="cloudCfgStatus">未保存</div>
+                    <div id="cloudSampleBox" style="margin-top:6px; display:none;"><img id="cloudSampleImg" style="max-width:80px; max-height:80px; border:1px solid var(--border); border-radius:4px; image-rendering:pixelated;"></div>
+                </div>
+
+                <label>动作</label>
+                <select id="cloudActionSelect">
+                    <option value="idle">idle (待机)</option>
+                    <option value="walk">walk (行走)</option>
+                    <option value="attack">attack (攻击)</option>
+                    <option value="skill">skill (技能)</option>
+                    <option value="hurt">hurt (受击)</option>
+                    <option value="death">death (死亡)</option>
+                    <option value="custom">custom (自定义)</option>
+                </select>
+                <textarea id="cloudCustomAction" placeholder="描述自定义动作，例如：施法、吃东西..." style="display:none; margin-top:8px; min-height:45px;"></textarea>
+
+                <label>帧数: <span id="cloudFrameCountVal">4</span></label>
+                <input type="range" id="cloudFrameCount" min="2" max="12" value="4">
+
+                <label>生成尺寸 (发送给 API 的分辨率；<span id="cloudSizeHint" style="color:#00b894;">未缩放→保持生成尺寸</span>)</label>
+                <div class="size-row">
+                    <input type="number" id="cloudSizeW" value="512" min="64" max="2048" step="64">
+                    <span class="sep">×</span>
+                    <input type="number" id="cloudSizeH" value="512" min="64" max="2048" step="64">
+                </div>
+                <div class="preset-row">
+                    <div class="cloud-size-btn active" data-csize="512">512²</div>
+                    <div class="cloud-size-btn" data-csize="768">768²</div>
+                    <div class="cloud-size-btn" data-csize="1024">1024²</div>
+                </div>
+                <div class="algo-desc" style="margin-top:4px;">执行过「缩放」才会把云端图降采样到精灵尺寸；否则按生成尺寸原样入帧（可生成常规非像素图）。</div>
+
+                <div class="checkbox-row" style="margin-top:8px;">
+                    <input type="checkbox" id="cloudSeedToggle" checked>
+                    <label for="cloudSeedToggle" style="margin:0;">固定种子 (保持角色一致)</label>
+                </div>
+                <div class="cloud-seed-row">
+                    <input type="number" id="cloudSeed" value="42" min="0">
+                    <button type="button" class="secondary" id="btnCloudSeedRand">🎲</button>
+                    <label><input type="checkbox" id="cloudSeedShared" checked>每帧共用</label>
+                </div>
+                <div class="algo-desc" id="cloudSeedHint" style="margin-top:4px;">固定相同种子+prompt 强约束可保持角色一致。</div>
+
+                <label>额外指令 (可选，附加到 prompt 的角色/动作细节)</label>
+                <textarea id="cloudExtraPrompt" placeholder="例如：持剑、红披风、动作要夸张..." style="min-height:45px;"></textarea>
+
+                <label>提示词模板 (点击填充，可再手改)</label>
+                <div class="preset-row" style="margin-top:0;">
+                    <div class="cloud-size-btn" data-tmpl="general">通用角色</div>
+                    <div class="cloud-size-btn" data-tmpl="pixel">像素风</div>
+                    <div class="cloud-size-btn" data-tmpl="realistic">写实风</div>
+                </div>
+                <label>Positive Prompt (希望出现的内容：角色/风格/动作)</label>
+                <textarea id="cloudPromptPos" class="cloud-prompt-area" style="min-height:55px;" placeholder="点上方模板填充，或「🪄 AI 识图写提示词」根据参考图自动生成"></textarea>
+                <label>Negative Prompt (不希望出现的，拼入 prompt 兼容所有后端)</label>
+                <textarea id="cloudPromptNeg" class="cloud-prompt-area" style="min-height:40px;">deformed, extra limbs, extra fingers, inconsistent character, different outfit, different colors, blurry, low quality, watermark, text, cropped, multiple characters</textarea>
+                <button class="secondary" id="btnCloudVision" style="margin-top:6px;">🪄 AI 识图写提示词</button>
+
+                <div class="cloud-warn">⚠️ 按张计费，请注意用量。生图走 OpenAI 兼容 /images/generations 同步接口；识图走 /chat/completions，两者独立。</div>
+
+                <button id="btnCloudGenerate">☁️ 云端生成序列帧</button>
+                <button class="secondary" id="btnCloudRegenFrame" style="margin-top:4px;">🔄 重生成当前帧</button>
+                <button class="secondary" id="btnCloudRegenAll" style="margin-top:4px;">🔁 整体重跑</button>
+                <button class="secondary" id="btnCloudCancel" style="margin-top:4px; display:none;">⏹ 取消</button>
+                <div id="cloudProgressBox" style="margin-top:8px; display:none;">
+                    <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;" id="cloudProgressText">准备中...</div>
+                    <div class="cloud-progress"><div id="cloudProgressBar"></div></div>
+                </div>
+                <div class="algo-desc" style="margin-top:6px;">云端逐帧生成 → 自动降采样到精灵尺寸 → 写入时间轴，可播放/导出 PNG/ZIP。</div>
+                <!-- 直接生成模式专属：把当前帧设为参考图，用于后续 AI/本地动画生成 -->
+                <button class="secondary" id="btnCloudUseAsRef" style="margin-top:6px; display:none;">📌 当前帧设为参考图</button>
+                <div class="algo-desc" id="cloudDirectHint" style="margin-top:4px; display:none;">生成后挑一张满意的帧，点上方按钮设为参考图，再切到「AI 生成」做动画。</div>
+            </div>
+        </div>
+
+        <!-- 5. 导出 -->
+        <div class="panel-section">
+            <div class="panel-title">📦 导出</div>
+            <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px;">
+                <button type="button" class="secondary" id="btnSelectAll" style="margin:0; flex:none; padding:4px 10px; font-size:11px;">☑ 全选</button>
+                <button type="button" class="secondary" id="btnSelectNone" style="margin:0; flex:none; padding:4px 10px; font-size:11px;">☐ 全不选</button>
+                <span id="exportSelCount" style="margin-left:auto; font-size:11px; color:var(--text-sub);">已选 0 帧</span>
+            </div>
+            <label>精灵图列数</label>
+            <input type="number" id="sheetCols" value="4" min="1" max="20">
+            <button id="btnExportSheet" disabled>📦 导出精灵图 PNG</button>
+            <button id="btnExportPng" disabled>🖼️ 导出选中帧 PNG (逐张)</button>
+            <button class="secondary" id="btnExportZip" disabled>🗜️ 导出选中帧 ZIP</button>
+            <div class="algo-desc" style="margin-top:4px;">单张或少量帧选「逐张 PNG」更直接；帧数多(10+)时浏览器可能拦截多次下载，建议用 ZIP。</div>
+        </div>
+    </div>
+
+    <div class="workspace">
+        <div class="preview-area">
+            <canvas id="mainCanvas" width="32" height="32"></canvas>
+            <div class="view-toolbar">
+                <button id="btnZoomOut" title="缩小">−</button>
+                <span class="zoom-label" id="zoomLabel">100%</span>
+                <button id="btnZoomIn" title="放大">+</button>
+                <button id="btnZoomReset" title="复位视图">⤾</button>
+            </div>
+            <div class="view-hint">拖拽移动 · 滚轮缩放</div>
+        </div>
+        <div class="timeline">
+            <div class="timeline-controls">
+                <button id="btnPlay" style="width:auto; padding: 4px 12px;">▶ 播放</button>
+                <button id="btnStep" class="secondary" style="width:auto; padding: 4px 12px;">⏭ 逐帧</button>
+                <label style="margin:0;">FPS:</label>
+                <input type="range" id="fpsSlider" min="1" max="24" value="8" style="width:100px;">
+                <span id="fpsVal">8</span>
+            </div>
+            <div class="frames-strip" id="framesStrip">
+                <div style="color:var(--text-sub); font-size:12px; padding:20px;">暂无帧数据，请上传参考图并生成</div>
+            </div>
+        </div>
+
+        <!-- ===== 新增：AI 代码编辑栏 ===== -->
+        <div class="ai-code-bar" id="aiCodeEditor" style="display:none;">
+            <div class="ai-code-head" id="aiCodeHead">
+                <span class="ai-code-title">🪄 AI 生成代码 <span id="aiCodeState" style="font-weight:normal; color:var(--text-sub);">(点击收起)</span></span>
+                <button type="button" id="btnRunCode" style="width:auto;">▶ 应用变换</button>
+            </div>
+            <div class="ai-code-body" id="aiCodeBody">
+                <textarea id="aiCodeEditorTextarea" spellcheck="false" placeholder="// AI 返回的变换+特效 JSON 会显示在这里，可手动修改后点「▶ 应用变换」用原图切片重渲染"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 128×128 像素画布编辑器 (模板B：下一帧绘制导航) ===== -->
+<div id="canvasView" style="display:none;">
+    <div class="cv-body">
+        <!-- 左侧工具栏 -->
+        <div class="cv-tools">
+            <button class="cv-tool active" id="cvToolPencil" title="铅笔 (P)">✏️</button>
+            <button class="cv-tool" id="cvToolEraser" title="橡皮 (E)">🧽</button>
+            <button class="cv-tool" id="cvToolFill" title="填充 (G)">🪣</button>
+            <button class="cv-tool" id="cvToolPicker" title="取色 (I)">💧</button>
+            <button class="cv-tool" id="cvToolLine" title="直线 (L)">📏</button>
+            <button class="cv-tool" id="cvToolRect" title="矩形 (R)">▭</button>
+        </div>
+
+        <!-- 中央画布舞台 -->
+        <div class="cv-stage" id="cvStage">
+            <div class="cv-canvas-wrap" id="cvCanvasWrap">
+                <canvas id="cvOnionLayer" width="128" height="128"></canvas>
+                <canvas id="cvCanvas" width="128" height="128"></canvas>
+                <canvas id="cvGridOverlay" width="128" height="128"></canvas>
+            </div>
+            <div class="cv-zoom-row">
+                <button id="cvZoomOut" title="缩小">−</button>
+                <span class="zlabel" id="cvZoomLabel">800%</span>
+                <button id="cvZoomIn" title="放大">+</button>
+                <button id="cvZoomReset" title="复位">⤾</button>
+            </div>
+            <div class="cv-hint">左键绘制 · 中键拖拽平移 · 滚轮缩放 · 右键浏览器菜单</div>
+        </div>
+
+        <!-- 右侧 调色板 / 帧 / 操作 -->
+        <div class="cv-side">
+            <div class="panel-section">
+                <div class="panel-title">调色板</div>
+                <div class="cv-color-row">
+                    <input type="color" id="cvColorPicker" value="#5fd3ff">
+                    <input type="text" id="cvColorHex" value="#5fd3ff" style="flex:1;">
+                </div>
+                <div class="cv-palette-grid" id="cvPaletteGrid"></div>
+                <button class="secondary" id="cvExtractPalette" style="margin-top:6px;">🎨 从当前帧提取调色板</button>
+            </div>
+            <div class="panel-section">
+                <div class="panel-title">帧管理</div>
+                <div class="cv-frames-list" id="cvFramesList"></div>
+                <div class="cv-btn-row" style="margin-top:8px;">
+                    <button id="cvAddFrame" class="secondary">＋ 新帧</button>
+                    <button id="cvDupFrame" class="secondary">⧉ 复制</button>
+                    <button id="cvDelFrame" class="secondary">🗑 删除</button>
+                </div>
+                <div class="cv-checkbox-row" style="margin-top:8px;">
+                    <input type="checkbox" id="cvOnionToggle" checked>
+                    <label for="cvOnionToggle" style="margin:0;">洋葱皮 (显示上一帧)</label>
+                </div>
+                <div class="cv-checkbox-row">
+                    <input type="checkbox" id="cvGridToggle">
+                    <label for="cvGridToggle" style="margin:0;">显示网格</label>
+                </div>
+            </div>
+            <div class="panel-section">
+                <div class="panel-title">画布操作</div>
+                <label>画布尺寸 (修改会清空帧)</label>
+                <div class="size-row">
+                    <select id="cvSizeSel">
+                        <option value="16">16×16</option>
+                        <option value="32">32×32</option>
+                        <option value="64">64×64</option>
+                        <option value="128" selected>128×128</option>
+                        <option value="192">192×192</option>
+                        <option value="256">256×256</option>
+                    </select>
+                    <button class="secondary" id="cvApplySize" style="width:auto;margin:0;padding:8px 12px;">应用</button>
+                </div>
+                <div class="size-row" style="gap:6px; margin-top:8px;">
+                    <button class="secondary" id="cvUndo" style="margin:0;flex:1;">↶ 撤销</button>
+                    <button class="secondary" id="cvRedo" style="margin:0;flex:1;">↷ 重做</button>
+                </div>
+                <button class="secondary" id="cvRestoreOrig" style="margin-top:6px;">⤺ 恢复原图 (清掉手绘)</button>
+                <button class="secondary" id="cvClearFrame">🗑 清空当前帧</button>
+                <button class="secondary" id="cvImportRef">📥 导入工坊参考图</button>
+                <button id="cvPlay">▶ 播放</button>
+                <label>FPS: <span id="cvFpsVal">8</span></label>
+                <input type="range" id="cvFps" min="1" max="24" value="8">
+                <button id="cvExportSheet">📦 导出精灵图 PNG</button>
+                <button class="secondary" id="cvExportZip">🗜️ 导出单帧 ZIP</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部 AI 下一帧导航 (模板B) -->
+    <div class="cv-ai-bar" id="cvAiBar">
+        <div class="cv-ai-head" id="cvAiHead">
+            <span class="cv-ai-title">🧭 AI 下一帧绘制导航 (模板B) <span id="cvAiState" style="font-weight:normal;color:#888;">(点击收起)</span></span>
+            <span style="font-size:11px;color:#888;">看前一帧 → 输出绘制指南 + keep/move/draw/erase 区域指令</span>
+        </div>
+        <div class="cv-ai-body" id="cvAiBody">
+            <div class="cv-ai-fields">
+                <div class="field"><label>导航模式</label>
+                    <select id="cvNavMode"><option value="guide" selected>文字指导 (推荐)</option><option value="auto">自动应用</option></select>
+                </div>
+                <div class="field"><label>动作</label>
+                    <select id="cvAction"><option value="idle">idle</option><option value="walk">walk</option><option value="attack">attack</option><option value="skill">skill</option><option value="hurt">hurt</option><option value="death">death</option><option value="jump">jump</option><option value="custom">custom (自定义)</option></select>
+                </div>
+                <div class="field" id="cvCustomActionField" style="display:none;"><label>自定义动作</label><input type="text" id="cvCustomAction" placeholder="例如：施法、吃东西" style="min-width:180px;"></div>
+                <div class="field"><label>总帧数</label><input type="number" id="cvTotal" value="8" min="2" max="32"></div>
+                <div class="field"><label>额外指令 (可选)</label><input type="text" id="cvExtra" placeholder="例如：动作要夸张" style="min-width:200px;"></div>
+            </div>
+            <button id="cvAiNav" style="width:auto; margin:0;">🧭 AI 导航下一帧</button>
+            <button id="cvAiApply" class="secondary" style="width:auto; margin:0;">↻ 重新应用上次结果</button>
+            <button id="cvAiClear" class="secondary" style="width:auto; margin:0;">✖ 清除导览</button>
+            <span style="font-size:11px;color:#888;align-self:center;">复用工坊模式 AI 配置 (Base / Key / Model)</span>
+            <div class="cv-ai-note" id="cvAiNote">导航指南将显示在这里。
+「文字指导」模式：AI 输出分步绘制指南，并在画布上叠加区域导览 (🟩保留 🟨新画 🟦移动 🟥擦除)，不改动画布，你按指南手绘下一帧。
+「自动应用」模式：AI 指令直接套用到画布生成下一帧。</div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/** ==========================================
+ *  核心状态管理
+ * ========================================== */
+const state = {
+    originalImage: null,
+    cleanedImage: null,
+    fullResImage: null,
+    pixelBaseImage: null,
+    frames: [],
+    currentFrame: 0,
+    isPlaying: false, playTimer: null, fps: 8,
+    canvasWidth: 32, canvasHeight: 32,
+    isPixelated: false
+};
+const $ = (id) => document.getElementById(id);
+const canvas = $('mainCanvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+ctx.imageSmoothingEnabled = false;
+
+function cloneImageData(src){ const d = ctx.createImageData(src.width, src.height); d.data.set(src.data); return d; }
+
+const view = { scale: 1, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0 };
+function _computeFitScale(){
+    const preview = document.querySelector('.preview-area');
+    if (!preview || !state.canvasWidth) return 1;
+    const padding = 24;
+    const aw = preview.clientWidth - padding * 2;
+    const ah = preview.clientHeight - padding * 2;
+    if (aw <= 0 || ah <= 0) return 1;
+    return Math.min(aw / state.canvasWidth, ah / state.canvasHeight);
+}
+function applyView(){
+    if (!state.canvasWidth) return;
+    const fit = _computeFitScale();
+    const total = fit * view.scale;
+    canvas.style.width  = (state.canvasWidth  * total) + 'px';
+    canvas.style.height = (state.canvasHeight * total) + 'px';
+    canvas.style.transform = `translate(${view.x}px, ${view.y}px)`;
+    const lbl = $('zoomLabel'); if (lbl) lbl.textContent = Math.round(view.scale * 100) + '%';
+}
+function setZoom(s){ view.scale = Math.min(30, Math.max(0.05, s)); applyView(); }
+function resetView(){ view.scale = 1; view.x = 0; view.y = 0; applyView(); }
+
+canvas.addEventListener('pointerdown', e => { view.dragging = true; view.lastX = e.clientX; view.lastY = e.clientY; });
+window.addEventListener('pointermove', e => {
+    if (!view.dragging) return;
+    view.x += e.clientX - view.lastX; view.y += e.clientY - view.lastY;
+    view.lastX = e.clientX; view.lastY = e.clientY; applyView();
+});
+window.addEventListener('pointerup', () => { view.dragging = false; });
+canvas.addEventListener('wheel', e => { e.preventDefault(); setZoom(view.scale * (e.deltaY < 0 ? 1.15 : 1 / 1.15)); }, { passive: false });
+$('btnZoomIn').addEventListener('click', () => setZoom(view.scale * 1.25));
+$('btnZoomOut').addEventListener('click', () => setZoom(view.scale / 1.25));
+$('btnZoomReset').addEventListener('click', resetView);
+window.addEventListener('resize', () => { if (state.canvasWidth) applyView(); });
+
+$('pixelArtModeToggle').addEventListener('change', (e) => {
+    const isPixelArt = e.target.checked;
+    const advancedOpts = $('advancedAlgoOptions');
+    if (isPixelArt) {
+        advancedOpts.style.opacity = '0.5';
+        advancedOpts.style.pointerEvents = 'none';
+    } else {
+        advancedOpts.style.opacity = '1';
+        advancedOpts.style.pointerEvents = 'auto';
+    }
+});
+
+/** ==========================================
+ *  模块1: 上传与去背景
+ * ========================================== */
+$('uploadInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+        const img = await loadImage(file);
+        state.originalImage = img;
+        state.canvasWidth = img.width; state.canvasHeight = img.height;
+        canvas.width = state.canvasWidth; canvas.height = state.canvasHeight;
+        ctx.drawImage(img, 0, 0);
+        state.cleanedImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        state.fullResImage = state.cleanedImage;
+        state.pixelBaseImage = null;
+        state.isPixelated = false;
+        $('btnRemoveBg').disabled = false;
+        $('btnRestoreBg').disabled = false;
+        $('btnPixelate').disabled = false;
+        $('btnResetSize').disabled = true;
+        $('pixelInfo').style.display = 'none';
+        resetView();
+        showToast('✅ 图片已加载: ' + img.width + '×' + img.height);
+    } catch (err) { showToast('❌ 图片加载失败: ' + err.message, true); }
+});
+
+$('toleranceSlider').addEventListener('input', e => $('tolVal').textContent = e.target.value);
+$('btnRemoveBg').addEventListener('click', () => {
+    if (!state.originalImage) return;
+    const tolerance = parseInt($('toleranceSlider').value);
+    let base;
+    if (state.isPixelated && state.pixelBaseImage) {
+        // 在缩放后的结果上执行去背景，尺寸保持缩放后的大小，不再回到原图大小
+        base = cloneImageData(state.pixelBaseImage);
+    } else {
+        // 直接读取当前画布内容作为源图，避免重绘原图导致尺寸/内容错乱
+        base = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
+    removeBackground(base, tolerance);
+    state.cleanedImage = base;
+    // 同步 fullResImage 为去背景后版本，否则后续"改大小"会从带背景的原图重新采样导致背景回归
+    if (state.isPixelated && state.fullResImage) {
+        const f = cloneImageData(state.fullResImage);
+        removeBackground(f, tolerance);
+        state.fullResImage = f;
+    } else {
+        state.fullResImage = base;
+    }
+    // 画布与逻辑尺寸始终跟随处理结果的真实宽高，杜绝尺寸回跳
+    state.canvasWidth = base.width;
+    state.canvasHeight = base.height;
+    canvas.width = base.width;
+    canvas.height = base.height;
+    ctx.putImageData(base, 0, 0);
+    applyView();
+    showToast('✅ 去背景完成');
+});
+
+$('btnRestoreBg').addEventListener('click', () => {
+    if (state.isPixelated && state.pixelBaseImage) {
+        const tw = parseInt($('targetW').value), th = parseInt($('targetH').value);
+        state.cleanedImage = cloneImageData(state.pixelBaseImage);
+        canvas.width = tw; canvas.height = th;
+        ctx.putImageData(state.cleanedImage, 0, 0);
+    } else if (state.originalImage) {
+        ctx.drawImage(state.originalImage, 0, 0);
+        state.cleanedImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(state.cleanedImage, 0, 0);
+    } else { showToast('❌ 无可用原图', true); return; }
+    resetView();
+    showToast('↩ 已还原');
+});
+
+function removeBackground(imageData, tolerance) {
+    const { data, width, height } = imageData;
+    const total = width * height;
+    const tolSq = (tolerance * 2.55) ** 2;
+
+    /* 阶段A：估计背景色 —— 整条边框采样取众数，跳过已透明的像素 */
+    const hist = new Map();
+    const addSample = (x, y) => {
+        const i = (y * width + x) * 4;
+        if (data[i + 3] < 128) return;
+        const key = (data[i] >> 4) + ',' + (data[i + 1] >> 4) + ',' + (data[i + 2] >> 4);
+        hist.set(key, (hist.get(key) || 0) + 1);
+    };
+    const step = Math.max(1, Math.floor(Math.max(width, height) / 48));
+    for (let x = 0; x < width; x += step) { addSample(x, 0); addSample(x, height - 1); }
+    for (let y = 0; y < height; y += step) { addSample(0, y); addSample(width - 1, y); }
+    let bgColor;
+    if (hist.size) {
+        let best = null, bestN = 0;
+        hist.forEach((n, key) => { if (n > bestN) { bestN = n; best = key; } });
+        const p = best.split(',');
+        bgColor = { r: parseInt(p[0]) * 16 + 8, g: parseInt(p[1]) * 16 + 8, b: parseInt(p[2]) * 16 + 8 };
+    } else {
+        bgColor = { r: 0, g: 0, b: 0 };
+    }
+
+    /* 阶段B：从整条边框发起泛洪填充 —— 透明像素或与背景色相近的像素置为透明 */
+    const visited = new Uint8Array(total);
+    const queue = [];
+    const enqueue = (x, y) => {
+        const p = y * width + x;
+        if (!visited[p]) { visited[p] = 1; queue.push(p); }
+    };
+    for (let x = 0; x < width; x++) { enqueue(x, 0); enqueue(x, height - 1); }
+    for (let y = 0; y < height; y++) { enqueue(0, y); enqueue(width - 1, y); }
+    for (let qi = 0; qi < queue.length; qi++) {
+        const p = queue[qi];
+        const idx = p * 4;
+        let isBg;
+        if (data[idx + 3] < 128) {
+            isBg = true;
+        } else {
+            const dr = data[idx] - bgColor.r, dg = data[idx + 1] - bgColor.g, db = data[idx + 2] - bgColor.b;
+            isBg = (dr * dr + dg * dg + db * db) <= tolSq;
+        }
+        if (isBg) {
+            data[idx + 3] = 0;
+            const x = p % width, y = (p / width) | 0;
+            if (x > 0) enqueue(x - 1, y);
+            if (x < width - 1) enqueue(x + 1, y);
+            if (y > 0) enqueue(x, y - 1);
+            if (y < height - 1) enqueue(x, y + 1);
+        }
+    }
+
+    /* 阶段C：清除残留水印/文字 —— 靠近图像边缘且非最大块的连通块，以及零散噪点 */
+    const compId = new Int32Array(total).fill(-1);
+    const compInfo = [];
+    const stack = [];
+    let compCount = 0;
+    for (let p = 0; p < total; p++) {
+        if (data[p * 4 + 3] > 0 && compId[p] === -1) {
+            const cid = compCount++;
+            let area = 0, minX = width, minY = height, maxX = -1, maxY = -1;
+            stack.length = 0; stack.push(p); compId[p] = cid;
+            while (stack.length) {
+                const q = stack.pop();
+                const qx = q % width, qy = (q / width) | 0;
+                area++;
+                if (qx < minX) minX = qx; if (qx > maxX) maxX = qx;
+                if (qy < minY) minY = qy; if (qy > maxY) maxY = qy;
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const nx = qx + dx, ny = qy + dy;
+                        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                        const nq = ny * width + nx;
+                        if (data[nq * 4 + 3] > 0 && compId[nq] === -1) { compId[nq] = cid; stack.push(nq); }
+                    }
+                }
+            }
+            compInfo.push({ area, minX, minY, maxX, maxY });
+        }
+    }
+    let maxArea = 0, maxId = -1;
+    for (let c = 0; c < compCount; c++) {
+        if (compInfo[c].area > maxArea) { maxArea = compInfo[c].area; maxId = c; }
+    }
+    const margin = Math.max(3, Math.round(Math.min(width, height) * 0.1));
+    for (let c = 0; c < compCount; c++) {
+        if (c === maxId) continue;                   // 最大的块视为角色，始终保留
+        const info = compInfo[c];
+        const nearBorder = info.minX <= margin || info.maxX >= width - 1 - margin ||
+                           info.minY <= margin || info.maxY >= height - 1 - margin;
+        const isSpeck = info.area <= Math.max(3, Math.round(total * 0.001));
+        if (nearBorder && info.area <= maxArea * 0.8) {   // 边缘残留（水印文字等），仅当明显小于角色时清除
+            for (let p = 0; p < total; p++) if (compId[p] === c) data[p * 4 + 3] = 0;
+        } else if (isSpeck) {                                          // 零散噪点
+            for (let p = 0; p < total; p++) if (compId[p] === c) data[p * 4 + 3] = 0;
+        }
+    }
+}
+function getPixelColor(data, width, x, y) { const i=(y*width+x)*4; return {r:data[i],g:data[i+1],b:data[i+2],a:data[i+3]}; }
+
+/** ==========================================
+ *  模块1.5: 像素化缩放
+ * ========================================== */
+document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const size = btn.dataset.size;
+        $('targetW').value = size;
+        $('targetH').value = size;
+    });
+});
+
+const algoDescriptions = {
+    area: '对每个目标像素覆盖的源区域取 RGB 平均值。',
+    edge: '结合 Sobel 边缘检测，保护轮廓清晰度。',
+    bilinear: '经典双线性插值，平滑过渡。'
+};
+$('downscaleAlgo').addEventListener('change', e => {
+    $('algoDesc').textContent = algoDescriptions[e.target.value];
+});
+$('quantizeSlider').addEventListener('input', e => {
+    const v = parseInt(e.target.value);
+    $('quantVal').textContent = v === 0 ? '关闭' : v + '色';
+});
+
+function pixelateImage(srcData, targetW, targetH, algo) {
+    if ($('pixelArtModeToggle').checked) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = srcData.width;
+        tempCanvas.height = srcData.height;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.putImageData(srcData, 0, 0);
+        const resultCanvas = document.createElement('canvas');
+        resultCanvas.width = targetW;
+        resultCanvas.height = targetH;
+        const rCtx = resultCanvas.getContext('2d');
+        rCtx.imageSmoothingEnabled = false; 
+        rCtx.drawImage(tempCanvas, 0, 0, targetW, targetH);
+        return rCtx.getImageData(0, 0, targetW, targetH);
+    }
+
+    const srcW = srcData.width, srcH = srcData.height;
+    const src = srcData.data;
+    const result = new ImageData(targetW, targetH);
+    const dst = result.data;
+    const xRatio = srcW / targetW;
+    const yRatio = srcH / targetH;
+
+    if (algo === 'bilinear') {
+        for (let dy = 0; dy < targetH; dy++) {
+            for (let dx = 0; dx < targetW; dx++) {
+                const sx = (dx + 0.5) * xRatio - 0.5;
+                const sy = (dy + 0.5) * yRatio - 0.5;
+                const x0 = Math.max(0, Math.floor(sx));
+                const y0 = Math.max(0, Math.floor(sy));
+                const x1 = Math.min(srcW - 1, x0 + 1);
+                const y1 = Math.min(srcH - 1, y0 + 1);
+                const fx = sx - x0, fy = sy - y0;
+                const di = (dy * targetW + dx) * 4;
+                for (let c = 0; c < 4; c++) {
+                    const v00 = src[(y0 * srcW + x0) * 4 + c];
+                    const v01 = src[(y0 * srcW + x1) * 4 + c];
+                    const v10 = src[(y1 * srcW + x0) * 4 + c];
+                    const v11 = src[(y1 * srcW + x1) * 4 + c];
+                    const top = v00 * (1 - fx) + v01 * fx;
+                    const bot = v10 * (1 - fx) + v11 * fx;
+                    dst[di + c] = top * (1 - fy) + bot * fy;
+                }
+            }
+        }
+    } else if (algo === 'edge') {
+        const edgeMap = computeSobelEdge(src, srcW, srcH);
+        for (let dy = 0; dy < targetH; dy++) {
+            for (let dx = 0; dx < targetW; dx++) {
+                const xStart = Math.floor(dx * xRatio);
+                const xEnd = Math.min(srcW, Math.floor((dx + 1) * xRatio));
+                const yStart = Math.floor(dy * yRatio);
+                const yEnd = Math.min(srcH, Math.floor((dy + 1) * yRatio));
+                let r = 0, g = 0, b = 0, a = 0;
+                let totalWeight = 0;
+                for (let sy = yStart; sy < yEnd; sy++) {
+                    for (let sx = xStart; sx < xEnd; sx++) {
+                        const si = (sy * srcW + sx) * 4;
+                        const sa = src[si + 3];
+                        if (sa === 0) continue;
+                        const edgeVal = edgeMap[sy * srcW + sx];
+                        const weight = 1.0 + edgeVal * 3.0;
+                        r += src[si] * weight;
+                        g += src[si + 1] * weight;
+                        b += src[si + 2] * weight;
+                        a += sa * weight;
+                        totalWeight += weight;
+                    }
+                }
+                const di = (dy * targetW + dx) * 4;
+                if (totalWeight > 0) {
+                    dst[di]     = Math.round(r / totalWeight);
+                    dst[di + 1] = Math.round(g / totalWeight);
+                    dst[di + 2] = Math.round(b / totalWeight);
+                    dst[di + 3] = Math.round(a / totalWeight);
+                } else {
+                    dst[di + 3] = 0;
+                }
+            }
+        }
+        if ($('edgeEnhanceToggle').checked) {
+            sharpenEdges(result);
+        }
+    } else {
+        for (let dy = 0; dy < targetH; dy++) {
+            for (let dx = 0; dx < targetW; dx++) {
+                const xStart = Math.floor(dx * xRatio);
+                const xEnd = Math.min(srcW, Math.floor((dx + 1) * xRatio));
+                const yStart = Math.floor(dy * yRatio);
+                const yEnd = Math.min(srcH, Math.floor((dy + 1) * yRatio));
+                let r = 0, g = 0, b = 0, a = 0, count = 0;
+                for (let sy = yStart; sy < yEnd; sy++) {
+                    for (let sx = xStart; sx < xEnd; sx++) {
+                        const si = (sy * srcW + sx) * 4;
+                        r += src[si];
+                        g += src[si + 1];
+                        b += src[si + 2];
+                        a += src[si + 3];
+                        count++;
+                    }
+                }
+                const di = (dy * targetW + dx) * 4;
+                if (count > 0) {
+                    dst[di]     = Math.round(r / count);
+                    dst[di + 1] = Math.round(g / count);
+                    dst[di + 2] = Math.round(b / count);
+                    dst[di + 3] = Math.round(a / count);
+                } else {
+                    dst[di + 3] = 0;
+                }
+            }
+        }
+    }
+    const quantColors = parseInt($('quantizeSlider').value);
+    if (quantColors > 0) {
+        quantizeColors(result, quantColors, $('ditherToggle').checked);
+    }
+    return result;
+}
+
+function computeSobelEdge(data, width, height) {
+    const edgeMap = new Float32Array(width * height);
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            const i = y * width + x;
+            const tl = gray(data, width, x-1, y-1);
+            const tc = gray(data, width, x,   y-1);
+            const tr = gray(data, width, x+1, y-1);
+            const ml = gray(data, width, x-1, y);
+            const mr = gray(data, width, x+1, y);
+            const bl = gray(data, width, x-1, y+1);
+            const bc = gray(data, width, x,   y+1);
+            const br = gray(data, width, x+1, y+1);
+            const gx = -tl + tr - 2*ml + 2*mr - bl + br;
+            const gy = -tl - 2*tc - tr + bl + 2*bc + br;
+            edgeMap[i] = Math.sqrt(gx * gx + gy * gy) / 1442;
+        }
+    }
+    return edgeMap;
+}
+function gray(data, width, x, y) {
+    const i = (y * width + x) * 4;
+    return 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+}
+function sharpenEdges(imageData) {
+    const { data, width, height } = imageData;
+    const original = new Uint8ClampedArray(data);
+    const kernel = [0, -1, 0, -1, 5, -1, 0, -1, 0];
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            const di = (y * width + x) * 4;
+            if (original[di + 3] === 0) continue;
+            for (let c = 0; c < 3; c++) {
+                let val = 0;
+                let ki = 0;
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        const si = ((y + dy) * width + (x + dx)) * 4 + c;
+                        val += original[si] * kernel[ki++];
+                    }
+                }
+                data[di + c] = Math.max(0, Math.min(255, val));
+            }
+        }
+    }
+}
+function quantizeColors(imageData, numColors, useDither) {
+    const { data, width, height } = imageData;
+    const pixels = [];
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] > 0) {
+            pixels.push([data[i], data[i+1], data[i+2], i]);
+        }
+    }
+    if (pixels.length === 0) return;
+    const palette = medianCut(pixels.map(p => [p[0], p[1], p[2]]), numColors);
+    if (useDither) {
+        const buffer = new Float32Array(data.length);
+        for (let i = 0; i < data.length; i++) buffer[i] = data[i];
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const di = (y * width + x) * 4;
+                if (buffer[di + 3] === 0) continue;
+                const oldR = buffer[di], oldG = buffer[di+1], oldB = buffer[di+2];
+                const newColor = findNearestColor(oldR, oldG, oldB, palette);
+                data[di] = newColor[0]; data[di+1] = newColor[1]; data[di+2] = newColor[2];
+                const errR = oldR - newColor[0];
+                const errG = oldG - newColor[1];
+                const errB = oldB - newColor[2];
+                distributeError(buffer, width, height, x+1, y,   di+4,     errR, errG, errB, 7/16);
+                distributeError(buffer, width, height, x-1, y+1, di-4+width*4, errR, errG, errB, 3/16);
+                distributeError(buffer, width, height, x,   y+1, di+width*4,   errR, errG, errB, 5/16);
+                distributeError(buffer, width, height, x+1, y+1, di+4+width*4, errR, errG, errB, 1/16);
+            }
+        }
+    } else {
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] === 0) continue;
+            const c = findNearestColor(data[i], data[i+1], data[i+2], palette);
+            data[i] = c[0]; data[i+1] = c[1]; data[i+2] = c[2];
+        }
+    }
+}
+function distributeError(buf, w, h, x, y, idx, er, eg, eb, factor) {
+    if (x < 0 || x >= w || y < 0 || y >= h) return;
+    if (idx < 0 || idx + 3 >= buf.length) return;
+    buf[idx]     += er * factor;
+    buf[idx + 1] += eg * factor;
+    buf[idx + 2] += eb * factor;
+}
+function medianCut(colors, depth) {
+    if (colors.length === 0) return [];
+    if (depth <= 1) {
+        let r = 0, g = 0, b = 0;
+        for (const c of colors) { r += c[0]; g += c[1]; b += c[2]; }
+        const n = colors.length;
+        return [[Math.round(r/n), Math.round(g/n), Math.round(b/n)]];
+    }
+    let minR=255, maxR=0, minG=255, maxG=0, minB=255, maxB=0;
+    for (const c of colors) {
+        if (c[0] < minR) minR = c[0]; if (c[0] > maxR) maxR = c[0];
+        if (c[1] < minG) minG = c[1]; if (c[1] > maxG) maxG = c[1];
+        if (c[2] < minB) minB = c[2]; if (c[2] > maxB) maxB = c[2];
+    }
+    const rangeR = maxR - minR, rangeG = maxG - minG, rangeB = maxB - minB;
+    let channel = 0;
+    if (rangeG >= rangeR && rangeG >= rangeB) channel = 1;
+    else if (rangeB >= rangeR && rangeB >= rangeG) channel = 2;
+    colors.sort((a, b) => a[channel] - b[channel]);
+    const mid = Math.floor(colors.length / 2);
+    return [
+        ...medianCut(colors.slice(0, mid), depth / 2),
+        ...medianCut(colors.slice(mid), depth / 2)
+    ];
+}
+function findNearestColor(r, g, b, palette) {
+    let minDist = Infinity, nearest = palette[0];
+    for (const p of palette) {
+        const dr = r - p[0], dg = g - p[1], db = b - p[2];
+        const dist = dr*dr + dg*dg + db*db;
+        if (dist < minDist) { minDist = dist; nearest = p; }
+    }
+    return nearest;
+}
+
+$('btnPixelate').addEventListener('click', () => {
+    if (!state.fullResImage) { showToast('❌ 请先上传图片', true); return; }
+    const targetW = parseInt($('targetW').value);
+    const targetH = parseInt($('targetH').value);
+    if (targetW < 1 || targetH < 1 || targetW > 256 || targetH > 256) {
+        showToast('❌ 目标尺寸须在 1~256 之间', true); return;
+    }
+    const algo = $('downscaleAlgo').value;
+    const srcW = state.fullResImage.width, srcH = state.fullResImage.height;
+    const pixelData = pixelateImage(state.fullResImage, targetW, targetH, algo);
+    state.pixelBaseImage = pixelData;
+    state.cleanedImage = pixelData;
+    state.canvasWidth = targetW;
+    state.canvasHeight = targetH;
+    state.isPixelated = true;
+    canvas.width = targetW;
+    canvas.height = targetH;
+    ctx.putImageData(pixelData, 0, 0);
+    $('btnResetSize').disabled = false;
+    const info = $('pixelInfo');
+    info.style.display = 'inline-block';
+    const modeText = $('pixelArtModeToggle').checked ? '像素画模式(最近邻)' : (algo === 'edge' ? '边缘感知' : algo === 'area' ? '面积平均' : '双线性');
+    info.textContent = `${srcW}×${srcH} → ${targetW}×${targetH} · ${modeText}`;
+    resetView();
+    showToast(`✅ 缩放完成: ${srcW}×${srcH} → ${targetW}×${targetH}`);
+});
+
+$('btnResetSize').addEventListener('click', () => {
+    if (!state.fullResImage) return;
+    state.cleanedImage = state.fullResImage;
+    state.canvasWidth = state.fullResImage.width;
+    state.canvasHeight = state.fullResImage.height;
+    state.isPixelated = false;
+    state.pixelBaseImage = null;
+    canvas.width = state.canvasWidth;
+    canvas.height = state.canvasHeight;
+    ctx.putImageData(state.fullResImage, 0, 0);
+    $('btnResetSize').disabled = true;
+    $('pixelInfo').style.display = 'none';
+    resetView();
+    showToast('✅ 已恢复原始尺寸');
+});
+
+/** ==========================================
+ *  模块3: 时间轴与预览
+ * ========================================== */
+function initFrameSlots(count) {
+    state.frames=[]; const strip=$('framesStrip'); strip.innerHTML='';
+    for(let i=0;i<count;i++){
+        state.frames.push({imageData:null,status:'loading',dataUrl:null});
+        const t=document.createElement('div'); t.className='frame-thumb'; t.dataset.index=i;
+        t.innerHTML=`<input type="checkbox" class="frame-sel" data-index="${i}" checked><span class="idx">#${i+1}</span><div class="status loading"></div>`;
+        t.addEventListener('click',()=>selectFrame(i));
+        t.querySelector('.frame-sel').addEventListener('click',e=>{e.stopPropagation();updateExportSelCount();});
+        strip.appendChild(t);
+    }
+    selectFrame(0);
+    updateExportSelCount();
+}
+function updateFrameStatus(idx,st){ state.frames[idx].status=st; const d=$('framesStrip').children[idx]?.querySelector('.status'); if(d)d.className='status '+st; }
+function selectFrame(idx){
+    state.currentFrame=idx;
+    document.querySelectorAll('.frame-thumb').forEach((el,i)=>el.classList.toggle('active',i===idx));
+    if(state.frames[idx]?.imageData) ctx.putImageData(state.frames[idx].imageData,0,0);
+}
+
+$('fpsSlider').addEventListener('input',e=>{state.fps=+e.target.value;$('fpsVal').textContent=state.fps;if(state.isPlaying){stopPreview();startPreview();}});
+$('btnPlay').addEventListener('click',()=>state.isPlaying?stopPreview():startPreview());
+$('btnStep').addEventListener('click',()=>{stopPreview();selectFrame((state.currentFrame+1)%state.frames.length);});
+
+function startPreview(){
+    if(state.frames.filter(f=>f.status==='done').length<2){showToast('❌ 至少需要2帧',true);return;}
+    state.isPlaying=true; $('btnPlay').textContent='⏸ 暂停';
+    state.playTimer=setInterval(()=>{
+        let next=(state.currentFrame+1)%state.frames.length;
+        while(state.frames[next]?.status!=='done'&&next!==state.currentFrame) next=(next+1)%state.frames.length;
+        selectFrame(next);
+    },1000/state.fps);
+}
+function stopPreview(){state.isPlaying=false;$('btnPlay').textContent='▶ 播放';clearInterval(state.playTimer);}
+
+/** ==========================================
+ *  模块4: 导出 (支持帧选择)
+ * ========================================== */
+// 获取勾选且已完成的帧索引
+function getSelectedFrames() {
+    const sel=[];
+    state.frames.forEach((f,i)=>{
+        if(f.status!=='done') return;
+        const cb=$('framesStrip').children[i]?.querySelector('.frame-sel');
+        if(cb?.checked) sel.push(i);
+    });
+    return sel;
+}
+function updateExportSelCount() {
+    const n=getSelectedFrames().length;
+    const el=$('exportSelCount'); if(el) el.textContent=`已选 ${n} 帧`;
+}
+$('btnSelectAll').addEventListener('click',()=>{
+    document.querySelectorAll('.frame-sel').forEach(cb=>{cb.checked=true;});
+    updateExportSelCount();
+});
+$('btnSelectNone').addEventListener('click',()=>{
+    document.querySelectorAll('.frame-sel').forEach(cb=>{cb.checked=false;});
+    updateExportSelCount();
+});
+$('btnExportSheet').addEventListener('click',()=>{
+    const sel=getSelectedFrames(); if(!sel.length){showToast('❌ 无可导出帧 (请勾选要导出的帧)',true);return;}
+    const cols=parseInt($('sheetCols').value)||sel.length, rows=Math.ceil(sel.length/cols), fw=state.canvasWidth, fh=state.canvasHeight;
+    const sc=document.createElement('canvas'); sc.width=cols*fw; sc.height=rows*fh; const sCtx=sc.getContext('2d'); sCtx.imageSmoothingEnabled=false;
+    sel.forEach((idx,i)=>{const c=i%cols,r=Math.floor(i/cols),x=c*fw,y=r*fh;sCtx.putImageData(state.frames[idx].imageData,x,y);});
+    downloadFile(sc.toDataURL('image/png'),'spritesheet.png');
+    showToast('✅ 精灵图 PNG 已导出');
+});
+$('btnExportPng').addEventListener('click',()=>{
+    const sel=getSelectedFrames(); if(!sel.length){showToast('❌ 无可导出帧 (请勾选要导出的帧)',true);return;}
+    sel.forEach((idx,i)=>{
+        const f=state.frames[idx];
+        setTimeout(()=>downloadFile(f.dataUrl,`frame_${String(i+1).padStart(3,'0')}.png`), i*300);
+    });
+    showToast(`✅ 正在逐张下载 ${sel.length} 张 PNG...`);
+});
+$('btnExportZip').addEventListener('click',async()=>{
+    const sel=getSelectedFrames(); if(!sel.length){showToast('❌ 无可导出帧 (请勾选要导出的帧)',true);return;}
+    if(typeof JSZip==='undefined'){showToast('❌ JSZip 未加载',true);return;}
+    const zip=new JSZip(); sel.forEach((idx,i)=>zip.file(`frame_${String(i+1).padStart(3,'0')}.png`,state.frames[idx].dataUrl.split(',')[1],{base64:true}));
+    downloadFile(URL.createObjectURL(await zip.generateAsync({type:'blob'})),'sprite_frames.zip');
+    showToast('✅ ZIP已导出');
+});
+
+/** ==========================================
+ *  工具函数
+ * ========================================== */
+function loadImage(file){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=r.result;};r.onerror=no;r.readAsDataURL(file);});}
+function downloadFile(url,name){const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function showToast(msg,err=false){const t=$('toast');t.textContent=msg;t.className='toast show'+(err?' error':'');clearTimeout(t._timer);t._timer=setTimeout(()=>t.className='toast',3000);}
+
+/** ==========================================
+ *  ===== 新增：本地 / AI 动画生成 =====
+ *  本模块纯追加，不改动任何原有代码
+ * ========================================== */
+
+/* ---------- 5.1 模式切换 (本地为默认) ---------- */
+function setGenMode(mode) {
+    const isLocal = mode === 'local';
+    const isAi = mode === 'ai';
+    const isCloud = mode === 'cloud';
+    $('localGenControls').style.display = isLocal ? 'block' : 'none';
+    $('aiGenControls').style.display = isAi ? 'block' : 'none';
+    $('cloudGenControls').style.display = isCloud ? 'block' : 'none';
+    $('aiCodeEditor').style.display = isAi ? 'block' : 'none';
+    $('genExtraControls').style.display = isAi ? 'block' : 'none';   // 切片/FX 控件仅在 AI 模式显示
+    $('genModeLocal').classList.toggle('active', isLocal);
+    $('genModeAi').classList.toggle('active', isAi);
+    $('genModeCloud').classList.toggle('active', isCloud);
+    if (isAi) refreshAiPalette();
+    if (isCloud && typeof cloudRefreshSpriteSize === 'function') cloudRefreshSpriteSize();
+    // 切到非 AI 模式时关闭切片可视化，避免覆盖预览
+    if (!isAi && state.sliceVisible) {
+        state.sliceVisible = false;
+        $('partShowSlice').checked = false;
+        if (state.frames && state.frames.length) selectFrame(state.currentFrame);
+        else if (state.cleanedImage) ctx.putImageData(state.cleanedImage, 0, 0);
+    }
+}
+$('genModeLocal').addEventListener('click', () => setGenMode('local'));
+$('genModeAi').addEventListener('click', () => setGenMode('ai'));
+$('genModeCloud').addEventListener('click', () => setGenMode('cloud'));
+
+$('localFrameCount').addEventListener('input', e => $('localFrameCountVal').textContent = e.target.value);
+$('aiFrameCount').addEventListener('input', e => $('aiFrameCountVal').textContent = e.target.value);
+$('aiActionSelect').addEventListener('change', e => {
+    const isCustom = e.target.value === 'custom';
+    $('aiCustomAction').style.display = isCustom ? 'block' : 'none';
+    if (isCustom) $('aiCustomAction').focus();
+});
+
+/* ---------- 5.2 本地生成 (纯前端逐帧变换) ---------- */
+$('btnLocalGenerate').addEventListener('click', () => {
+    if (!state.cleanedImage) { showToast('❌ 请先上传并处理参考图', true); return; }
+    const action = $('localActionSelect').value;
+    const frameCount = parseInt($('localFrameCount').value) || 4;
+    const frames = localGenerateFrames(action, frameCount);
+    commitFramesFromImageData(frames);
+    showToast(`✅ 本地生成 ${frames.length} 帧动画 (${action})`);
+});
+
+function localGenerateFrames(action, frameCount) {
+    // 方案A：优先用自动切片逐部件变换；无切片时回退到整图变换 (localGenerateFramesLegacy)
+    const parts = (typeof getParts === 'function') ? getParts() : null;
+    if (parts && parts.length) {
+        const w = state.canvasWidth, h = state.canvasHeight;
+        const names = parts.map(p => p.name);
+        const specs = localBuildSpecs(action, frameCount, parts);
+        return specs.map(s => renderFrame(parts, clampFrameSpec(s, names), w, h, state.fxEnabled));
+    }
+    return localGenerateFramesLegacy(action, frameCount);
+}
+
+/* ---------- 5.3 通用：帧提交 (复用现有时间轴/播放/导出) ---------- */
+function commitFramesFromImageData(frames) {
+    if (!frames || !frames.length) { showToast('❌ 无有效帧数据', true); return; }
+    const w = state.canvasWidth, h = state.canvasHeight;
+    initFrameSlots(frames.length);
+    const strip = $('framesStrip');
+    frames.forEach((imgData, i) => {
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').putImageData(imgData, 0, 0);
+        const dataUrl = c.toDataURL('image/png');
+        state.frames[i] = { imageData: imgData, status: 'done', dataUrl };
+        const thumb = strip.children[i];
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        thumb.insertBefore(img, thumb.firstChild);
+        updateFrameStatus(i, 'done');
+    });
+    $('btnExportSheet').disabled = false;
+    $('btnExportPng').disabled = false;
+    $('btnExportZip').disabled = false;
+    updateExportSelCount();
+    selectFrame(0);
+}
+
+/* ---------- 5.4 AI 配置子面板 (独立 localStorage，刷新自动恢复) ---------- */
+const AI_CFG_KEY = 'pixelWorkshop.aiGenConfig';
+
+function aiSaveCfg() {
+    const base = $('aiApiBase').value.trim();
+    const key = $('aiApiKey').value.trim();
+    const model = $('aiModel').value.trim();
+    if (!base || !key || !model) { showToast('❌ 配置不完整，未保存', true); return; }
+    try {
+        localStorage.setItem(AI_CFG_KEY, JSON.stringify({ base, key, model }));
+        const st = $('aiCfgStatus');
+        st.textContent = '已保存 ✓'; st.style.color = '#00b894';
+        showToast('✅ AI 配置已保存');
+    } catch (e) { showToast('❌ 保存失败: ' + e.message, true); }
+}
+
+function aiLoadCfg() {
+    try {
+        const raw = localStorage.getItem(AI_CFG_KEY);
+        if (raw) {
+            const cfg = JSON.parse(raw);
+            if (cfg.base) $('aiApiBase').value = cfg.base;
+            if (cfg.key) $('aiApiKey').value = cfg.key;
+            if (cfg.model) $('aiModel').value = cfg.model;
+            const st = $('aiCfgStatus');
+            st.textContent = '已保存 ✓'; st.style.color = '#00b894';
+        }
+    } catch (e) { }
+}
+
+$('btnAiSaveCfg').addEventListener('click', aiSaveCfg);
+$('btnAiTestApi').addEventListener('click', async () => {
+    const base = $('aiApiBase').value.replace(/\/$/, '');
+    const key = $('aiApiKey').value.trim();
+    const model = $('aiModel').value.trim();
+    if (!base || !key || !model) { showToast('❌ 请填写完整配置', true); return; }
+    $('btnAiTestApi').disabled = true; $('btnAiTestApi').textContent = '⏳ 测试中...';
+    try {
+        const resp = await fetch(`${base}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Reply OK' }], max_tokens: 5 })
+        });
+        if (resp.ok) showToast('✅ API 连接成功！');
+        else showToast('❌ API ' + resp.status + ': ' + (await resp.text()).substring(0, 120), true);
+    } catch (err) {
+        showToast('❌ 连接失败: ' + err.message, true);
+    } finally {
+        $('btnAiTestApi').disabled = false; $('btnAiTestApi').textContent = '🔌 测试';
+    }
+});
+aiLoadCfg();
+
+/* ---------- 5.5 调色板提取 ---------- */
+function extractPalette(imageData, maxColors = 16) {
+    const colors = [], seen = new Set();
+    if (!imageData) return colors;
+    const { data } = imageData;
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < 128) continue;                             // 跳过透明像素
+        const r = Math.min(255, Math.round(data[i] / 32) * 32);      // 步长 32 量化
+        const g = Math.min(255, Math.round(data[i + 1] / 32) * 32);
+        const b = Math.min(255, Math.round(data[i + 2] / 32) * 32);
+        const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+        if (!seen.has(hex)) {
+            seen.add(hex); colors.push(hex);
+            if (colors.length >= maxColors) break;
+        }
+    }
+    return colors;
+}
+
+function renderPaletteBox(colors) {
+    const box = $('aiPaletteBox');
+    box.innerHTML = '';
+    if (!colors || !colors.length) {
+        box.innerHTML = '<span class="ai-palette-empty">未提取到颜色</span>';
+        return;
+    }
+    colors.forEach(c => {
+        const sw = document.createElement('span');
+        sw.className = 'ai-palette-swatch';
+        sw.style.background = c;
+        sw.title = c;
+        box.appendChild(sw);
+    });
+}
+
+function refreshAiPalette() {
+    renderPaletteBox(state.cleanedImage ? extractPalette(state.cleanedImage) : []);
+}
+
+/* ---------- 5.6 AI 生成代码并运行 ---------- */
+$('btnAiGenerate').addEventListener('click', async () => {
+    if (!state.cleanedImage) { showToast('❌ 请先上传并处理参考图', true); return; }
+    const base = $('aiApiBase').value.replace(/\/$/, '');
+    const key = $('aiApiKey').value.trim();
+    const model = $('aiModel').value.trim();
+    if (!base || !key || !model) { showToast('❌ 请先填写 AI 配置', true); return; }
+
+    let action = $('aiActionSelect').value;
+    let actionDesc = action;
+    if (action === 'custom') {
+        actionDesc = $('aiCustomAction').value.trim();
+        if (!actionDesc) { showToast('❌ 请输入自定义动作描述', true); return; }
+    }
+    const frameCount = parseInt($('aiFrameCount').value) || 4;
+    const extra = $('aiExtraPrompt').value.trim();
+
+    // 方案A：序列化切片结构 + 调色板作为上下文；vision 让模型看见造型
+    const parts = getParts();
+    if (!parts || !parts.length) { showToast('❌ 切片失败，无法生成变换', true); return; }
+    const partNames = parts.map(p => p.name);
+    const aiCtx = buildAiContext(action, actionDesc, frameCount, extra, parts);
+    renderPaletteBox(aiCtx.palette);
+
+    const refBase64 = getSrcCanvas().toDataURL('image/png');
+
+    $('btnAiGenerate').disabled = true;
+    $('btnAiGenerate').textContent = '⏳ 思考中...';
+    try {
+        const resp = await fetch(`${base}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+            body: JSON.stringify({
+                model,
+                temperature: 0.15,
+                max_tokens: 2500,
+                messages: [
+                    { role: 'system', content: aiSysPromptJSON(aiCtx) },
+                    { role: 'user', content: [
+                        { type: 'image_url', image_url: { url: refBase64 } },
+                        { type: 'text', text: `请按系统指令输出 ${frameCount} 帧 ${action} 动画的变换+特效 JSON。部件名: ${JSON.stringify(partNames)}` }
+                    ] }
+                ]
+            })
+        });
+        if (!resp.ok) throw new Error('API ' + resp.status + ': ' + (await resp.text()).substring(0, 200));
+
+        const result = await resp.json();
+        let content = result.choices?.[0]?.message?.content || '';
+        if (!content.trim()) throw new Error('AI 未返回内容');
+
+        let frames = parseAiJson(content);                       // 去 ```json / 截取 [..] / JSON.parse
+        frames = validateAiFrames(frames, partNames);            // 校验 + 钳制
+
+        $('aiCodeEditorTextarea').value = JSON.stringify(frames, null, 2);  // 写入编辑栏 (可手改)
+        $('aiCodeBody').style.display = 'block';
+
+        applyTransformsFromFrames(frames, parts);                // 用原图切片渲染 (+特效) → 接入时间轴/播放/导出
+        showToast('✅ AI 变换已应用: ' + frames.length + ' 帧动画！');
+    } catch (err) {
+        console.error(err);
+        showToast('❌ AI 生成失败: ' + err.message, true);
+    } finally {
+        $('btnAiGenerate').disabled = false;
+        $('btnAiGenerate').textContent = '⚡ AI 生成变换并应用';
+    }
+});
+
+/* ---------- 5.7 (旧"代码沙盒重画"范式已废弃，改为方案A JSON 解析/校验，见文末新增模块) ---------- */
+
+/* ---------- 5.8 代码编辑栏：应用变换 & 折叠 ---------- */
+$('btnRunCode').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!state.cleanedImage) { showToast('❌ 请先上传并处理参考图', true); return; }
+    const txt = $('aiCodeEditorTextarea').value;
+    if (!txt.trim()) { showToast('❌ JSON 为空', true); return; }
+    try {
+        const parts = getParts();
+        if (!parts || !parts.length) { showToast('❌ 无可用切片，无法应用变换', true); return; }
+        const partNames = parts.map(p => p.name);
+        let frames = parseAiJson(txt);                 // 解析编辑栏 JSON (允许手改)
+        frames = validateAiFrames(frames, partNames);  // 校验 + 钳制
+        applyTransformsFromFrames(frames, parts);      // 用原图切片重渲染
+        showToast('✅ 已应用变换: ' + frames.length + ' 帧');
+    } catch (err) {
+        showToast('❌ 应用失败: ' + err.message, true);
+    }
+});
+
+let aiCodeCollapsed = false;
+$('aiCodeHead').addEventListener('click', () => {
+    aiCodeCollapsed = !aiCodeCollapsed;
+    $('aiCodeBody').style.display = aiCodeCollapsed ? 'none' : 'block';
+    const st = $('aiCodeState');
+    if (st) st.textContent = aiCodeCollapsed ? '(点击展开)' : '(点击收起)';
+});
+
+// ========== 新增：切片引擎 ==========
+// 方案A 核心：自动按 alpha 通道把处理后原图切成 body / legL / legR / armL / armR / weapon
+// 部件。所有部件的 src 矩形拼回去与原图 bbox 像素级吻合 (静止帧 = 原图，无分割缝)。
+// 本模块纯追加，只读取 state，不改任何原有函数体。
+state.parts = null;                       // [{name, src:{sx,sy,sw,sh}, anchor:{ax,ay}}]
+state.srcCanvas = null;                   // 处理后原图的离屏 canvas (切片渲染源，永远只读)
+state._lastCleanRef = null;               // 用于侦测 cleanedImage 是否变化以失效缓存
+state._bbox = null;                       // 整体 alpha bbox {minX,minY,maxX,maxY,w,h,cx,cy}
+state.fxEnabled = true;                   // 特效增强层开关 (Tier2)
+state.sliceVisible = false;               // 切片可视化开关
+state.sliceOverride = { bodyLegY: null, legSplitX: null }; // 手动微调值
+const PART_COLORS = { body:'#5fd3ff', legL:'#ffd23f', legR:'#ffae00', armL:'#ff5d8f', armR:'#ff2d6f', weapon:'#7dff8a' };
+
+function clampN(v, d, a, b) { if (v == null || v === '') return d; const n = +v; if (isNaN(n)) return d; return Math.max(a, Math.min(b, n)); }
+
+// 处理后原图 → 离屏 canvas (带 cleanedImage 变化侦测，无需改原有上传/去背景/缩放逻辑)
+function getSrcCanvas() {
+    if (!state.cleanedImage) { state.srcCanvas = null; state.parts = null; state._lastCleanRef = null; return null; }
+    if (state.srcCanvas && state._lastCleanRef === state.cleanedImage && state.srcCanvas.width === state.canvasWidth) return state.srcCanvas;
+    const c = document.createElement('canvas');
+    c.width = state.canvasWidth; c.height = state.canvasHeight;
+    const cx = c.getContext('2d');
+    cx.imageSmoothingEnabled = false;
+    cx.putImageData(state.cleanedImage, 0, 0);
+    state.srcCanvas = c;
+    state._lastCleanRef = state.cleanedImage;
+    state.parts = null; // 图像变化，切片失效
+    return c;
+}
+
+// 计算切片部件 (带缓存)。返回数组，可能为空 (无 alpha)
+function getParts() {
+    if (!state.cleanedImage) return null;
+    if (state.parts && state._lastCleanRef === state.cleanedImage) return state.parts;
+    getSrcCanvas();
+    state.parts = autoSliceParts(state.cleanedImage);
+    return state.parts;
+}
+
+// 自动切片：alpha 投影找 bbox → 水平空白行切 body/legs → 腿区垂直空白列切 legL/legR
+// → 躯干两侧窄条作 armL/armR；无清晰分割线时按经验比例兜底。
+function autoSliceParts(img) {
+    const { data, width, height } = img;
+    let minX = width, minY = height, maxX = -1, maxY = -1;
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            if (data[(y * width + x) * 4 + 3] > 0) {
+                if (x < minX) minX = x; if (x > maxX) maxX = x;
+                if (y < minY) minY = y; if (y > maxY) maxY = y;
+            }
+        }
+    }
+    if (maxX < 0) { state._bbox = null; return []; }
+    const bw = maxX - minX + 1, bh = maxY - minY + 1;
+
+    // 行 alpha 投影 → 在下半区找最弱行 (腰部间隙) 作为 body/legs 分割
+    const rowAlpha = new Array(bh).fill(0);
+    for (let y = 0; y < bh; y++) {
+        let s = 0;
+        for (let x = 0; x < bw; x++) if (data[((minY + y) * width + (minX + x)) * 4 + 3] > 0) s++;
+        rowAlpha[y] = s;
+    }
+    let bodyLegY = null;
+    // 腰部搜索限定在中段 [45%, 80%]，避免把头部底沿误判为腰；取该带内最窄行
+    const waistStart = Math.round(bh * 0.45);
+    const waistEnd = Math.min(bh - 1, Math.round(bh * 0.8));
+    let minVal = Infinity, minRow = -1;
+    for (let y = waistStart; y < waistEnd; y++) {
+        if (rowAlpha[y] < minVal && rowAlpha[y] < bw * 0.6) { minVal = rowAlpha[y]; minRow = y; }
+    }
+    if (minRow > 0) bodyLegY = minY + minRow;
+    if (bodyLegY === null) bodyLegY = minY + Math.round(bh * 0.55);          // 兜底：头30/躯40/腿30 → 55% 处
+    if (state.sliceOverride.bodyLegY != null) bodyLegY = state.sliceOverride.bodyLegY;
+    bodyLegY = Math.max(minY + 1, Math.min(maxY, bodyLegY));
+
+    // 腿区列 alpha 投影 → 找最长低 alpha 连通列 (两腿之间的间隙)，平手时取最靠近中央者
+    const legsTop = bodyLegY, legsBot = maxY, legsH = legsBot - legsTop + 1;
+    const colAlpha = new Array(bw).fill(0);
+    for (let x = 0; x < bw; x++) {
+        let s = 0;
+        for (let y = 0; y < legsH; y++) if (data[((legsTop + y) * width + (minX + x)) * 4 + 3] > 0) s++;
+        colAlpha[x] = s;
+    }
+    const legThr = legsH * 0.4;
+    let bestRun = null; // {start,len,center,dist}
+    for (let x = 0; x < bw;) {
+        if (colAlpha[x] < legThr) {
+            let s = x; while (x < bw && colAlpha[x] < legThr) x++;
+            const len = x - s, center = s + len / 2, dist = Math.abs(center - bw / 2);
+            if (!bestRun || len > bestRun.len || (len === bestRun.len && dist < bestRun.dist)) bestRun = { start: s, len, center, dist };
+        } else x++;
+    }
+    let legSplitX = bestRun ? (minX + Math.round(bestRun.center)) : (minX + Math.round(bw / 2)); // 兜底：左右各半
+    if (state.sliceOverride.legSplitX != null) legSplitX = state.sliceOverride.legSplitX;
+    legSplitX = Math.max(minX + 1, Math.min(maxX, legSplitX));
+
+    // 躯干区列 alpha → 找中央连续高 alpha 段为 trunk，两侧窄条作 armL/armR
+    const bodyTop = minY, bodyBot = bodyLegY - 1, bodyH = bodyBot - bodyTop + 1;
+    const bodyCol = new Array(bw).fill(0);
+    for (let x = 0; x < bw; x++) {
+        let s = 0;
+        for (let y = 0; y < bodyH; y++) if (data[((bodyTop + y) * width + (minX + x)) * 4 + 3] > 0) s++;
+        bodyCol[x] = s;
+    }
+    const thr = bodyH * 0.25;
+    const center = Math.floor(bw / 2);
+    let trunkStart = center, trunkEnd = center;
+    while (trunkStart > 0 && bodyCol[trunkStart - 1] >= thr) trunkStart--;
+    while (trunkEnd < bw - 1 && bodyCol[trunkEnd + 1] >= thr) trunkEnd++;
+    let lExtent = 0; for (let x = trunkStart - 1; x >= 0; x--) { if (bodyCol[x] >= thr) lExtent++; else break; }
+    let rExtent = 0; for (let x = trunkEnd + 1; x < bw; x++) { if (bodyCol[x] >= thr) rExtent++; else break; }
+    let armW = Math.min(Math.max(lExtent, rExtent), Math.floor(bw * 0.3));
+
+    const parts = [];
+    if (armW >= 1) {
+        const armL_end = minX + armW;
+        const armR_start = maxX - armW + 1;
+        if (armR_start > armL_end) {
+            parts.push({ name: 'armL', src: { sx: minX, sy: bodyTop, sw: armW, sh: bodyH }, anchor: { ax: armL_end - 1, ay: bodyTop } });
+            parts.push({ name: 'body', src: { sx: armL_end, sy: bodyTop, sw: armR_start - armL_end, sh: bodyH }, anchor: { ax: Math.floor((armL_end + armR_start) / 2), ay: bodyBot } });
+            parts.push({ name: 'armR', src: { sx: armR_start, sy: bodyTop, sw: maxX - armR_start + 1, sh: bodyH }, anchor: { ax: armR_start, ay: bodyTop } });
+        } else {
+            parts.push({ name: 'body', src: { sx: minX, sy: bodyTop, sw: bw, sh: bodyH }, anchor: { ax: minX + Math.floor(bw / 2), ay: bodyBot } });
+        }
+    } else {
+        parts.push({ name: 'body', src: { sx: minX, sy: bodyTop, sw: bw, sh: bodyH }, anchor: { ax: minX + Math.floor(bw / 2), ay: bodyBot } });
+    }
+    parts.push({ name: 'legL', src: { sx: minX, sy: legsTop, sw: legSplitX - minX, sh: legsH }, anchor: { ax: minX + Math.floor((legSplitX - minX) / 2), ay: legsTop } });
+    parts.push({ name: 'legR', src: { sx: legSplitX, sy: legsTop, sw: maxX - legSplitX + 1, sh: legsH }, anchor: { ax: legSplitX + Math.floor((maxX - legSplitX + 1) / 2), ay: legsTop } });
+
+    state._bbox = { minX, minY, maxX, maxY, w: bw, h: bh, cx: minX + Math.floor(bw / 2), cy: minY + Math.floor(bh / 2) };
+    return parts;
+}
+
+// 切片可视化：在主画布上叠加彩色半透明部件框 + 锚点
+function drawSliceOverlay() {
+    if (!state.cleanedImage) { showToast('❌ 请先上传并处理参考图', true); return; }
+    const parts = getParts();
+    ctx.putImageData(state.cleanedImage, 0, 0);
+    const info = $('partInfo');
+    if (!parts || !parts.length) { if (info) info.textContent = '未检测到角色像素'; return; }
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 1;
+    parts.forEach(p => {
+        ctx.strokeStyle = PART_COLORS[p.name] || '#fff';
+        ctx.strokeRect(p.src.sx + 0.5, p.src.sy + 0.5, p.src.sw - 1, p.src.sh - 1);
+        ctx.fillStyle = PART_COLORS[p.name] || '#fff';
+        ctx.fillRect(p.anchor.ax - 1, p.anchor.ay - 1, 3, 3);
+    });
+    ctx.restore();
+    if (info) info.textContent = parts.map(p => `${p.name}:${p.src.sw}×${p.src.sh}`).join('  ');
+}
+
+// ========== 新增：渲染器 + 特效增强层 ==========
+// 给定 parts + 单帧变换参数 + 特效指令，渲染到离屏 canvas 再 getImageData。
+// 主体层(必做)：save→平移(原位+dx,dy)→绕锚点 rot→drawImage(原图切片)→restore；源永远是原图。
+// 特效层(可选,Tier2)：在主体之上额外绘制粒子/残影/swoosh/ring，绝不触碰主体像素。
+function clampFrameSpec(spec, partNames) {
+    const g = (spec.global = spec.global || {});
+    g.dx = Math.round(clampN(g.dx, 0, -8, 8));
+    g.dy = Math.round(clampN(g.dy, 0, -8, 8));
+    g.rot = clampN(g.rot, 0, -1.047, 1.047);     // ±60° (弧度)
+    g.sx = clampN(g.sx, 1, 0.8, 1.2);
+    g.sy = clampN(g.sy, 1, 0.8, 1.2);
+    g.alpha = clampN(g.alpha, 1, 0, 1);
+    g.flash = !!g.flash;
+    spec.parts = spec.parts || {};
+    partNames.forEach(n => {
+        const p = (spec.parts[n] || (spec.parts[n] = { dx: 0, dy: 0, rot: 0 }));
+        p.dx = Math.round(clampN(p.dx, 0, -8, 8));
+        p.dy = Math.round(clampN(p.dy, 0, -8, 8));
+        p.rot = clampN(p.rot, 0, -1.047, 1.047);  // ±60° (弧度)
+    });
+    spec.effects = Array.isArray(spec.effects) ? spec.effects : [];
+    return spec;
+}
+
+function renderFrame(parts, spec, w, h, fxOn) {
+    const bbox = state._bbox || { cx: Math.floor(w / 2), cy: Math.floor(h / 2) };
+    const g = spec.global;
+    const src = getSrcCanvas();
+
+    // 主体层 (含 global 变换与每 part 变换，静止帧=原图)
+    const body = document.createElement('canvas'); body.width = w; body.height = h;
+    const bctx = body.getContext('2d'); bctx.imageSmoothingEnabled = false;
+    bctx.save();
+    bctx.translate(bbox.cx + g.dx, bbox.cy + g.dy);
+    bctx.rotate(g.rot);
+    bctx.scale(g.sx, g.sy);
+    bctx.translate(-bbox.cx, -bbox.cy);
+    parts.forEach(p => {
+        const pt = spec.parts[p.name] || { dx: 0, dy: 0, rot: 0 };
+        bctx.save();
+        bctx.translate(p.anchor.ax + pt.dx, p.anchor.ay + pt.dy);
+        bctx.rotate(pt.rot);
+        bctx.translate(-p.anchor.ax, -p.anchor.ay);
+        bctx.drawImage(src, p.src.sx, p.src.sy, p.src.sw, p.src.sh, p.src.sx, p.src.sy, p.src.sw, p.src.sh);
+        bctx.restore();
+    });
+    bctx.restore();
+    if (g.flash) { // 整帧白闪 (只作用于已绘主体像素)
+        bctx.globalCompositeOperation = 'source-atop';
+        bctx.fillStyle = 'rgba(255,255,255,0.6)';
+        bctx.fillRect(0, 0, w, h);
+        bctx.globalCompositeOperation = 'source-over';
+    }
+
+    // 输出层：先 afterimage 残影 → 主体(按 alpha) → 其余特效(slash/glow/dust/impact)
+    const out = document.createElement('canvas'); out.width = w; out.height = h;
+    const octx = out.getContext('2d'); octx.imageSmoothingEnabled = false;
+    const fi = spec.frame || 0;
+    const effs = (fxOn && Array.isArray(spec.effects)) ? spec.effects.filter(e => e && e.type && effectActive(e, fi)) : [];
+    // afterimage：把主体层以低 alpha 在偏移处重绘 1~3 次形成拖影
+    effs.forEach(e => {
+        if (e.type !== 'afterimage') return;
+        const k = Math.min(3, Math.max(1, Math.round(e.len || 2)));
+        for (let i = 1; i <= k; i++) {
+            octx.globalAlpha = 0.18 * (1 - i / (k + 1));
+            octx.drawImage(body, -i, 0);
+        }
+        octx.globalAlpha = 1;
+    });
+    octx.globalAlpha = clampN(g.alpha, 1, 0, 1);
+    octx.drawImage(body, 0, 0);
+    octx.globalAlpha = 1;
+    // 其余特效：在主体之上额外绘制，不触碰主体像素
+    effs.forEach(e => {
+        const col = e.color || '#ffffff';
+        const x = e.x | 0, y = e.y | 0;
+        if (e.type === 'slash') {                    // 刀光：从 (x,y) 沿 rot 角度画长 len、宽 w 的线
+            const len = e.len || 10, wdt = e.w || 2, ang = clampN(e.rot, 0, -180, 180) * Math.PI / 180;
+            octx.strokeStyle = col; octx.globalAlpha = 0.85; octx.lineWidth = wdt;
+            octx.beginPath(); octx.moveTo(x, y); octx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len); octx.stroke();
+            octx.globalAlpha = 1;
+        } else if (e.type === 'glow') {              // 光晕：半透明实心圆
+            const r = Math.max(1, e.len || 4);
+            octx.fillStyle = col; octx.globalAlpha = 0.5;
+            octx.beginPath(); octx.arc(x, y, r, 0, Math.PI * 2); octx.fill();
+            octx.globalAlpha = 1;
+        } else if (e.type === 'dust') {              // 尘土：散点
+            octx.fillStyle = col; octx.globalAlpha = 0.7;
+            for (let k = 0; k < 6; k++) octx.fillRect(x + ((k * 7) % 5) - 2, y + ((k * 5) % 4) - 1, 1, 1);
+            octx.globalAlpha = 1;
+        } else if (e.type === 'impact') {            // 冲击：半透明圆环
+            const r = Math.max(1, e.len || 5);
+            octx.strokeStyle = col; octx.globalAlpha = 0.7; octx.lineWidth = e.w || 2;
+            octx.beginPath(); octx.arc(x, y, r, 0, Math.PI * 2); octx.stroke();
+            octx.globalAlpha = 1;
+        }
+    });
+    return octx.getImageData(0, 0, w, h);
+}
+
+// 特效是否在当前帧生效 (frames:[n1,n2] 区间，缺失则全程)
+function effectActive(e, frameIdx) {
+    if (!Array.isArray(e.frames) || !e.frames.length) return true;
+    const lo = e.frames[0], hi = (e.frames[1] != null ? e.frames[1] : e.frames[0]);
+    return frameIdx >= lo && frameIdx <= hi;
+}
+
+// 用一组变换帧规格渲染并接入时间轴/播放/导出
+function applyTransformsFromFrames(frames, parts) {
+    if (!parts || !parts.length) { showToast('❌ 无可用切片', true); return; }
+    const w = state.canvasWidth, h = state.canvasHeight;
+    const names = parts.map(p => p.name);
+    const imgs = frames.map(s => renderFrame(parts, clampFrameSpec(s, names), w, h, state.fxEnabled));
+    commitFramesFromImageData(imgs);
+}
+
+// ========== 新增：本地骨骼动画 (基于切片，对齐模板A节奏：rot 用弧度，effects 数组) ==========
+function localBuildSpecs(action, frameCount, parts) {
+    const names = parts.map(p => p.name);
+    const has = n => names.includes(n);
+    const specs = [];
+    const W = state.canvasWidth, H = state.canvasHeight;
+    const D2R = Math.PI / 180;
+    // 取调色板色用于特效 (符合"颜色取自调色板")
+    const pal = (state.cleanedImage && extractPalette) ? extractPalette(state.cleanedImage) : [];
+    const palCol = (i, fb) => (pal && pal.length) ? pal[i % pal.length] : fb;
+    const cx = state._bbox ? state._bbox.cx : Math.floor(W / 2);
+    const cy = state._bbox ? state._bbox.cy : Math.floor(H / 2);
+    for (let i = 0; i < frameCount; i++) {
+        const t = i / frameCount;
+        const u = frameCount > 1 ? i / (frameCount - 1) : 0;
+        const spec = { frame: i, global: { dx: 0, dy: 0, rot: 0, sx: 1, sy: 1 }, parts: {}, effects: [] };
+        names.forEach(n => { spec.parts[n] = { dx: 0, dy: 0, rot: 0 }; });
+
+        if (action === 'idle') {                       // Tier1：body dy ±1 呼吸，手臂 rot ±3°
+            spec.global.dy = Math.round(Math.sin(t * Math.PI * 2) * 1);
+            if (has('armL')) spec.parts.armL.rot = Math.sin(t * Math.PI * 2) * 3 * D2R;
+            if (has('armR')) spec.parts.armR.rot = -Math.sin(t * Math.PI * 2) * 3 * D2R;
+        } else if (action === 'walk') {                // Tier1：双腿交替±15°，body dy ±1，手臂反向(腿60%)
+            const s = Math.sin(t * Math.PI * 2);
+            spec.global.dy = Math.round(s * 1);
+            if (has('legL')) { spec.parts.legL.rot = s * 15 * D2R; spec.parts.legL.dx = Math.round(s * 1); }
+            if (has('legR')) { spec.parts.legR.rot = -s * 15 * D2R; spec.parts.legR.dx = -Math.round(s * 1); }
+            if (has('armL')) spec.parts.armL.rot = -s * 9 * D2R;
+            if (has('armR')) spec.parts.armR.rot = s * 9 * D2R;
+        } else if (action === 'attack') {              // Tier2：30%蓄力 → 20%挥出 → 50%收势
+            const mid = Math.floor(frameCount * 0.5);
+            const windup = Math.floor(frameCount * 0.3);
+            if (i < windup) {                           // 蓄力：手臂后摆/上抬
+                const k = i / Math.max(1, windup);
+                if (has('armR')) spec.parts.armR.rot = k * 25 * D2R;
+                if (has('armL')) spec.parts.armL.rot = k * 15 * D2R;
+            } else if (i === mid) {                     // 挥出：arm/weapon rot 大幅 + 前冲 + 刀光 + 残影
+                spec.global.dx = 3;
+                if (has('armR')) spec.parts.armR.rot = -35 * D2R;
+                if (has('armL')) spec.parts.armL.rot = -20 * D2R;
+                spec.effects.push({ type: 'slash', color: palCol(0, '#ffffff'), x: cx, y: cy, rot: -30, len: Math.round(W * 0.5), w: 2, frames: [mid, mid] });
+                spec.effects.push({ type: 'afterimage', color: palCol(0, '#ffffff'), x: 0, y: 0, len: 2, w: 1, frames: [mid, mid] });
+            } else if (i > mid) {                       // 收势回正
+                const k = (i - mid) / Math.max(1, frameCount - mid);
+                if (has('armR')) spec.parts.armR.rot = (-35 + 35 * k) * D2R;
+            }
+        } else if (action === 'skill') {               // Tier2：火焰光晕 (glow) + 尘星 (dust)
+            spec.global.dy = Math.round(Math.sin(t * Math.PI * 2) * 1);
+            const fx = Math.round(W * 0.5), fy = Math.round(H * 0.5);
+            spec.effects.push({ type: 'glow', color: palCol(0, '#ff8800'), x: fx, y: fy - 4, rot: 0, len: 5, w: 1, frames: [i, i] });
+            spec.effects.push({ type: 'glow', color: palCol(1 % pal.length, '#ffcc00'), x: fx, y: fy - 2, rot: 0, len: 3, w: 1, frames: [i, i] });
+            spec.effects.push({ type: 'dust', color: palCol(2 % Math.max(1, pal.length), '#ff4400'), x: fx, y: fy, rot: 0, len: 0, w: 1, frames: [i, i] });
+        } else if (action === 'hurt') {                // Tier1：body rot 后仰 12°，dx 后退，手臂后张
+            const k = Math.sin(t * Math.PI);            // 中段最强
+            spec.global.dx = -Math.round(2 + k);
+            if (has('body')) spec.parts.body.rot = k * 12 * D2R;
+            if (has('armL')) spec.parts.armL.rot = -k * 15 * D2R;
+            if (has('armR')) spec.parts.armR.rot = k * 15 * D2R;
+        } else if (action === 'death') {               // Tier2：逐帧旋转倒地 (末帧 body rot 60°) + 下沉 + 碎散
+            spec.global.dy = Math.round(u * 3);
+            if (has('body')) spec.parts.body.rot = u * 60 * D2R;
+            names.forEach(n => {
+                spec.parts[n].dx = Math.round(Math.sin(i * 1.7 + n.charCodeAt(0)) * u * 2);
+                spec.parts[n].dy = Math.round(Math.cos(i * 1.3 + n.charCodeAt(0)) * u * 1);
+            });
+        } else if (action === 'jump') {                // Tier1：下蹲 → 上升 → 落地缓冲
+            if (u < 0.25) {                             // 下蹲
+                spec.global.dy = 1; spec.global.sy = 0.9; spec.global.sx = 1.1;
+                if (has('legL')) spec.parts.legL.rot = 8 * D2R;
+                if (has('legR')) spec.parts.legR.rot = -8 * D2R;
+            } else if (u < 0.75) {                      // 上升
+                const k = (u - 0.25) / 0.5;
+                spec.global.dy = -Math.round(Math.sin(k * Math.PI) * Math.max(3, Math.round(H * 0.18)));
+                spec.global.sy = 1.1; spec.global.sx = 0.9;
+            } else {                                    // 落地缓冲
+                spec.global.dy = 1; spec.global.sy = 0.92; spec.global.sx = 1.08;
+            }
+        }
+        specs.push(spec);
+    }
+    return specs;
+}
+
+// 整图变换兜底 (切片失败时使用，保留原本地逻辑)
+function localGenerateFramesLegacy(action, frameCount) {
+    const w = state.canvasWidth, h = state.canvasHeight;
+    const srcC = document.createElement('canvas');
+    srcC.width = w; srcC.height = h;
+    const sCtx = srcC.getContext('2d');
+    sCtx.imageSmoothingEnabled = false;
+    sCtx.putImageData(state.cleanedImage, 0, 0);
+
+    const out = [];
+    for (let i = 0; i < frameCount; i++) {
+        const t = i / frameCount;
+        const u = frameCount > 1 ? i / (frameCount - 1) : 0;
+        let ox = 0, oy = 0, sx = 1, sy = 1, rot = 0, flash = false;
+
+        if (action === 'idle') {
+            oy = Math.sin(t * Math.PI * 2) * 1;
+            sy = 1 + Math.sin(t * Math.PI * 2) * 0.02;
+        } else if (action === 'walk') {
+            oy = -Math.abs(Math.sin(t * Math.PI * 2)) * 2;
+            rot = Math.sin(t * Math.PI * 2) * 0.06;
+        } else if (action === 'attack') {
+            const mid = Math.floor(frameCount / 2);
+            if (i === mid) { ox = 3; sx = 1.15; flash = true; }
+            else if (i === mid - 1) { sx = 0.9; ox = -1; }
+            else if (i > mid) { sx = 1.1; }
+        } else if (action === 'jump') {
+            oy = -Math.sin(u * Math.PI) * Math.max(3, Math.round(h * 0.15));
+            const sq = Math.sin(u * Math.PI);
+            sy = 1 + sq * 0.15; sx = 1 - sq * 0.1;
+        } else if (action === 'hurt') {
+            ox = (i % 2 === 0) ? 1 : -1; flash = (i % 2 === 1);
+        } else { // skill / death 等无整图逻辑时退化为 idle
+            oy = Math.sin(t * Math.PI * 2) * 1; sy = 1 + Math.sin(t * Math.PI * 2) * 0.02;
+        }
+
+        const fC = document.createElement('canvas');
+        fC.width = w; fC.height = h;
+        const fCtx = fC.getContext('2d');
+        fCtx.imageSmoothingEnabled = false;
+        fCtx.save();
+        fCtx.translate(w / 2 + ox, h / 2 + oy);
+        fCtx.rotate(rot); fCtx.scale(sx, sy); fCtx.translate(-w / 2, -h / 2);
+        fCtx.drawImage(srcC, 0, 0);
+        fCtx.restore();
+        if (flash) {
+            fCtx.globalCompositeOperation = 'source-atop';
+            fCtx.fillStyle = 'rgba(255,255,255,0.65)';
+            fCtx.fillRect(0, 0, w, h);
+            fCtx.globalCompositeOperation = 'source-over';
+        }
+        out.push(fCtx.getImageData(0, 0, w, h));
+    }
+    return out;
+}
+
+// ========== 新增：AI 变换生成 (方案A：AI 输出变换+特效 JSON) ==========
+// 构造喂给 AI 的上下文：序列化 parts + 调色板 + 动作/帧数/特效开关/额外指令
+function buildAiContext(action, actionDesc, frameCount, extra, parts) {
+    const palette = extractPalette(state.cleanedImage);
+    const partNames = parts.map(p => p.name);
+    const sliceInfo = parts.length
+        ? '已切片。部件列表：' + parts.map(p => `${p.name} region=[${p.src.sx},${p.src.sy},${p.src.sw},${p.src.sh}] anchor=[${p.anchor.ax},${p.anchor.ay}]`).join(' ; ')
+        : '未切片。工具按 躯干/腿分割Y、左右腿分割X 自动分割：body=分割Y以上，legL/legR=分割Y以下按分割X左右分，armL/armR/weapon 由你根据图像判断大致区域';
+    return {
+        w: state.canvasWidth, h: state.canvasHeight,
+        partNames, palette, sliceInfo,
+        fxOn: state.fxEnabled ? 'on' : 'off',
+        action: actionDesc, frameCount, extra
+    };
+}
+
+// System Prompt（模板 A）：强约束 AI 只输出变换+特效 JSON 数组，禁止重画主体
+function aiSysPromptJSON(c) {
+    return `# 角色
+你是 2D 像素序列帧生成工具内置的"像素动画导演"。
+你不生成图像，只输出变换指令 JSON 数组；工具会逐像素执行平移/旋转/缩放来渲染每一帧，原图像素绝不被重新生成。
+
+========== 输入上下文（工具自动填充） ==========
+动作: ${c.action}
+帧数: ${c.frameCount}
+精灵尺寸: ${c.w}x${c.h}
+切片状态: ${c.sliceInfo}
+提取调色板: ${JSON.stringify(c.palette)}
+特效增强层: ${c.fxOn}   // on | off
+额外指令: ${c.extra || '无'}
+参考图: 见附件
+
+========== 输出 schema（字段名与结构必须完全一致，工具逐字段解析） ==========
+[
+  {
+    "frame": 0,
+    "global": { "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1 },
+    "parts": {
+      "body":   { "dx": 0, "dy": 0, "rot": 0 },
+      "legL":   { "dx": 0, "dy": 0, "rot": 0 },
+      "legR":   { "dx": 0, "dy": 0, "rot": 0 },
+      "armL":   { "dx": 0, "dy": 0, "rot": 0 },
+      "armR":   { "dx": 0, "dy": 0, "rot": 0 },
+      "weapon": { "dx": 0, "dy": 0, "rot": 0 }
+    },
+    "effects": []
+  }
+]
+数组长度必须等于帧数，frame 从 0 到 ${c.frameCount - 1} 顺序排列。
+
+========== 硬约束 ==========
+1. frame 0 为站立基准帧：global/parts 全部为 0/1，effects 为空数组。
+2. dx/dy 为整数像素，取值 [-8, 8]；rot 为角度，取值 [-60, 60]；sx/sy 取值 [0.9, 1.1]。
+3. 连续性：相邻帧之间单个部件 |Δrot| ≤ 25°，|Δdx|、|Δdy| ≤ 3；动作中途不得突然反向。
+4. 旋转围绕部件锚点（关节）发生；有切片锚点时以锚点为依据规划摆幅。
+5. 图中不存在的部件（如无武器）该部件保持全 0，不得虚构。
+6. 仅当特效增强层 = on 时允许 effects，每项格式：
+   { "type": "slash|glow|dust|afterimage|impact",
+     "color": "<必须取自调色板>",
+     "x": , "y": ,          // 相对精灵左上角
+     "rot": , "len": , "w": ,
+     "frames": [n1, n2] }   // 仅在这些帧出现
+7. 一切颜色（含特效）只能取自提取调色板，禁止自造 hex。
+8. 只输出纯 JSON 数组，无 markdown、无注释、无解释文字。
+
+========== 动作节奏参考 ==========
+- attack: 前30%蓄力(手臂后摆/上抬) → 20%挥出(arm/weapon 的 rot 大幅变化，可加 slash) → 后50%收势回正
+- walk: 双腿交替前后摆，body 的 dy 每帧 ±1 起伏，手臂与同侧腿反向摆、幅度为腿的60%
+- idle: 仅 body 的 dy ±1 呼吸起伏，手臂 rot ±3 微动
+- jump: 前段下蹲(body dy+1、腿 rot 收) → 中段上升(body dy 负值、腿伸展) → 末段落地缓冲
+- hurt: body rot 后仰 10~15°，global dx 后退 2~3，手臂后张
+- die: 逐帧旋转倒地，末帧 body rot ±90°、dy 落到地面线
+- 若额外指令非空则优先满足（如"动作要夸张"可把约束3放宽1.5倍）
+
+现在观察参考图，输出 ${c.frameCount} 帧的完整 JSON。`;
+}
+
+// 解析 AI 返回：去 ```json 标记 → 截取首个 '[' 到末个 ']' → JSON.parse
+function parseAiJson(raw) {
+    let s = String(raw || '').trim();
+    s = s.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const a = s.indexOf('['), b = s.lastIndexOf(']');
+    if (a === -1 || b === -1 || b < a) throw new Error('未找到 JSON 数组');
+    return JSON.parse(s.slice(a, b + 1));
+}
+
+// 校验 + 兜底：非空数组、补齐 global/parts/effects、rot 由角度转弧度、特效字段过滤
+function validateAiFrames(frames, partNames) {
+    if (!Array.isArray(frames) || !frames.length) throw new Error('帧数组为空');
+    const D2R = Math.PI / 180;
+    return frames.map((f, i) => {
+        if (typeof f !== 'object' || f === null) throw new Error('第 ' + i + ' 帧非对象');
+        f.global = f.global || {};
+        f.parts = f.parts || {};
+        // rot: 模板A 输出为角度 → 转弧度
+        f.global.rot = clampN(f.global.rot, 0, -60, 60) * D2R;
+        Object.keys(f.parts).forEach(k => {
+            const p = (f.parts[k] || (f.parts[k] = { dx: 0, dy: 0, rot: 0 }));
+            p.rot = clampN(p.rot, 0, -60, 60) * D2R;
+        });
+        // effects 过滤：必须有 type
+        f.effects = Array.isArray(f.effects) ? f.effects.filter(e => e && typeof e === 'object' && typeof e.type === 'string') : [];
+        return clampFrameSpec(f, partNames);
+    });
+}
+
+// ========== 新增：UI 接线 (特效开关 / 切片可视化 / 手动微调) ==========
+$('fxEnhanceToggle').addEventListener('change', e => { state.fxEnabled = e.target.checked; });
+
+function syncSliceControlsRange() {
+    const parts = getParts();
+    const b = state._bbox;
+    if (!b) return;
+    const yEl = $('partBodyLegY'), xEl = $('partLegSplitX');
+    yEl.min = b.minY; yEl.max = b.maxY;
+    xEl.min = b.minX; xEl.max = b.maxX;
+    const legL = parts && parts.find(p => p.name === 'legL');
+    const legR = parts && parts.find(p => p.name === 'legR');
+    const by = state.sliceOverride.bodyLegY != null ? state.sliceOverride.bodyLegY : (legL ? legL.src.sy : Math.round(b.minY + b.h * 0.55));
+    const lx = state.sliceOverride.legSplitX != null ? state.sliceOverride.legSplitX : (legR ? legR.src.sx : Math.round(b.minX + b.w / 2));
+    yEl.value = by; $('partBodyLegYNum').value = by;
+    xEl.value = lx; $('partLegSplitXNum').value = lx;
+}
+
+$('partShowSlice').addEventListener('change', e => {
+    state.sliceVisible = e.target.checked;
+    if (state.sliceVisible) {
+        state.parts = null; getParts(); syncSliceControlsRange();
+        drawSliceOverlay();
+    } else if (state.frames && state.frames.length) {
+        selectFrame(state.currentFrame);
+    } else if (state.cleanedImage) {
+        ctx.putImageData(state.cleanedImage, 0, 0);
+    }
+});
+
+function applySliceTune() {
+    const y = parseInt($('partBodyLegYNum').value);
+    const x = parseInt($('partLegSplitXNum').value);
+    state.sliceOverride.bodyLegY = isNaN(y) ? null : y;
+    state.sliceOverride.legSplitX = isNaN(x) ? null : x;
+    state.parts = null; getParts();           // 用新分割线重切
+    if (state.sliceVisible) drawSliceOverlay();
+}
+['partBodyLegY', 'partLegSplitX'].forEach(id => {
+    $(id).addEventListener('input', e => { $(id + 'Num').value = e.target.value; applySliceTune(); });
+});
+['partBodyLegYNum', 'partLegSplitXNum'].forEach(id => {
+    $(id).addEventListener('input', e => { $(id.replace('Num', '')).value = e.target.value; applySliceTune(); });
+});
+
+/* 默认本地模式 */
+setGenMode('local');
+
+// ========== 新增：128×128 像素画布编辑器 + 模板B AI 下一帧绘制导航 ==========
+// 顶层模式切换：工坊 (workshop) ↔ 画布 (canvas)。两视图互斥显示，互不破坏。
+// 画布模式独立维护 cvState.frames，不读写 state.frames；仅复用 state.cleanedImage
+// 作为"大图参考"与调色板来源，以及工坊的 AI 配置 (Base/Key/Model)。
+let CV_SIZE = 128;   // 画布边长 (可在「画布操作」中自定义 16~256)
+const cvState = {
+    tool: 'pencil',
+    color: '#5fd3ff',
+    palette: ['#000000','#ffffff','#5fd3ff','#ffd23f','#ff5d8f','#7dff8a','#ff8800','#00b894',
+              '#6c5ce7','#d63031','#0984e3','#fdcb6e','#e17055','#00cec9','#a29bfe','#636e72'],
+    frames: [],          // ImageData[] (128×128)
+    frame: 0,
+    zoom: 8,             // 显示倍率 (8x = 800%)
+    showGrid: false,
+    onion: true,
+    fps: 8, playing: false, playTimer: null,
+    refImage: null,      // 导入的参考图 (ImageData 128×128，供 AI "大图参考")
+    lastNav: null,       // 上次 AI 导航结果 (用于"重新应用")
+    drawing: false, lastPx: null, lineStart: null, _snap: null,
+    panX: 0, panY: 0, panning: false, panLastX: 0, panLastY: 0,  // 中键拖拽平移 + 滚轮缩放视图
+    navMode: 'guide', navOverlay: false, navFrame: -1,           // AI 导航: 文字指导叠加 / 当前导览帧
+    undoStacks: [], redoStacks: []                               // 每帧撤销/重做快照 (与 frames 索引对齐)
+};
+const cvCanvas = $('cvCanvas');
+const cvCtx = cvCanvas.getContext('2d', { willReadFrequently: true });
+cvCtx.imageSmoothingEnabled = false;
+const cvGridCanvas = $('cvGridOverlay');
+const cvGridCtx = cvGridCanvas.getContext('2d');
+const cvOnionCanvas = $('cvOnionLayer');
+const cvOnionCtx = cvOnionCanvas.getContext('2d');
+cvOnionCtx.imageSmoothingEnabled = false;
+
+// ---------- 顶层模式切换 ----------
+function setAppMode(mode) {
+    const isCanvas = mode === 'canvas';
+    document.querySelector('.main-container').style.display = isCanvas ? 'none' : 'flex';
+    $('canvasView').style.display = isCanvas ? 'flex' : 'none';
+    $('appModeWorkshop').classList.toggle('active', !isCanvas);
+    $('appModeCanvas').classList.toggle('active', isCanvas);
+    if (isCanvas) {
+        if (!cvState.frames.length) cvNewFrame(true);
+        cvApplyZoom();
+        cvRenderAll();
+        cvRenderFramesList();
+    } else {
+        cvStopPlay();
+    }
+}
+$('appModeWorkshop').addEventListener('click', () => setAppMode('workshop'));
+$('appModeCanvas').addEventListener('click', () => setAppMode('canvas'));
+
+// ---------- 帧管理 ----------
+function cvBlankFrame() { return cvCtx.createImageData(CV_SIZE, CV_SIZE); }
+function cvNewFrame(silent) {
+    cvState.frames.push(cvBlankFrame());
+    cvState.undoStacks.push([]);
+    cvState.redoStacks.push([]);
+    cvState.frame = cvState.frames.length - 1;
+    if (!silent) { cvRenderAll(); cvRenderFramesList(); }
+}
+function cvDupFrame() {
+    if (!cvState.frames.length) { cvNewFrame(); return; }
+    const cur = cvState.frames[cvState.frame];
+    const c = cvCtx.createImageData(CV_SIZE, CV_SIZE); c.data.set(cur.data);
+    const at = cvState.frame + 1;
+    cvState.frames.splice(at, 0, c);
+    cvState.undoStacks.splice(at, 0, []);
+    cvState.redoStacks.splice(at, 0, []);
+    cvState.frame = at;
+    cvRenderAll(); cvRenderFramesList();
+}
+function cvDelFrame() {
+    if (!cvState.frames.length) return;
+    if (cvState.frames.length === 1) {
+        cvPushUndo();
+        cvState.frames[0] = cvBlankFrame();
+        cvRenderAll(); cvRenderFramesList(); return;
+    }
+    cvState.frames.splice(cvState.frame, 1);
+    cvState.undoStacks.splice(cvState.frame, 1);
+    cvState.redoStacks.splice(cvState.frame, 1);
+    if (cvState.frame >= cvState.frames.length) cvState.frame = cvState.frames.length - 1;
+    cvRenderAll(); cvRenderFramesList();
+}
+function cvSelectFrame(i) {
+    cvState.frame = Math.max(0, Math.min(cvState.frames.length - 1, i));
+    cvRenderAll(); cvRenderFramesList();
+}
+
+// ---------- 撤销 / 重做 / 恢复原图 ----------
+const CV_UNDO_CAP = 60;   // 每帧最多保留快照数 (防内存膨胀)
+function cvPushUndo() {
+    const i = cvState.frame;
+    const cur = cvState.frames[i];
+    if (!cur) return;
+    const snap = cvCtx.createImageData(CV_SIZE, CV_SIZE);
+    snap.data.set(cur.data);
+    (cvState.undoStacks[i] = cvState.undoStacks[i] || []).push(snap);
+    if (cvState.undoStacks[i].length > CV_UNDO_CAP) cvState.undoStacks[i].shift();
+    (cvState.redoStacks[i] = cvState.redoStacks[i] || []).length = 0;   // 新动作清空重做
+}
+function cvUndo() {
+    const i = cvState.frame;
+    const st = cvState.undoStacks[i];
+    if (!st || !st.length) { showToast('已无可撤销操作'); return; }
+    const cur = cvState.frames[i];
+    const rs = cvState.redoStacks[i] = cvState.redoStacks[i] || [];
+    const rc = cvCtx.createImageData(CV_SIZE, CV_SIZE); rc.data.set(cur.data); rs.push(rc);
+    cvState.frames[i] = st.pop();
+    cvRenderAll(); cvRenderFramesList();
+}
+function cvRedo() {
+    const i = cvState.frame;
+    const rs = cvState.redoStacks[i];
+    if (!rs || !rs.length) { showToast('已无可重做操作'); return; }
+    const cur = cvState.frames[i];
+    const st = cvState.undoStacks[i] = cvState.undoStacks[i] || [];
+    const uc = cvCtx.createImageData(CV_SIZE, CV_SIZE); uc.data.set(cur.data); st.push(uc);
+    cvState.frames[i] = rs.pop();
+    cvRenderAll(); cvRenderFramesList();
+}
+// 恢复原图：清掉本帧所有手绘，恢复到导入的参考图 (无参考图则清空)
+function cvRestoreOrig() {
+    const i = cvState.frame;
+    if (!cvState.frames[i]) { showToast('❌ 无当前帧', true); return; }
+    cvPushUndo();
+    if (cvState.refImage) {
+        const c = cvCtx.createImageData(CV_SIZE, CV_SIZE); c.data.set(cvState.refImage.data);
+        cvState.frames[i] = c;
+    } else {
+        cvState.frames[i] = cvBlankFrame();
+    }
+    cvRenderAll(); cvRenderFramesList();
+    showToast(cvState.refImage ? '✅ 已恢复到导入的原图' : '✅ 已清空本帧 (无原图可恢复)');
+}
+
+// ---------- 自定义画布尺寸 ----------
+function cvResize(newSize) {
+    newSize = Math.max(16, Math.min(256, newSize | 0));
+    if (newSize === CV_SIZE) { showToast('尺寸未变化'); return; }
+    const hasContent = cvState.frames.some(f => f && f.data.some((v, idx) => idx % 4 === 3 && v > 0));
+    if (hasContent && !confirm(`修改画布尺寸为 ${newSize}×${newSize} 将清空所有帧与撤销历史，是否继续？`)) return;
+    CV_SIZE = newSize;
+    cvCanvas.width = cvCanvas.height = CV_SIZE;
+    cvGridCanvas.width = cvGridCanvas.height = CV_SIZE;
+    cvOnionCanvas.width = cvOnionCanvas.height = CV_SIZE;
+    cvCtx.imageSmoothingEnabled = false;
+    cvOnionCtx.imageSmoothingEnabled = false;
+    cvState.frames = [cvBlankFrame()];
+    cvState.frame = 0;
+    cvState.refImage = null;
+    cvState.undoStacks = []; cvState.redoStacks = [];
+    cvState.lastNav = null; cvState.navOverlay = false; cvState.navFrame = -1;
+    cvState.zoom = 8; cvState.panX = 0; cvState.panY = 0;
+    cvApplyZoom(); cvRenderAll(); cvRenderFramesList();
+    showToast(`✅ 画布尺寸已设为 ${CV_SIZE}×${CV_SIZE}`);
+}
+$('cvAddFrame').addEventListener('click', () => cvNewFrame());
+$('cvDupFrame').addEventListener('click', cvDupFrame);
+$('cvDelFrame').addEventListener('click', cvDelFrame);
+$('cvUndo').addEventListener('click', cvUndo);
+$('cvRedo').addEventListener('click', cvRedo);
+$('cvRestoreOrig').addEventListener('click', cvRestoreOrig);
+$('cvApplySize').addEventListener('click', () => cvResize(+$('cvSizeSel').value));
+// Ctrl+Z 撤销 / Ctrl+Y 或 Ctrl+Shift+Z 重做 (仅画布模式)
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && $('canvasView').style.display === 'flex') {
+        const t = (e.target.tagName || '').toUpperCase();
+        if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+        e.preventDefault();
+        if (e.shiftKey) cvRedo(); else cvUndo();
+    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y') && $('canvasView').style.display === 'flex') {
+        e.preventDefault(); cvRedo();
+    }
+});
+
+// ---------- 渲染 ----------
+function cvRenderFramesList() {
+    const list = $('cvFramesList'); list.innerHTML = '';
+    cvState.frames.forEach((f, i) => {
+        const item = document.createElement('div');
+        item.className = 'cv-frame-item' + (i === cvState.frame ? ' active' : '');
+        const thumb = document.createElement('canvas');
+        thumb.width = CV_SIZE; thumb.height = CV_SIZE;
+        thumb.getContext('2d').putImageData(f, 0, 0);
+        const idx = document.createElement('span'); idx.className = 'fv'; idx.textContent = '#' + (i + 1);
+        const del = document.createElement('button'); del.className = 'fdel'; del.textContent = '×';
+        del.addEventListener('click', (e) => { e.stopPropagation(); cvState.frame = i; cvDelFrame(); });
+        item.appendChild(thumb); item.appendChild(idx); item.appendChild(del);
+        item.addEventListener('click', () => cvSelectFrame(i));
+        list.appendChild(item);
+    });
+}
+function cvDrawGrid() {
+    cvGridCtx.clearRect(0, 0, CV_SIZE, CV_SIZE);
+    if (cvState.showGrid) {
+        cvGridCtx.strokeStyle = 'rgba(255,255,255,0.22)';
+        cvGridCtx.lineWidth = 1 / cvState.zoom;   // 1 显示像素宽
+        for (let i = 0; i <= CV_SIZE; i++) {
+            cvGridCtx.beginPath(); cvGridCtx.moveTo(i, 0); cvGridCtx.lineTo(i, CV_SIZE); cvGridCtx.stroke();
+            cvGridCtx.beginPath(); cvGridCtx.moveTo(0, i); cvGridCtx.lineTo(CV_SIZE, i); cvGridCtx.stroke();
+        }
+    }
+    // AI 导航区域导览 (非破坏性，仅描边；仅在与导览相同的帧上显示，切到别的帧自动隐藏)
+    if (cvState.navOverlay && cvState.lastNav && cvState.navFrame === cvState.frame) {
+        cvDrawNavRegions(cvState.lastNav);
+    }
+}
+// 在网格层上描出 keep/move/draw/erase 区域，作为手绘参考 (不写入主画布)
+function cvDrawNavRegions(nav) {
+    const lw = 2 / cvState.zoom;       // 约 2 屏幕像素粗，缩放后保持可见
+    const box = (color, x, y, w, h) => {
+        cvGridCtx.strokeStyle = color; cvGridCtx.lineWidth = lw;
+        cvGridCtx.strokeRect(x | 0, y | 0, w | 0, h | 0);
+    };
+    if (Array.isArray(nav.keep))  nav.keep.forEach(r  => { if (Array.isArray(r)) box('rgba(0,255,140,0.95)', r[0], r[1], r[2], r[3]); });
+    if (Array.isArray(nav.erase)) nav.erase.forEach(r => { if (Array.isArray(r)) box('rgba(255,70,70,0.95)', r[0], r[1], r[2], r[3]); });
+    if (Array.isArray(nav.draw))  nav.draw.forEach(d => { if (d && Array.isArray(d.rect)) box('rgba(255,225,60,0.95)', d.rect[0], d.rect[1], d.rect[2], d.rect[3]); });
+    if (Array.isArray(nav.move))  nav.move.forEach(m => {
+        if (!m || !Array.isArray(m.from)) return;
+        box('rgba(90,170,255,0.95)', m.from[0], m.from[1], m.from[2], m.from[3]);          // 起点 (实线)
+        if (Array.isArray(m.to)) {
+            cvGridCtx.setLineDash([3 / cvState.zoom, 2 / cvState.zoom]);
+            box('rgba(90,170,255,0.65)', m.to[0], m.to[1], m.from[2], m.from[3]);           // 终点 (虚线)
+            cvGridCtx.setLineDash([]);
+        }
+    });
+}
+function cvRenderAll() {
+    const cur = cvState.frames[cvState.frame];
+    if (cur) cvCtx.putImageData(cur, 0, 0);
+    cvOnionCtx.clearRect(0, 0, CV_SIZE, CV_SIZE);
+    if (cvState.onion && cvState.frame > 0 && cvState.frames[cvState.frame - 1]) {
+        cvOnionCtx.putImageData(cvState.frames[cvState.frame - 1], 0, 0);
+    }
+    cvDrawGrid();
+}
+function cvCommitRender() {
+    cvCtx.putImageData(cvState.frames[cvState.frame], 0, 0);
+    const item = $('cvFramesList').children[cvState.frame];
+    if (item) { const t = item.querySelector('canvas'); if (t) t.getContext('2d').putImageData(cvState.frames[cvState.frame], 0, 0); }
+}
+function cvApplyZoom() {
+    const px = CV_SIZE * cvState.zoom;
+    [cvCanvas, cvGridCanvas, cvOnionCanvas].forEach(c => { c.style.width = px + 'px'; c.style.height = px + 'px'; });
+    $('cvCanvasWrap').style.transform = `translate(${cvState.panX}px, ${cvState.panY}px)`;
+    $('cvZoomLabel').textContent = Math.round(cvState.zoom * 100) + '%';
+    cvDrawGrid();
+}
+$('cvZoomIn').addEventListener('click', () => { cvState.zoom = Math.min(40, cvState.zoom * 1.25); cvApplyZoom(); });
+$('cvZoomOut').addEventListener('click', () => { cvState.zoom = Math.max(1, cvState.zoom / 1.25); cvApplyZoom(); });
+$('cvZoomReset').addEventListener('click', () => { cvState.zoom = 8; cvState.panX = 0; cvState.panY = 0; cvApplyZoom(); });
+// 滚轮缩放 + 中键平移 (右键留给浏览器菜单)
+$('cvStage').addEventListener('wheel', e => { e.preventDefault(); cvState.zoom = Math.max(1, Math.min(40, cvState.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); cvApplyZoom(); }, { passive: false });
+// 中键拖拽平移画布视图
+$('cvStage').addEventListener('pointerdown', e => {
+    if (e.button !== 1) return;            // 仅中键平移 (0=左键绘制, 2=右键菜单)
+    e.preventDefault();
+    cvState.panning = true;
+    cvState.panLastX = e.clientX;
+    cvState.panLastY = e.clientY;
+    try { $('cvStage').setPointerCapture(e.pointerId); } catch (_) {}
+    $('cvStage').style.cursor = 'grabbing';
+});
+$('cvStage').addEventListener('pointermove', e => {
+    if (!cvState.panning) return;
+    cvState.panX += e.clientX - cvState.panLastX;
+    cvState.panY += e.clientY - cvState.panLastY;
+    cvState.panLastX = e.clientX;
+    cvState.panLastY = e.clientY;
+    cvApplyZoom();
+});
+const cvEndPan = e => {
+    if (e.button === 1 && cvState.panning) {
+        cvState.panning = false;
+        $('cvStage').style.cursor = '';
+        try { $('cvStage').releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+};
+$('cvStage').addEventListener('pointerup', cvEndPan);
+$('cvStage').addEventListener('pointercancel', cvEndPan);
+$('cvGridToggle').addEventListener('change', e => { cvState.showGrid = e.target.checked; cvDrawGrid(); });
+$('cvOnionToggle').addEventListener('change', e => { cvState.onion = e.target.checked; cvRenderAll(); });
+
+// ---------- 工具 ----------
+function cvSetTool(t) {
+    cvState.tool = t;
+    ['Pencil','Eraser','Fill','Picker','Line','Rect'].forEach(k => {
+        const el = $('cvTool' + k);
+        if (el) el.classList.toggle('active', t === k.toLowerCase());
+    });
+}
+['pencil','eraser','fill','picker','line','rect'].forEach(t => {
+    const el = $('cvTool' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (el) el.addEventListener('click', () => cvSetTool(t));
+});
+function cvRenderPalette() {
+    const g = $('cvPaletteGrid'); g.innerHTML = '';
+    cvState.palette.forEach(col => {
+        const s = document.createElement('div');
+        s.className = 'cv-swatch' + (col.toLowerCase() === cvState.color.toLowerCase() ? ' active' : '');
+        s.style.background = col; s.title = col;
+        s.addEventListener('click', () => cvSetColor(col));
+        g.appendChild(s);
+    });
+}
+function cvSetColor(col) {
+    cvState.color = col;
+    $('cvColorPicker').value = col;
+    $('cvColorHex').value = col;
+    cvRenderPalette();
+}
+$('cvColorPicker').addEventListener('input', e => cvSetColor(e.target.value));
+$('cvColorHex').addEventListener('change', e => { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) cvSetColor(e.target.value); });
+
+// ---------- 坐标 / 像素工具 ----------
+function cvClientToPixel(e) {
+    const r = cvCanvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - r.left) / r.width * CV_SIZE);
+    const y = Math.floor((e.clientY - r.top) / r.height * CV_SIZE);
+    return { x: Math.max(0, Math.min(CV_SIZE - 1, x)), y: Math.max(0, Math.min(CV_SIZE - 1, y)) };
+}
+function cvHexToRgba(hex, a) { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255, a]; }
+function cvSetPixel(img, x, y, rgba) {
+    if (x < 0 || y < 0 || x >= CV_SIZE || y >= CV_SIZE) return;
+    const i = (y * CV_SIZE + x) * 4;
+    img.data[i] = rgba[0]; img.data[i+1] = rgba[1]; img.data[i+2] = rgba[2]; img.data[i+3] = rgba[3];
+}
+function cvGetPixel(img, x, y) { const i = (y * CV_SIZE + x) * 4; return [img.data[i], img.data[i+1], img.data[i+2], img.data[i+3]]; }
+function cvBresenham(x0, y0, x1, y1, cb) {
+    let dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+    let sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, err = dx - dy, cx = x0, cy = y0;
+    while (true) { cb(cx, cy); if (cx === x1 && cy === y1) break; const e2 = 2 * err; if (e2 > -dy) { err -= dy; cx += sx; } if (e2 < dx) { err += dx; cy += sy; } }
+}
+function cvFillBucket(img, x, y, rgba) {
+    const target = cvGetPixel(img, x, y);
+    if (target[0] === rgba[0] && target[1] === rgba[1] && target[2] === rgba[2] && target[3] === rgba[3]) return;
+    const stack = [[x, y]];
+    while (stack.length) {
+        const [cx, cy] = stack.pop();
+        if (cx < 0 || cy < 0 || cx >= CV_SIZE || cy >= CV_SIZE) continue;
+        const p = cvGetPixel(img, cx, cy);
+        if (p[0] !== target[0] || p[1] !== target[1] || p[2] !== target[2] || p[3] !== target[3]) continue;
+        cvSetPixel(img, cx, cy, rgba);
+        stack.push([cx+1, cy], [cx-1, cy], [cx, cy+1], [cx, cy-1]);
+    }
+}
+
+// ---------- 绘制事件 ----------
+function cvDrawShapePreview(start, end) {
+    cvCtx.putImageData(cvState._snap, 0, 0);
+    cvCtx.fillStyle = cvState.color;
+    if (cvState.tool === 'line') {
+        cvBresenham(start.x, start.y, end.x, end.y, (x, y) => cvCtx.fillRect(x, y, 1, 1));
+    } else if (cvState.tool === 'rect') {
+        const x = Math.min(start.x, end.x), y = Math.min(start.y, end.y);
+        const w = Math.abs(end.x - start.x) + 1, h = Math.abs(end.y - start.y) + 1;
+        cvCtx.fillRect(x, y, w, h);
+    }
+}
+cvCanvas.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;            // 仅左键绘制；中键平移，右键浏览器菜单
+    e.preventDefault(); cvCanvas.setPointerCapture(e.pointerId);
+    const p = cvClientToPixel(e);
+    const img = cvState.frames[cvState.frame];
+    if (cvState.tool === 'picker') {
+        const px = cvGetPixel(img, p.x, p.y);
+        if (px[3] > 0) cvSetColor('#' + [px[0],px[1],px[2]].map(v => v.toString(16).padStart(2,'0')).join(''));
+        cvSetTool('pencil'); return;
+    }
+    if (cvState.tool === 'fill') {
+        cvPushUndo();
+        cvFillBucket(img, p.x, p.y, cvHexToRgba(cvState.color, 255));
+        cvCommitRender(); return;
+    }
+    cvPushUndo();
+    cvState.drawing = true; cvState.lastPx = p;
+    if (cvState.tool === 'line' || cvState.tool === 'rect') {
+        cvState._snap = cvCtx.createImageData(CV_SIZE, CV_SIZE);
+        cvState._snap.data.set(img.data);
+        cvState.lineStart = p;
+    } else {
+        const rgba = cvState.tool === 'eraser' ? [0,0,0,0] : cvHexToRgba(cvState.color, 255);
+        cvSetPixel(img, p.x, p.y, rgba);
+        cvCommitRender();
+    }
+});
+cvCanvas.addEventListener('pointermove', e => {
+    if (!cvState.drawing) return;
+    const p = cvClientToPixel(e);
+    const img = cvState.frames[cvState.frame];
+    if (cvState.tool === 'line' || cvState.tool === 'rect') {
+        cvDrawShapePreview(cvState.lineStart, p);
+    } else {
+        const rgba = cvState.tool === 'eraser' ? [0,0,0,0] : cvHexToRgba(cvState.color, 255);
+        cvBresenham(cvState.lastPx.x, cvState.lastPx.y, p.x, p.y, (x, y) => cvSetPixel(img, x, y, rgba));
+        cvState.lastPx = p; cvCommitRender();
+    }
+});
+window.addEventListener('pointerup', e => {
+    if (!cvState.drawing) return;
+    cvState.drawing = false;
+    if (cvState.tool === 'line' || cvState.tool === 'rect') {
+        const img = cvState.frames[cvState.frame];
+        const s = cvState.lineStart, en = cvClientToPixel(e);
+        if (cvState.tool === 'line') {
+            cvBresenham(s.x, s.y, en.x, en.y, (x, y) => cvSetPixel(img, x, y, cvHexToRgba(cvState.color, 255)));
+        } else {
+            const x = Math.min(s.x, en.x), y = Math.min(s.y, en.y);
+            const w = Math.abs(en.x - s.x) + 1, h = Math.abs(en.y - s.y) + 1;
+            for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) cvSetPixel(img, x+xx, y+yy, cvHexToRgba(cvState.color, 255));
+        }
+        cvState._snap = null; cvState.lineStart = null;
+        cvCommitRender();
+    }
+});
+
+// ---------- 画布操作 ----------
+$('cvClearFrame').addEventListener('click', () => {
+    cvPushUndo();
+    cvState.frames[cvState.frame] = cvBlankFrame();
+    cvRenderAll(); cvRenderFramesList();
+});
+// 把颜色并入画布调色板 (去重，提取色置顶，上限 32 色)
+function cvMergePalette(cols) {
+    if (!cols || !cols.length) return;
+    const merged = [], seen = new Set();
+    cols.concat(cvState.palette).forEach(c => { const lc = c.toLowerCase(); if (!seen.has(lc)) { merged.push(c); seen.add(lc); } });
+    cvState.palette = merged.slice(0, 32);
+    cvRenderPalette();
+}
+$('cvImportRef').addEventListener('click', () => {
+    // 用工坊当前 cleanedImage (去背景 + 缩放后的最新结果)；缺失则回退读取主画布
+    let baseImg = state.cleanedImage;
+    if (!baseImg && canvas.width) { try { baseImg = ctx.getImageData(0, 0, canvas.width, canvas.height); } catch (e) { baseImg = null; } }
+    if (!baseImg) { showToast('❌ 工坊中暂无处理后的图，请先在工坊模式：上传 → 去背景 → 缩放', true); return; }
+    const w = baseImg.width, h = baseImg.height;
+    const src = document.createElement('canvas'); src.width = w; src.height = h;
+    src.getContext('2d').putImageData(baseImg, 0, 0);
+    const tmp = document.createElement('canvas'); tmp.width = CV_SIZE; tmp.height = CV_SIZE;
+    const tx = tmp.getContext('2d'); tx.imageSmoothingEnabled = false;
+    // 1:1 居中放入 128×128，保留工坊缩放后的原始像素；仅当超出画布才按最近邻缩小
+    let dw = w, dh = h;
+    if (w > CV_SIZE || h > CV_SIZE) {
+        const s = Math.min(CV_SIZE / w, CV_SIZE / h);
+        dw = Math.max(1, Math.round(w * s)); dh = Math.max(1, Math.round(h * s));
+    }
+    const dx = Math.floor((CV_SIZE - dw) / 2), dy = Math.floor((CV_SIZE - dh) / 2);
+    tx.drawImage(src, 0, 0, w, h, dx, dy, dw, dh);
+    cvState.refImage = tx.getImageData(0, 0, CV_SIZE, CV_SIZE);
+    const at = cvState.frame + 1;
+    cvState.frames.splice(at, 0, cvState.refImage);
+    cvState.undoStacks.splice(at, 0, []);
+    cvState.redoStacks.splice(at, 0, []);
+    cvState.frame = at;
+    cvMergePalette(extractPalette(baseImg));   // 自动把参考图配色加入调色板
+    cvRenderAll(); cvRenderFramesList();
+    showToast(`✅ 已导入处理后的图 (${w}×${h}，1:1 居中放入 ${CV_SIZE}×${CV_SIZE})`);
+});
+$('cvExtractPalette').addEventListener('click', () => {
+    const cur = cvState.frames[cvState.frame];
+    if (!cur) { showToast('❌ 无当前帧', true); return; }
+    const cols = extractPalette(cur);
+    if (!cols || !cols.length) { showToast('❌ 当前帧为空，无颜色可提取', true); return; }
+    cvMergePalette(cols);
+    showToast('✅ 已从当前帧提取 ' + cols.length + ' 色到调色板');
+});
+$('cvPlay').addEventListener('click', () => {
+    if (cvState.playing) { cvStopPlay(); return; }
+    if (cvState.frames.length < 2) { showToast('❌ 至少需要 2 帧才能播放', true); return; }
+    cvState.playing = true; $('cvPlay').textContent = '⏸ 停止';
+    cvState.playTimer = setInterval(() => cvSelectFrame((cvState.frame + 1) % cvState.frames.length), 1000 / cvState.fps);
+});
+function cvStopPlay() {
+    cvState.playing = false;
+    if (cvState.playTimer) { clearInterval(cvState.playTimer); cvState.playTimer = null; }
+    $('cvPlay').textContent = '▶ 播放';
+}
+$('cvFps').addEventListener('input', e => { cvState.fps = +e.target.value; $('cvFpsVal').textContent = cvState.fps; });
+function cvDownloadCanvas(c, name) { const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = name; a.click(); }
+$('cvExportSheet').addEventListener('click', () => {
+    if (!cvState.frames.length) { showToast('❌ 无帧可导出', true); return; }
+    const cols = Math.min(cvState.frames.length, 8), rows = Math.ceil(cvState.frames.length / cols);
+    const sheet = document.createElement('canvas'); sheet.width = cols * CV_SIZE; sheet.height = rows * CV_SIZE;
+    const sx = sheet.getContext('2d'); sx.imageSmoothingEnabled = false;
+    cvState.frames.forEach((f, i) => {
+        const c = document.createElement('canvas'); c.width = CV_SIZE; c.height = CV_SIZE;
+        c.getContext('2d').putImageData(f, 0, 0);
+        sx.drawImage(c, (i % cols) * CV_SIZE, Math.floor(i / cols) * CV_SIZE);
+    });
+    cvDownloadCanvas(sheet, 'pixel-canvas-sheet.png');
+    showToast('✅ 已导出精灵图 PNG');
+});
+$('cvExportZip').addEventListener('click', async () => {
+    if (!cvState.frames.length) { showToast('❌ 无帧可导出', true); return; }
+    if (typeof JSZip === 'undefined') { showToast('❌ JSZip 未加载', true); return; }
+    const zip = new JSZip();
+    cvState.frames.forEach((f, i) => {
+        const c = document.createElement('canvas'); c.width = CV_SIZE; c.height = CV_SIZE;
+        c.getContext('2d').putImageData(f, 0, 0);
+        zip.file('frame_' + String(i + 1).padStart(3, '0') + '.png', c.toDataURL('image/png').split(',')[1], { base64: true });
+    });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pixel-canvas-frames.zip'; a.click();
+    showToast('✅ 已导出 ZIP');
+});
+
+// ---------- 模板B：AI 下一帧绘制导航 ----------
+function cvBbox(img) {
+    let minX = CV_SIZE, minY = CV_SIZE, maxX = -1, maxY = -1;
+    for (let y = 0; y < CV_SIZE; y++) for (let x = 0; x < CV_SIZE; x++) {
+        if (img.data[(y * CV_SIZE + x) * 4 + 3] > 0) {
+            if (x < minX) minX = x; if (x > maxX) maxX = x;
+            if (y < minY) minY = y; if (y > maxY) maxY = y;
+        }
+    }
+    if (maxX < 0) return [0, 0, 0, 0];
+    return [minX, minY, maxX - minX + 1, maxY - minY + 1];
+}
+function cvIsEmpty(img) { return cvBbox(img)[2] === 0; }
+function cvPaletteForCtx() {
+    if (state.cleanedImage && typeof extractPalette === 'function') {
+        const p = extractPalette(state.cleanedImage);
+        if (p && p.length) return p;
+    }
+    return cvState.palette.slice();
+}
+function cvSysPromptB(c) {
+    return `# 角色
+你是像素画布的"下一帧绘制导师"。用户已经把角色的像素图放到画布上了，
+你的唯一任务：观察附件里的当前帧（附件1）和第一帧（附件2），在原图轮廓、比例、配色的基础上，
+用「分步文字指南 + 区域指令」告诉用户：下一帧要怎么微调这张图来完成动作。
+
+绝对禁止：
+- 不要重新设计角色造型、发型、衣服款式、配色。
+- 不要给角色画新的姿势或角度（仍保持原朝向）。
+- 不要虚构当前图中不存在的部件。
+
+========== 上下文（工具自动填充） ==========
+画布: 128x128，原点左上，x 向右，y 向下
+当前帧内容包围盒: ${c.bbox}
+大图参考: ${c.hasRef}
+动作 / 总帧数: ${c.action} / ${c.total}
+正在画第: ${c.n} 帧
+额外指令: ${c.extra || '无'}
+调色板: ${JSON.stringify(c.palette)}
+前一帧: 见附件1   第一帧: 见附件2
+
+========== 输出 schema（纯 JSON，字段名不可变） ==========
+{
+  "frame": ${c.n},
+  "guide": "1. 第一步...\\n2. 第二步...\\n3. ...",
+  "keep":  [ [x,y,w,h], ... ],
+  "move":  [ {"from":[x,y,w,h], "to":[x,y], "note":"左臂整体下摆"} ],
+  "draw":  [ {"rect":[x,y,w,h], "what":"拳头向右延伸2像素", "colors":["#..."]} ],
+  "erase": [ [x,y,w,h], ... ],
+  "note":  "一句话说明本帧动作"
+}
+
+========== 坐标对齐规则（最关键） ==========
+1. 先以附件2(第一帧)为"规范图"，附件1(当前帧)为"现状图"。在脑中建立坐标系：原点左上，x 向右，y 向下。
+2. 输出任何区域前，必须先在附件1/2中定位到真实部件：
+   - 用 "包围盒" 框出附件2中头、躯干、左腿、右腿、左臂、右臂、武器/道具；
+   - 对比附件1，确认这些部件在当前帧是否已有位移；
+   - 所有 keep/move/erase 矩形必须紧贴附件1中对应部件的真实像素区域，不准用"大概位置"。
+3. 矩形生成后必须自检：
+   - keep/erase/move.from 的矩形要与附件1中的非透明像素大面积重叠（覆盖率 ≥ 70%）；
+   - draw 的矩形必须紧邻已有部件边界，不能凭空出现在空白区域中央；
+   - 若自检不通过，立即用附件1中真实像素区域重新修正坐标。
+4. 所有 move.to / draw.rect 坐标以"附件1中对应部件当前左上角"为基准偏移，不要以画布中心或第一帧中心为基准。
+5. 如果当前帧与第一帧整体位置已有漂移，优先用 keep + 小范围修正把角色稳住，而不是重新对齐到第一帧中心。
+
+========== 规则 ==========
+6. 每帧变化是小动作（idle/hurt/walk/attack/...），不是重绘：只移动/微调已有肢体，每帧位移 ≤ 3px，
+   旋转用 2~3 条阶梯 move/draw 表达。头和躯干尽量保持不动，优先动四肢。
+7. 新增像素只用于填补动作造成的缺口，或极小幅的延伸（如拳头、脚尖），禁止大面积重画。
+8. 颜色必须来自调色板；新画区域的颜色只能从同一部件已有的最近似颜色选取，不能引入新色。
+9. 每条 move 必须配一条完全覆盖 from 的 erase，不留残影像素；to 为目标左上角坐标。
+10. 坐标为整数且 0..127；动作将要出界时在 note 提示"先整体移回中心"并给出整体平移建议值。
+11. guide 字段【必填】：按用户作画顺序写编号步骤，每步先说"哪个已有部件"、"怎么动"、"从哪里到哪里"、"用什么色"。
+   示例："1. 保持躯干和头不动（keep [30,20,16,24]）。2. 把左臂 [28,34,4,12] 整体下移 2px 到 [28,36] 并擦除原位置。3. 用 #d4a574 在 [42,36,3,3] 补画拳头。"
+12. 首帧模式(画布为空)才看大图参考；非首帧必须严格基于附件1/2已有内容。
+13. 像素画要点：硬边缘、无抗锯齿、轮廓清晰；保持与原图一致的 1~2 像素描边 + 平涂风格。
+14. 只输出纯 JSON，无 markdown、无注释、无解释文字。`;
+}
+function cvParseNavJson(raw) {
+    let s = String(raw || '').trim();
+    s = s.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const a = s.indexOf('{'), b = s.lastIndexOf('}');
+    if (a === -1 || b === -1 || b < a) throw new Error('未找到 JSON 对象');
+    return JSON.parse(s.slice(a, b + 1));
+}
+function cvRectClamp(x, y, w, h) {
+    x = Math.max(0, Math.min(CV_SIZE, x|0)); y = Math.max(0, Math.min(CV_SIZE, y|0));
+    w = Math.max(0, Math.min(CV_SIZE - x, w|0)); h = Math.max(0, Math.min(CV_SIZE - y, h|0));
+    return [x, y, w, h];
+}
+function cvClearRect(img, x, y, w, h) {
+    const [X,Y,W,H] = cvRectClamp(x,y,w,h);
+    for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) {
+        const i = ((Y+yy) * CV_SIZE + (X+xx)) * 4;
+        img.data[i] = img.data[i+1] = img.data[i+2] = img.data[i+3] = 0;
+    }
+}
+function cvFillRectColor(img, x, y, w, h, hex) {
+    const [X,Y,W,H] = cvRectClamp(x,y,w,h);
+    const [r,g,b] = cvHexToRgba(hex, 255);
+    for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) {
+        const i = ((Y+yy) * CV_SIZE + (X+xx)) * 4;
+        img.data[i] = r; img.data[i+1] = g; img.data[i+2] = b; img.data[i+3] = 255;
+    }
+}
+// 应用导航：move(读源→擦源→写目标) → erase → draw。首帧模式直接画在 frame 0。
+function cvApplyNav(nav) {
+    if (!nav || typeof nav !== 'object') throw new Error('导航结果无效');
+    const cur = cvState.frames[cvState.frame];
+    const isFirst = cvIsEmpty(cur) && cvState.frame === 0;
+    const img = cvCtx.createImageData(CV_SIZE, CV_SIZE); img.data.set(cur.data);
+    // 1. 读出 move 源区域到缓冲
+    const moveBufs = [];
+    if (Array.isArray(nav.move)) nav.move.forEach(m => {
+        if (!m || !Array.isArray(m.from) || !Array.isArray(m.to)) return;
+        const [FX,FY,FW,FH] = cvRectClamp(m.from[0], m.from[1], m.from[2], m.from[3]);
+        const buf = new Uint8ClampedArray(FW * FH * 4);
+        for (let yy = 0; yy < FH; yy++) for (let xx = 0; xx < FW; xx++) {
+            const si = ((FY+yy) * CV_SIZE + (FX+xx)) * 4, di = (yy * FW + xx) * 4;
+            buf[di]=img.data[si]; buf[di+1]=img.data[si+1]; buf[di+2]=img.data[si+2]; buf[di+3]=img.data[si+3];
+        }
+        moveBufs.push({ buf, w: FW, h: FH, tx: m.to[0]|0, ty: m.to[1]|0 });
+    });
+    // 2. 擦除：独立 erase + move.from
+    if (Array.isArray(nav.erase)) nav.erase.forEach(r => { if (Array.isArray(r)) cvClearRect(img, r[0], r[1], r[2], r[3]); });
+    if (Array.isArray(nav.move)) nav.move.forEach(m => { if (m && Array.isArray(m.from)) cvClearRect(img, m.from[0], m.from[1], m.from[2], m.from[3]); });
+    // 3. 写 move 到目标
+    moveBufs.forEach(mb => {
+        for (let yy = 0; yy < mb.h; yy++) for (let xx = 0; xx < mb.w; xx++) {
+            const px = mb.tx + xx, py = mb.ty + yy;
+            if (px < 0 || py < 0 || px >= CV_SIZE || py >= CV_SIZE) continue;
+            const di = (py * CV_SIZE + px) * 4, si = (yy * mb.w + xx) * 4;
+            img.data[di]=mb.buf[si]; img.data[di+1]=mb.buf[si+1]; img.data[di+2]=mb.buf[si+2]; img.data[di+3]=mb.buf[si+3];
+        }
+    });
+    // 4. draw 填色
+    if (Array.isArray(nav.draw)) nav.draw.forEach(d => {
+        if (!d || !Array.isArray(d.rect)) return;
+        const col = (Array.isArray(d.colors) && d.colors[0]) ? d.colors[0] : cvState.color;
+        cvFillRectColor(img, d.rect[0], d.rect[1], d.rect[2], d.rect[3], col);
+    });
+    if (isFirst) { cvPushUndo(); cvState.frames[0] = img; }
+    else {
+        const at = cvState.frame + 1;
+        cvState.frames.splice(at, 0, img);
+        cvState.undoStacks.splice(at, 0, []);
+        cvState.redoStacks.splice(at, 0, []);
+        cvState.frame = at;
+    }
+    cvState.lastNav = nav;
+    cvRenderAll(); cvRenderFramesList();
+}
+// 把导航结果格式化为 note 文本 (guide 步骤 + 区域图例 + 一句话)
+function cvFormatNavNote(nav, applied) {
+    const guide = (nav.guide || '').trim() || '(AI 未给出步骤，参考下方区域导览手绘)';
+    const note = (nav.note || '').trim();
+    const head = applied
+        ? `✅ 已自动应用为第 ${cvState.frame + 1} 帧`
+        : `📋 第 ${cvState.frame + 1} 帧绘制指南 (在画布上按彩色框手绘)`;
+    const legend = '区域导览: 🟩保留  🟨新画  🟦移动(实线=起点 / 虚线=终点)  🟥擦除';
+    let out = head + '\n\n' + guide + '\n\n' + legend;
+    if (note) out += '\n\n一句话: ' + note;
+    return out;
+}
+// 文字指导模式：只叠加区域导览 + 显示指南，不改动画布帧
+function cvShowNavGuide(nav) {
+    cvState.lastNav = nav;
+    cvState.navFrame = cvState.frame;
+    cvState.navOverlay = true;
+    cvDrawGrid();
+    $('cvAiNote').textContent = cvFormatNavNote(nav, false);
+}
+$('cvAiNav').addEventListener('click', async () => {
+    const base = ($('aiApiBase').value || '').replace(/\/$/, '');
+    const key = ($('aiApiKey').value || '').trim();
+    const model = ($('aiModel').value || '').trim();
+    if (!base || !key || !model) { showToast('❌ 请先在工坊模式填写 AI 配置 (Base / Key / Model)', true); return; }
+    if (!cvState.frames.length) { showToast('❌ 无当前帧', true); return; }
+    const cur = cvState.frames[cvState.frame];
+    const isFirst = cvIsEmpty(cur) && cvState.frame === 0;
+    const n = isFirst ? 0 : cvState.frame + 1;
+    const actionVal = $('cvAction').value;
+    const actionDesc = actionVal === 'custom' ? (($('cvCustomAction').value || 'custom').trim() || 'custom') : actionVal;
+    const ctxObj = {
+        bbox: JSON.stringify(cvBbox(cur)),
+        hasRef: (cvState.refImage || state.cleanedImage) ? '有' : '无',
+        action: actionDesc,
+        total: +$('cvTotal').value || 8,
+        n: n,
+        extra: ($('cvExtra').value || '').trim(),
+        palette: cvPaletteForCtx()
+    };
+    const prevC = document.createElement('canvas'); prevC.width = CV_SIZE; prevC.height = CV_SIZE;
+    prevC.getContext('2d').putImageData(cur, 0, 0);
+    const firstC = document.createElement('canvas'); firstC.width = CV_SIZE; firstC.height = CV_SIZE;
+    if (cvState.frames[0]) firstC.getContext('2d').putImageData(cvState.frames[0], 0, 0);
+    $('cvAiNav').disabled = true; $('cvAiNav').textContent = '⏳ 导航中...';
+    $('cvAiNote').textContent = '正在请求 AI 导航...';
+    try {
+        const resp = await fetch(`${base}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+            body: JSON.stringify({
+                model, temperature: 0.3, max_tokens: 3000,
+                messages: [
+                    { role: 'system', content: cvSysPromptB(ctxObj) },
+                    { role: 'user', content: [
+                        { type: 'image_url', image_url: { url: prevC.toDataURL('image/png') } },
+                        { type: 'image_url', image_url: { url: firstC.toDataURL('image/png') } },
+                        { type: 'text', text: `正在画第 ${n} 帧。请输出纯 JSON：必填 guide(分步绘制指南) + keep/move/draw/erase 区域指令。` }
+                    ] }
+                ]
+            })
+        });
+        if (!resp.ok) throw new Error('API ' + resp.status + ': ' + (await resp.text()).substring(0, 200));
+        const result = await resp.json();
+        const content = result.choices?.[0]?.message?.content || '';
+        if (!content.trim()) throw new Error('AI 未返回内容');
+        const nav = cvParseNavJson(content);
+        const mode = $('cvNavMode').value;
+        if (mode === 'guide') {
+            // 文字指导：只在画布叠加区域导览 + 显示分步指南，不改动画布
+            cvShowNavGuide(nav);
+            showToast('✅ AI 导览已生成 (画布叠加区域 + 文字指南)');
+        } else {
+            // 自动应用：套用到画布生成下一帧
+            cvApplyNav(nav);
+            $('cvAiNote').textContent = cvFormatNavNote(nav, true);
+            showToast('✅ AI 导航已自动应用，生成第 ' + (cvState.frame + 1) + ' 帧');
+        }
+    } catch (err) {
+        console.error(err);
+        $('cvAiNote').textContent = '❌ ' + err.message;
+        showToast('❌ AI 导航失败: ' + err.message, true);
+    } finally {
+        $('cvAiNav').disabled = false; $('cvAiNav').textContent = '🧭 AI 导航下一帧';
+    }
+});
+$('cvAiApply').addEventListener('click', () => {
+    if (!cvState.lastNav) { showToast('❌ 暂无上次导航结果', true); return; }
+    if ($('cvNavMode').value === 'guide') {
+        cvShowNavGuide(cvState.lastNav);
+        showToast('✅ 已重新显示导览 (画布叠加 + 指南)');
+    } else {
+        try { cvApplyNav(cvState.lastNav); $('cvAiNote').textContent = cvFormatNavNote(cvState.lastNav, true); showToast('✅ 已重新应用到画布'); } catch (e) { showToast('❌ ' + e.message, true); }
+    }
+});
+$('cvAiClear').addEventListener('click', () => {
+    cvState.navOverlay = false; cvDrawGrid();
+    $('cvAiNote').textContent = '已清除画布上的区域导览。点击「AI 导航下一帧」重新生成。';
+});
+$('cvAction').addEventListener('change', e => {
+    const isCustom = e.target.value === 'custom';
+    $('cvCustomActionField').style.display = isCustom ? 'flex' : 'none';
+    if (isCustom) $('cvCustomAction').focus();
+});
+let cvAiCollapsed = false;
+$('cvAiHead').addEventListener('click', () => {
+    cvAiCollapsed = !cvAiCollapsed;
+    $('cvAiBody').style.display = cvAiCollapsed ? 'none' : 'flex';
+    $('cvAiState').textContent = cvAiCollapsed ? '(点击展开)' : '(点击收起)';
+});
+
+// ---------- 快捷键 (仅画布模式) ----------
+window.addEventListener('keydown', e => {
+    if ($('canvasView').style.display === 'none') return;
+    const t = e.target.tagName;
+    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+    const map = { p:'pencil', e:'eraser', g:'fill', i:'picker', l:'line', r:'rect' };
+    const k = (e.key || '').toLowerCase();
+    if (map[k]) { cvSetTool(map[k]); e.preventDefault(); }
+});
+
+// ---------- 画布模块初始化 ----------
+cvRenderPalette();
+cvSetTool('pencil');
+
+// ========== 新增：云端生图(OpenAI 兼容 /images/generations) 配置与预设 / 识图写prompt / 同步调用取图 / 单帧重生成 ==========
+// 铁律：生图只走 POST {base}/images/generations 同步接口；识图走 /chat/completions。两者独立。
+// 与原逻辑交互只读取 state / 追加字段，不改任何已有函数体。新 DOM ID 均以 cloud* 前缀。
+const CLOUD_CFG_KEY = 'pixelWorkshop.cloudGenConfig';
+const CLOUD_PRESETS = {
+    custom:       { base: '',                                              model: '' },
+    openai:       { base: 'https://api.openai.com/v1',                     model: 'dall-e-3' },
+    aliyun:       { base: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'wanx2.1-t2i-turbo' },
+    siliconflow:  { base: 'https://api.siliconflow.cn/v1',                 model: 'FLUX.1-schnell' },
+    zhipu:        { base: 'https://open.bigmodel.cn/api/paas/v4',          model: 'cogview-4' }
+};
+state.cloudCancel = false;
+state.cloudBusy = false;
+state.cloudSeedOk = true;   // 运行时降级：若后端 400 报 seed，置 false 并提示
+state.cloudDirectMode = false; // 云端直接生成模式：无需参考图，纯 prompt 生图
+
+// 云端模式切换：参考图模式 ↔ 直接生成模式
+document.querySelectorAll('.cloud-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.cloud-mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const isDirect = btn.dataset.cmode === 'direct';
+        state.cloudDirectMode = isDirect;
+        $('cloudModeHint').textContent = isDirect
+            ? '🎨 直接生成模式：无需参考图，按提示词直接生图。挑一张满意的帧点「📌 设为参考图」后可切到 AI 生成做动画，或当普通生图 AI 用。'
+            : '📷 参考图模式：需先上传参考图，「识图写提示词」可辅助，一致性更好。';
+        $('btnCloudVision').style.display = isDirect ? 'none' : '';
+        $('btnCloudUseAsRef').style.display = isDirect ? '' : 'none';
+        $('cloudDirectHint').style.display = isDirect ? '' : 'none';
+    });
+});
+// 直接生成模式：把当前帧设为参考图 (供后续 AI/本地动画生成)
+$('btnCloudUseAsRef').addEventListener('click', () => {
+    const f = state.frames[state.currentFrame];
+    if (!f || !f.imageData) { showToast('❌ 当前帧无图像数据', true); return; }
+    state.cleanedImage = cloneImageData(f.imageData);
+    state.fullResImage = cloneImageData(f.imageData);
+    state.canvasWidth = f.imageData.width;
+    state.canvasHeight = f.imageData.height;
+    state.isPixelated = false;
+    canvas.width = state.canvasWidth; canvas.height = state.canvasHeight;
+    ctx.putImageData(state.cleanedImage, 0, 0);
+    resetView();
+    cloudRefreshSpriteSize();
+    showToast('✅ 当前帧已设为参考图，可切换到「AI 生成」做动画');
+});
+
+function cloudRefreshSpriteSize() {
+    const hint = $('cloudSizeHint');
+    if (!hint) return;
+    if (state.isPixelated) {
+        hint.textContent = `已缩放→降采样到 ${state.canvasWidth}×${state.canvasHeight}`;
+        hint.style.color = '#00b894';
+    } else {
+        hint.textContent = '未缩放→保持生成尺寸';
+        hint.style.color = '#5fd3ff';
+    }
+}
+
+function cloudSaveCfg() {
+    const base = $('cloudApiBase').value.trim();
+    const key = $('cloudApiKey').value.trim();
+    const model = $('cloudModel').value.trim();
+    const preset = $('cloudPreset').value;
+    try {
+        localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify({ base, key, model, preset }));
+        const st = $('cloudCfgStatus');
+        st.textContent = '已保存 ✓'; st.style.color = '#00b894';
+        showToast('✅ 云端配置已保存');
+    } catch (e) { showToast('❌ 保存失败: ' + e.message, true); }
+}
+function cloudLoadCfg() {
+    try {
+        const raw = localStorage.getItem(CLOUD_CFG_KEY);
+        if (!raw) return;
+        const cfg = JSON.parse(raw);
+        if (cfg.preset) $('cloudPreset').value = cfg.preset;
+        if (cfg.base) $('cloudApiBase').value = cfg.base;
+        if (cfg.key) $('cloudApiKey').value = cfg.key;
+        if (cfg.model) $('cloudModel').value = cfg.model;
+        const st = $('cloudCfgStatus');
+        st.textContent = '已保存 ✓'; st.style.color = '#00b894';
+    } catch (e) { }
+}
+$('cloudPreset').addEventListener('change', e => {
+    const p = CLOUD_PRESETS[e.target.value];
+    if (!p) return;
+    if (p.base) $('cloudApiBase').value = p.base;
+    if (p.model) $('cloudModel').value = p.model;
+});
+$('btnCloudSave').addEventListener('click', cloudSaveCfg);
+cloudLoadCfg();
+
+// ---------- 提示词模板 (通用角色 / 像素风 / 写实风) ----------
+const CLOUD_PROMPT_TEMPLATES = {
+    general: {
+        positive: 'single character, full body, centered in frame, facing forward, consistent character design, identical outfit and colors across all frames, clean solid background, clear silhouette, high quality, detailed illustration',
+        negative: 'deformed, extra limbs, extra fingers, inconsistent character, different outfit, different colors, blurry, low quality, watermark, text, signature, cropped, multiple characters'
+    },
+    pixel: {
+        positive: 'single character, full body, centered, consistent character design, identical outfit and colors, pixel art, 16-bit retro game sprite, crisp hard edges, limited color palette, clean solid background, clear silhouette',
+        negative: 'deformed, extra limbs, inconsistent character, different outfit, blurry, anti-aliasing, smooth gradients, photorealistic, 3d render, watermark, text, multiple characters'
+    },
+    realistic: {
+        positive: 'single character, full body, centered, consistent character design, identical outfit and colors, digital painting, smooth shading, detailed, soft lighting, clean background, high quality concept art',
+        negative: 'deformed, extra limbs, inconsistent character, different outfit, blurry, pixel art, low quality, watermark, text, signature, cropped, multiple characters'
+    }
+};
+function cloudApplyTemplate(key) {
+    const t = CLOUD_PROMPT_TEMPLATES[key];
+    if (!t) return;
+    $('cloudPromptPos').value = t.positive;
+    $('cloudPromptNeg').value = t.negative;
+    document.querySelectorAll('.cloud-size-btn[data-tmpl]').forEach(b => b.classList.toggle('active', b.dataset.tmpl === key));
+    showToast('📋 已填充「' + ({ general: '通用角色', pixel: '像素风', realistic: '写实风' }[key]) + '」模板');
+}
+document.querySelectorAll('.cloud-size-btn[data-tmpl]').forEach(btn => {
+    btn.addEventListener('click', () => cloudApplyTemplate(btn.dataset.tmpl));
+});
+// 首次进入若 positive 为空，预填通用角色模板
+if (!$('cloudPromptPos').value.trim()) cloudApplyTemplate('general');
+
+// 生成尺寸预设 (仅绑定 [data-csize]，与模板按钮 [data-tmpl] 互不干扰)
+document.querySelectorAll('.cloud-size-btn[data-csize]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.cloud-size-btn[data-csize]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const s = btn.dataset.csize;
+        $('cloudSizeW').value = s; $('cloudSizeH').value = s;
+    });
+});
+['cloudSizeW', 'cloudSizeH'].forEach(id => $(id).addEventListener('input', () => {
+    document.querySelectorAll('.cloud-size-btn[data-csize]').forEach(b => b.classList.remove('active'));
+}));
+$('cloudFrameCount').addEventListener('input', e => $('cloudFrameCountVal').textContent = e.target.value);
+$('cloudActionSelect').addEventListener('change', e => {
+    const isCustom = e.target.value === 'custom';
+    $('cloudCustomAction').style.display = isCustom ? 'block' : 'none';
+    if (isCustom) $('cloudCustomAction').focus();
+});
+$('btnCloudSeedRand').addEventListener('click', () => { $('cloudSeed').value = Math.floor(Math.random() * 1000000); });
+$('cloudSeedToggle').addEventListener('change', e => {
+    const on = e.target.checked;
+    $('cloudSeed').disabled = !on;
+    $('btnCloudSeedRand').disabled = !on;
+    $('cloudSeedShared').disabled = !on;
+    $('cloudSeedHint').textContent = on ? '固定相同种子+prompt 强约束可保持角色一致。' : '当前不固定种子，一致性依赖 prompt 约束。';
+});
+
+// ---------- 测试连接 (按 HTTP 状态码分类) ----------
+$('btnCloudTest').addEventListener('click', async () => {
+    const base = $('cloudApiBase').value.replace(/\/$/, '');
+    const key = $('cloudApiKey').value.trim();
+    const model = $('cloudModel').value.trim();
+    if (!base || !key || !model) { showToast('❌ 请填写完整云端配置', true); return; }
+    $('btnCloudTest').disabled = true; $('btnCloudTest').textContent = '⏳ 测试中...';
+    $('cloudSampleBox').style.display = 'none';
+    try {
+        const resp = await fetch(`${base}/images/generations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+            body: JSON.stringify({ model, prompt: 'a simple red square on white background', size: '512x512', n: 1 })
+        });
+        if (!resp.ok) {
+            const txt = (await resp.text()).substring(0, 160);
+            if (resp.status === 401) showToast('❌ API Key 无效或未授权', true);
+            else if (resp.status === 404) showToast('❌ 模型名错误或 Base URL 路径不正确，请确认该服务商支持 /images/generations', true);
+            else if (resp.status === 400 || resp.status === 422) showToast('❌ 参数错误，请检查 size/model 是否被该后端支持: ' + txt, true);
+            else showToast('❌ HTTP ' + resp.status + ': ' + txt, true);
+            return;
+        }
+        const result = await resp.json();
+        const item = result.data && result.data[0];
+        if (!item || (!item.url && !item.b64_json)) {
+            showToast('❌ 该后端未返回同步图片数据，可能不支持同步 /images/generations（异步 task 模式）', true);
+            return;
+        }
+        showToast('✅ 连接成功');
+        try {
+            const url = item.b64_json ? 'data:image/png;base64,' + item.b64_json : item.url;
+            $('cloudSampleImg').src = url;
+            $('cloudSampleBox').style.display = 'block';
+        } catch (_) { }
+    } catch (err) {
+        showToast('❌ 无法访问该地址，请检查 Base URL 或本地代理设置: ' + err.message, true);
+    } finally {
+        $('btnCloudTest').disabled = false; $('btnCloudTest').textContent = '🔌 测试连接';
+    }
+});
+
+// ---------- 识图写 prompt (复用 AI 视觉配置 /chat/completions，与生图端点独立) ----------
+function cloudVisionSysPrompt(ctx) {
+    return `你是像素动画的"提示词工程师"。观察用户提供的角色参考图，为云端文生图模型撰写生成单帧像素图的提示词。
+只输出纯 JSON：{"positive":"...","negative":"..."}，无任何其他文字。
+positive 必须包含：same character, consistent design, identical outfit and colors, pixel art, sprite, full body；并把调色板颜色作为颜色约束写入。
+动作: ${ctx.action}；总帧数: ${ctx.total}；额外指令: ${ctx.extra || '无'}；调色板: ${JSON.stringify(ctx.palette)}。
+negative: deformed, extra limbs, inconsistent character, different outfit, blurry, watermark。`;
+}
+$('btnCloudVision').addEventListener('click', async () => {
+    if (!state.cleanedImage) { showToast('❌ 请先上传并处理参考图', true); return; }
+    const base = $('aiApiBase').value.replace(/\/$/, '');
+    const key = $('aiApiKey').value.trim();
+    const model = $('aiModel').value.trim();
+    if (!base || !key || !model) { showToast('❌ 请先在「AI 生成」档配置视觉模型 (Base/Key/Model)', true); return; }
+    let action = $('cloudActionSelect').value, actionDesc = action;
+    if (action === 'custom') actionDesc = $('cloudCustomAction').value.trim() || 'custom';
+    const ctx = { action: actionDesc, total: +$('cloudFrameCount').value || 4, extra: $('cloudExtraPrompt').value.trim(), palette: state.cleanedImage ? extractPalette(state.cleanedImage) : [] };
+    const refBase64 = getSrcCanvas().toDataURL('image/png');
+    $('btnCloudVision').disabled = true; $('btnCloudVision').textContent = '⏳ 识图中...';
+    try {
+        const resp = await fetch(`${base}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+            body: JSON.stringify({
+                model, temperature: 0.4, max_tokens: 800,
+                messages: [
+                    { role: 'system', content: cloudVisionSysPrompt(ctx) },
+                    { role: 'user', content: [
+                        { type: 'image_url', image_url: { url: refBase64 } },
+                        { type: 'text', text: '请输出纯 JSON {"positive":"","negative":""}' }
+                    ] }
+                ]
+            })
+        });
+        if (!resp.ok) throw new Error('API ' + resp.status + ': ' + (await resp.text()).substring(0, 160));
+        const result = await resp.json();
+        let content = result.choices?.[0]?.message?.content || '';
+        let parsed = null;
+        try { parsed = JSON.parse(content.replace(/```json|```/g, '').trim()); } catch (_) {
+            const m = content.match(/\{[\s\S]*\}/); if (m) { try { parsed = JSON.parse(m[0]); } catch (_) { } }
+        }
+        if (parsed && parsed.positive) {
+            $('cloudPromptPos').value = parsed.positive;
+            if (parsed.negative) $('cloudPromptNeg').value = parsed.negative;
+            showToast('✅ 提示词已生成，可在上方手改后生图');
+        } else {
+            $('cloudPromptPos').value = content.trim() || 'pixel art sprite, full body, consistent character';
+            showToast('⚠️ 未解析到 JSON，已用返回文本作为 positive');
+        }
+    } catch (err) {
+        showToast('❌ 识图失败: ' + err.message + '（可手动填写 positive 后生图）', true);
+    } finally {
+        $('btnCloudVision').disabled = false; $('btnCloudVision').textContent = '🪄 AI 识图写提示词';
+    }
+});
+
+// ---------- 每帧姿态描述 (动作节奏，与本地 localBuildSpecs 对齐) ----------
+function cloudPoseForFrame(action, i, total, customDesc) {
+    const t = total <= 1 ? 0 : i / (total - 1);
+    const f = `${i + 1}/${total}`;
+    const map = {
+        idle: () => `idle breathing pose, subtle body rise/fall, frame ${f}`,
+        walk: () => (i % 2 === 0 ? `walk cycle, left leg forward right arm forward, frame ${f}` : `walk cycle, right leg forward left arm forward, frame ${f}`),
+        attack: () => t < 0.3 ? `attack windup, arm pulled back, frame ${f}` : t < 0.5 ? `attack swing, weapon extended forward, frame ${f}` : `attack recovery, returning to stance, frame ${f}`,
+        skill: () => t < 0.4 ? `skill charge, gathering energy, frame ${f}` : t < 0.7 ? `skill cast, effect burst, frame ${f}` : `skill recovery, frame ${f}`,
+        hurt: () => `hurt reaction, knocked back, frame ${f}`,
+        death: () => `death fall, body rotated ${Math.round(t * 90)} degrees toward ground, frame ${f}`,
+        jump: () => t < 0.33 ? `jump crouch, knees bent, frame ${f}` : t < 0.66 ? `jump airborne, body raised, frame ${f}` : `jump landing, frame ${f}`,
+        custom: () => `${customDesc || 'custom action'}, frame ${f}`
+    };
+    return (map[action] || map.idle)();
+}
+
+// ---------- 单帧生图：POST /images/generations → 取图 → 降采样到精灵尺寸 ImageData ----------
+async function cloudGenerateOne(frameIdx, total, ctx) {
+    const pose = cloudPoseForFrame(ctx.action, frameIdx, total, ctx.customDesc);
+    let prompt = ctx.positive ? (ctx.positive + ', ' + pose) : pose;
+    if (ctx.negative) prompt += '. Avoid: ' + ctx.negative;   // negative 拼入 prompt，兼容所有后端
+    const useSeed = ctx.useSeed && state.cloudSeedOk;
+    const sd = ctx.sharedSeed ? ctx.seed : (ctx.seed + frameIdx);
+    const body = { model: ctx.model, prompt, size: ctx.size, n: 1 };
+    if (useSeed) body.seed = sd;
+    let resp = await fetch(`${ctx.base}/images/generations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ctx.key },
+        body: JSON.stringify(body)
+    });
+    // 降级：若 seed 引发 400/422，去 seed 重试一次 (并标记后续帧不再带 seed)
+    if ((resp.status === 400 || resp.status === 422) && useSeed) {
+        state.cloudSeedOk = false;
+        const b2 = { model: ctx.model, prompt, size: ctx.size, n: 1 };
+        resp = await fetch(`${ctx.base}/images/generations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ctx.key },
+            body: JSON.stringify(b2)
+        });
+        if (resp.ok) showToast('⚠️ 当前后端不支持 seed，已自动降级（一致性依赖 prompt 约束）');
+    }
+    if (!resp.ok) { const e = new Error('HTTP ' + resp.status + ': ' + (await resp.text()).substring(0, 180)); e.status = resp.status; throw e; }
+    const result = await resp.json();
+    const item = result.data && result.data[0];
+    if (!item) throw new Error('后端未返回 data');
+    let bitmap;
+    if (item.b64_json) {
+        const bin = atob(item.b64_json);
+        const arr = new Uint8Array(bin.length);
+        for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
+        bitmap = await createImageBitmap(new Blob([arr], { type: 'image/png' }));
+    } else if (item.url) {
+        const r2 = await fetch(item.url);
+        const blob = await r2.blob();
+        bitmap = await createImageBitmap(blob);
+    } else throw new Error('后端未返回 url 或 b64_json');
+    // 生成尺寸 canvas → 按 target 缩放 (执行过缩放→降采样到精灵尺寸；否则保持生成尺寸)
+    const genW = ctx.genW, genH = ctx.genH;
+    const off = document.createElement('canvas');
+    off.width = genW; off.height = genH;
+    const octx = off.getContext('2d');
+    octx.imageSmoothingEnabled = false;
+    octx.drawImage(bitmap, 0, 0, genW, genH);
+    const tw = ctx.targetW, th = ctx.targetH;
+    const out = document.createElement('canvas');
+    out.width = tw; out.height = th;
+    const outCtx = out.getContext('2d', { willReadFrequently: true });
+    outCtx.imageSmoothingEnabled = false;
+    outCtx.drawImage(off, 0, 0, genW, genH, 0, 0, tw, th);
+    if (bitmap.close) bitmap.close();
+    return outCtx.getImageData(0, 0, tw, th);
+}
+
+// 把单帧 ImageData 写入现有帧结构 (复用时间轴/播放/导出)，不改 commitFramesFromImageData
+function cloudSetFrame(i, imageData) {
+    const w = state.canvasWidth, h = state.canvasHeight;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').putImageData(imageData, 0, 0);
+    const dataUrl = c.toDataURL('image/png');
+    state.frames[i] = { imageData, status: 'done', dataUrl };
+    const thumb = $('framesStrip').children[i];
+    if (thumb) {
+        const oldImg = thumb.querySelector('img');
+        if (oldImg) oldImg.remove();
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        thumb.insertBefore(img, thumb.firstChild);
+    }
+    if (state.currentFrame === i) selectFrame(i);
+}
+
+// ---------- 批量生成 / 重跑 / 单帧重生成 ----------
+async function cloudGenerateAll(regenIndices) {
+    if (state.cloudBusy) { showToast('❌ 正在生成中，请稍候', true); return; }
+    // 直接生成模式无需参考图；参考图模式必须有 cleanedImage
+    if (!state.cloudDirectMode && !state.cleanedImage) { showToast('❌ 请先上传并处理参考图，或切到「直接生成模式」', true); return; }
+    const base = $('cloudApiBase').value.replace(/\/$/, '');
+    const key = $('cloudApiKey').value.trim();
+    const model = $('cloudModel').value.trim();
+    if (!base || !key || !model) { showToast('❌ 请填写完整云端配置', true); return; }
+    const positive = $('cloudPromptPos').value.trim();
+    if (!positive) { showToast('❌ 请先填写或生成 Positive Prompt', true); return; }
+    let action = $('cloudActionSelect').value, customDesc = '';
+    if (action === 'custom') { customDesc = $('cloudCustomAction').value.trim(); if (!customDesc) { showToast('❌ 请输入自定义动作', true); return; } }
+    const isRegen = !!regenIndices;
+    const total = isRegen ? state.frames.length : (+$('cloudFrameCount').value || 4);
+    const genW = +$('cloudSizeW').value || 512, genH = +$('cloudSizeH').value || 512;
+    const useSeed = $('cloudSeedToggle').checked;
+    const sharedSeed = $('cloudSeedShared').checked;
+    const seed = +$('cloudSeed').value || 0;
+    const negative = $('cloudPromptNeg').value.trim();
+    // 目标帧尺寸：执行过「缩放」→降采样到精灵尺寸；未缩放→保持生成尺寸原样入帧(支持常规非像素图)。
+    // 重生成始终跟随现有帧尺寸，不改画布；全新生成(未缩放)才把画布调整到生成尺寸。
+    const pixelated = !!state.isPixelated;
+    let targetW, targetH;
+    if (pixelated || isRegen) {
+        targetW = state.canvasWidth; targetH = state.canvasHeight;
+    } else {
+        targetW = genW; targetH = genH;
+        state.canvasWidth = genW; state.canvasHeight = genH;
+        canvas.width = genW; canvas.height = genH;
+        resetView();
+    }
+    const ctx = { base, key, model, positive, negative, size: `${genW}x${genH}`, genW, genH, targetW, targetH, useSeed, sharedSeed, seed, action, customDesc };
+    const indices = regenIndices || Array.from({ length: total }, (_, i) => i);
+
+    state.cloudBusy = true; state.cloudCancel = false; state.cloudSeedOk = true;
+    if (!isRegen) initFrameSlots(total);   // 全量生成：重建时间轴 (slot 默认 loading)
+
+    $('btnCloudGenerate').disabled = true;
+    $('btnCloudRegenAll').disabled = true;
+    $('btnCloudRegenFrame').disabled = true;
+    $('btnCloudCancel').style.display = 'inline-block';
+    $('cloudProgressBox').style.display = 'block';
+    $('cloudProgressBar').style.width = '0%';
+    let done = 0; const t0 = Date.now();
+    for (const i of indices) {
+        if (state.cloudCancel) break;
+        $('cloudProgressText').textContent = `正在生成第 ${i + 1}/${total} 帧...`;
+        $('cloudProgressBar').style.width = (done / indices.length * 100) + '%';
+        if (state.frames[i]) updateFrameStatus(i, 'loading');
+        try {
+            const imgData = await cloudGenerateOne(i, total, ctx);
+            cloudSetFrame(i, imgData);
+            updateFrameStatus(i, 'done');
+        } catch (err) {
+            console.error('cloud frame', i, err);
+            if (state.frames[i]) updateFrameStatus(i, 'error');
+            showToast(`❌ 第${i + 1}帧失败: ${err.message.substring(0, 110)}`, true);
+            // 继续下一帧，已生成帧保留
+        }
+        done++;
+    }
+    $('cloudProgressBar').style.width = '100%';
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    $('cloudProgressText').textContent = state.cloudCancel ? `已取消 (已完成 ${done}/${indices.length}，用时 ${elapsed}s)` : `完成 ${done}/${indices.length} 帧，用时 ${elapsed}s`;
+    $('btnCloudGenerate').disabled = false;
+    $('btnCloudRegenAll').disabled = false;
+    $('btnCloudRegenFrame').disabled = false;
+    $('btnCloudCancel').style.display = 'none';
+    state.cloudBusy = false;
+    if (done > 0) {
+        $('btnExportSheet').disabled = false;
+        $('btnExportPng').disabled = false;
+        $('btnExportZip').disabled = false;
+        updateExportSelCount();
+        selectFrame(indices[0]);
+        if (!state.cloudCancel) showToast(`✅ 云端生成完成 (${done} 帧)`);
+    }
+}
+$('btnCloudGenerate').addEventListener('click', () => cloudGenerateAll(null));
+$('btnCloudRegenAll').addEventListener('click', () => {
+    if (!state.frames || !state.frames.length) { showToast('❌ 暂无帧可重跑，请先生成', true); return; }
+    cloudGenerateAll(Array.from({ length: state.frames.length }, (_, i) => i));
+});
+$('btnCloudRegenFrame').addEventListener('click', () => {
+    if (!state.frames || !state.frames.length) { showToast('❌ 暂无帧，请先生成', true); return; }
+    cloudGenerateAll([state.currentFrame]);
+});
+$('btnCloudCancel').addEventListener('click', () => { state.cloudCancel = true; showToast('⏹ 已请求取消，完成当前帧后停止'); });
+</script>
+</body>
+</html>

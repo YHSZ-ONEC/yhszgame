@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YHSZ Game | 静态游戏分享站</title>
+  <link rel="stylesheet" href="./assets/site.css">
+  <script src="./data/games.js" defer></script>
+  <script src="./assets/site.js" defer></script>
+</head>
+<body data-page="home">
+  <header class="topbar">
+    <nav class="shell nav" aria-label="主导航">
+      <a class="brand" href="./index.html" aria-label="返回首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>YHSZ Game</span>
+      </a>
+      <div class="nav-links">
+        <a data-nav="home" href="./index.html">游戏</a>
+        <a data-nav="blog" href="./blog/">博客</a>
+        <a data-nav="about" href="./about/">个人</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="shell page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Static Game Shelf</p>
+        <h1>我的游戏展示页</h1>
+        <p class="lead">
+          收纳自己做的浏览器游戏和互动工具。点击卡片即可试玩，也可以用搜索快速找到类型相近的作品。
+        </p>
+      </div>
+      <aside class="hero-panel">
+        <strong>最新加入</strong>
+        <p>像素精灵帧工坊已经加入作品列表，可用于生成和导出像素动画序列帧。</p>
+      </aside>
+    </section>
+
+    <section class="toolbar" aria-label="游戏搜索">
+      <label class="search-box">
+        <span>搜索</span>
+        <input id="gameSearch" type="search" placeholder="标题、标签、简介">
+      </label>
+      <p id="gameCount" class="result-count"></p>
+    </section>
+
+    <section id="gameGrid" class="game-grid" aria-live="polite"></section>
+    <p id="gameEmpty" class="empty" hidden>没有找到匹配的游戏。</p>
+  </main>
+
+  <footer class="shell footer">
+    <span>Browser games collection.</span>
+    <span>Playable and lightweight.</span>
+  </footer>
+</body>
+</html>
