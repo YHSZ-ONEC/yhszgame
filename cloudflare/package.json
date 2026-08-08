@@ -1,0 +1,10 @@
+{
+  "name": "blog-api",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute blog-backend-db --file=./schema.sql",
+    "db:init:remote": "wrangler d1 execute blog-backend-db --remote --file=./schema.sql"
+  }
+}

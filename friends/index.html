@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>友链 | YHSZ Game</title>
+  <link rel="stylesheet" href="../assets/site.css">
+  <script src="../assets/site.js" defer></script>
+</head>
+<body data-page="friends">
+  <header class="topbar">
+    <nav class="shell nav" aria-label="主导航">
+      <a class="brand" href="../index.html" aria-label="返回首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>YHSZ Game</span>
+      </a>
+      <div class="nav-links">
+        <a data-nav="home" href="../index.html">游戏</a>
+        <a data-nav="blog" href="../blog/">博客</a>
+        <a data-nav="about" href="../about/">个人</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="shell page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Friends</p>
+        <h1>友链</h1>
+        <p class="lead">收录朋友的站点，欢迎在页面底部申请互换友链。</p>
+      </div>
+    </section>
+
+    <!-- CF-BLOG-START -->
+    <section class="markdown-card">
+      <div id="cfFriendList" class="cf-friend-grid"></div>
+    </section>
+
+    <section class="markdown-card">
+      <h2 class="cf-form-title">申请友链</h2>
+      <form id="cfFriendForm" class="cf-friend-form">
+        <label>名称 <input name="name" required></label>
+        <label>网址 <input name="url" type="url" required placeholder="https://"></label>
+        <label>描述 <input name="desc" placeholder="一句话介绍"></label>
+        <label>Logo <input name="logo" type="url" placeholder="https://（选填）"></label>
+        <button type="submit" class="button primary">提交申请</button>
+      </form>
+    </section>
+    <!-- CF-BLOG-END -->
+  </main>
+
+  <footer class="shell footer">
+    <span>Friends links.</span>
+    <span>Link exchange.</span>
+  </footer>
+</body>
+</html>

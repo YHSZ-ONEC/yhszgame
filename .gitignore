@@ -1,0 +1,4 @@
+# wrangler 本地状态（缓存 / 本地 D1 / 构建产物）
+.wrangler/
+# 依赖
+node_modules/

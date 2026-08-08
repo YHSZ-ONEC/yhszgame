@@ -1,0 +1,12 @@
+name = "blog-api"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "blog-backend-db"
+database_id = "e762418d-a806-4d71-b6cf-d75501bb61e2"
+
+[vars]
+TZ = "Asia/Shanghai"
+BLOG_ORIGIN = "https://index-5ch.pages.dev"
