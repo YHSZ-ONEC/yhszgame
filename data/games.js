@@ -36,5 +36,35 @@ window.YHSZ_GAMES = [
       alt: "像素精灵帧工坊图标"
     },
     tags: ["HTML", "Canvas", "像素", "工具"]
+  },
+  {
+    id: "td",
+    title: "别按那个键",
+    description: "增量塔防原型：所有塔全自动攻击，挑战『不按键』也能通关，含经济经营、研究树与成就系统。",
+    route: "./games/td/index.html",
+    folder: "./games/td/index.html",
+    status: "游戏",
+    date: "2026-08-08",
+    accent: "#f0b429",
+    icon: {
+      image: "./assets/icons/td.svg",
+      alt: "别按那个键图标"
+    },
+    tags: ["HTML", "塔防", "增量", "自动战斗"]
+  },
+  {
+    id: "buildcard",
+    title: "营造司 · 城市营造盘",
+    description: "肉鸽卡牌城市营造：抽牌在棋盘上造城，权衡五行生克、地势契合与灾异诏令，24 关步步为营。",
+    route: "./games/buildcard/index.html",
+    folder: "./games/buildcard/index.html",
+    status: "游戏",
+    date: "2026-08-08",
+    accent: "#e07a3f",
+    icon: {
+      image: "./assets/icons/buildcard.svg",
+      alt: "营造司 · 城市营造盘图标"
+    },
+    tags: ["HTML", "卡牌", "建造", "肉鸽"]
   }
 ];

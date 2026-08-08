@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>营造司 · 城市营造盘</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <div class="game-header">
+      <h1>营造司 <span class="sub">· 城市营造盘</span></h1>
+      <div class="header-actions">
+        <button class="btn ghost" id="btn-help">规则</button>
+        <button class="btn ghost" id="btn-deck">牌组 <span id="deck-count">0</span></button>
+        <button class="btn ghost" id="btn-audio" title="音效开关">🔊</button>
+        <button class="btn ghost" id="btn-new">新游戏</button>
+      </div>
+    </div>
+    <div id="hud"></div>
+    <div id="arche" class="arche"></div>
+    <div id="cata-bar"></div>
+    <div id="edict" class="edict"></div>
+    <div id="main">
+      <div id="board-wrap">
+        <div id="board"></div>
+        <div id="controls"></div>
+      </div>
+      <div id="side">
+        <div id="cols"></div>
+        <div id="preview"></div>
+        <div id="jokers"></div>
+      </div>
+    </div>
+    <div class="helptip" id="helptip"></div>
+    <div id="hand"></div>
+    <div id="log"></div>
+  </div>
+
+  <div id="overlay">
+    <div class="modal" id="modal"></div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
