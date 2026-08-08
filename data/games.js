@@ -10,7 +10,7 @@ window.YHSZ_GAMES = [
   {
     id: "qw",
     title: "我的世界 HTML 版",
-    description: "一个纯前端 3D 方块建造小游戏，支持移动、跳跃、飞行、破坏和放置方块。",
+    description: "用来测试qwen3.8 max，不算真正的作品，一个纯前端 3D 方块建造小游戏，支持移动、跳跃、飞行、破坏和放置方块。",
     route: "./games/qw/index.html",
     folder: "./games/qw/index.html",
     status: "游戏",

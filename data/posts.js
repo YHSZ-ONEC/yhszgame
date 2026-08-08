@@ -14,5 +14,13 @@ window.YHSZ_POSTS = [
     summary: "构建一个能用于实际游戏开发的工具。",
     path: "./posts/pixel.md",
     tags: ["开发日志", "pixel序列帧工具"]
+  },
+  {
+    slug: "coding",
+    title: "开发日志 003：疯狂coding",
+    date: "2026-08-08",
+    summary: "加入两个新游戏。",
+    path: "./posts/coding.md",
+    tags: ["开发日志", "两个新游戏"]
   }
 ];
