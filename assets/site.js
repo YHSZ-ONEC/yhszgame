@@ -436,20 +436,14 @@
 })();
 
 /* CF-BLOG-START */
-/* Cloudflare API 接入：评论 / 搜索 / 统计 / 友链。独立 IIFE，不依赖上方私有函数。 */
+/* 静态搜索：全站头部 🔍 按钮 + 弹窗，本地过滤 window.YHSZ_POSTS，纯前端无需后端。独立 IIFE。 */
 (function () {
-  // 同源部署：API 由 Pages Function 提供（functions/api/[[path]].js），随站点一起发布在 index-5ch.pages.dev
-  // 空串 = 相对根路径 /api/*，与站点同源，无需 CORS，也不受 workers.dev 被墙影响
-  const API_BASE = '';
   const page = document.body.dataset.page || '';
 
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
   }[c]));
-  const api = (path, opt) => fetch(API_BASE + path, opt).then((r) => r.json());
-  const currentSlug = () => decodeURIComponent(location.hash.replace(/^#/, ''))
-    || (window.YHSZ_POSTS && window.YHSZ_POSTS[0] && window.YHSZ_POSTS[0].slug) || '';
   // 静态搜索高亮：先转义再包裹 <mark>，避免 XSS
   const highlight = (text, q) => {
     const safe = esc(text);
@@ -480,7 +474,7 @@
     btn.className = 'cf-search-trigger';
     btn.type = 'button';
     btn.textContent = '🔍 搜索';
-    nav.appendChild(btn);                          // 排在友链之后 → 友链右侧
+    nav.appendChild(btn);                          // 追加到导航末尾
 
     const modal = document.createElement('div');
     modal.className = 'cf-search-modal';
@@ -526,162 +520,9 @@
     box.addEventListener('click', (e) => { if (e.target.closest('.cf-search-result')) close(); });
   }
 
-  // ---- 友链导航入口 ----
-  function injectFriendLink() {
-    const nav = $('.nav-links');
-    if (!nav || document.getElementById('cfFriendNav')) return;
-    const a = document.createElement('a');
-    a.id = 'cfFriendNav';
-    a.href = (page === 'home' ? './' : '../') + 'friends/';
-    a.textContent = '友链';
-    nav.appendChild(a);
-  }
-
-  // ---- 博客页：评论（统计/点赞并入评论区）----
-  function initBlog() {
-    if (page !== 'blog') return;
-    const comments = $('#cfComments');
-    const postView = $('#postView');
-    const main = $('.cf-blog-main');
-
-    // 文章上方紧凑「跳到评论」小按钮（右对齐，不占大块空间）
-    if (main && postView && !$('.cf-blog-toolbar', main)) {
-      const toolbar = document.createElement('div');
-      toolbar.className = 'cf-blog-toolbar';
-      const jumpBtn = document.createElement('button');
-      jumpBtn.className = 'cf-comment-jump';
-      jumpBtn.type = 'button';
-      jumpBtn.textContent = '💬 跳到评论';
-      jumpBtn.addEventListener('click', () => {
-        const c = $('#cfComments');
-        if (c) c.scrollIntoView({ behavior: 'smooth' });
-      });
-      toolbar.appendChild(jumpBtn);
-      main.insertBefore(toolbar, postView);
-    }
-
-    if (!comments) return;
-
-    // 统计/点赞渲染到评论区头部 .cf-comment-meta（不再单独占一整条）
-    const renderStats = (slug) => {
-      api('/api/stats?path=' + encodeURIComponent(slug)).then((res) => {
-        if (res.code !== 0) return;
-        const liked = localStorage.getItem('cfLiked_' + slug);
-        const meta = $('.cf-comment-meta', comments);
-        if (!meta) return;
-        meta.innerHTML = '<span>阅读 ' + (res.data.views || 0) + '</span>'
-          + '<span>👍 ' + (res.data.likes || 0) + '</span>'
-          + '<button class="cf-stats-like" ' + (liked ? 'disabled' : '') + '>'
-          + (liked ? '已赞' : '点赞') + '</button>';
-        const lk = $('.cf-stats-like', meta);
-        if (lk && !liked) lk.addEventListener('click', () => {
-          api('/api/stats/like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: slug }) }).then((r) => {
-            if (r.code === 0) { localStorage.setItem('cfLiked_' + slug, '1'); renderStats(slug); }
-            else alert(r.message);
-          });
-        });
-      });
-    };
-
-    const formHtml = '<form id="cfCommentForm" class="cf-comment-form">'
-      + '<input name="nick" placeholder="昵称 *" required>'
-      + '<input name="mail" type="email" placeholder="邮箱（选填）">'
-      + '<input name="link" type="url" placeholder="网址（选填）">'
-      + '<textarea name="comment" placeholder="说点什么…" required></textarea>'
-      + '<button type="submit" class="button primary">发表评论</button></form>';
-
-    const renderComments = (slug) => {
-      if (!comments) return;
-      comments.innerHTML = '<div class="cf-comments-bar">'
-        + '<h3 class="cf-comment-title">评论</h3>'
-        + '<div class="cf-comment-meta"></div>'
-        + '</div>'
-        + '<div class="cf-comment-list"></div>' + formHtml;
-      renderStats(slug);   // 结构就绪后填充统计到头部
-      const list = $('.cf-comment-list', comments);
-      api('/api/comment?path=' + encodeURIComponent(slug)).then((res) => {
-        if (res.code !== 0) return;
-        const items = (res.data && res.data.list) || [];
-        list.innerHTML = items.length ? items.map((c) =>
-          '<div class="cf-comment-item"><div class="cf-comment-head">'
-          + '<strong>' + esc(c.nick) + '</strong>'
-          + (c.link ? '<a href="' + esc(c.link) + '" rel="nofollow" target="_blank">主页</a>' : '')
-          + '<span class="cf-comment-time">' + esc(c.insertedAt || '') + '</span>'
-          + '<button class="cf-comment-like" data-id="' + c.id + '">👍 ' + (c.likes || 0) + '</button>'
-          + '</div><p class="cf-comment-text">' + esc(c.comment) + '</p></div>'
-        ).join('') : '<p class="cf-comment-empty">还没有评论，快来抢沙发。</p>';
-      });
-      const form = $('#cfCommentForm', comments);
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const data = {
-          path: slug,
-          nick: form.nick.value.trim(), mail: form.mail.value.trim(),
-          link: form.link.value.trim(), comment: form.comment.value.trim()
-        };
-        if (!data.nick || !data.comment) { alert('昵称和内容必填'); return; }
-        api('/api/comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((res) => {
-          if (res.code === 0) { form.reset(); renderComments(slug); }
-          else alert(res.message);
-        });
-      });
-      list.addEventListener('click', (e) => {
-        const btn = e.target.closest('.cf-comment-like');
-        if (!btn) return;
-        api('/api/comment/like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: +btn.dataset.id }) }).then((res) => {
-          if (res.code === 0) renderComments(slug);
-        });
-      });
-    };
-
-    const update = () => {
-      const slug = currentSlug();
-      if (!slug) return;
-      renderComments(slug);
-    };
-    window.addEventListener('hashchange', update);
-    setTimeout(update, 120);
-  }
-
-  // ---- 友链页 ----
-  function initFriends() {
-    if (page !== 'friends') return;
-    const list = $('#cfFriendList');
-    const form = $('#cfFriendForm');
-    if (list) {
-      api('/api/friends').then((res) => {
-        if (res.code !== 0) return;
-        const items = (res.data && res.data.list) || [];
-        list.innerHTML = items.length ? items.map((f) =>
-          '<a class="cf-friend-card" href="' + esc(f.url) + '" target="_blank" rel="nofollow">'
-          + (f.logo ? '<img src="' + esc(f.logo) + '" alt="">' : '<span class="cf-friend-logo">' + esc((f.name || '?').slice(0, 1)) + '</span>')
-          + '<strong>' + esc(f.name) + '</strong>'
-          + '<span>' + esc(f.desc || '') + '</span></a>'
-        ).join('') : '<p class="empty">还没有友链，快在下方申请吧。</p>';
-      });
-    }
-    if (form) {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const data = {
-          name: form.name.value.trim(), url: form.url.value.trim(),
-          desc: form.desc.value.trim(), logo: form.logo.value.trim()
-        };
-        if (!data.name || !data.url) { alert('名称和网址必填'); return; }
-        api('/api/friends', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((res) => {
-          if (res.code === 0) { form.reset(); alert('申请已提交，待审核'); }
-          else alert(res.message);
-        });
-      });
-    }
-  }
-
   // ---- 启动 ----
   function start() {
-    injectFriendLink();
     initSearch();
-    initBlog();
-    initFriends();
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', start);
