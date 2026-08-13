@@ -14,7 +14,13 @@
         .main-container { display: flex; flex: 1; overflow: hidden; }
         .sidebar { width: 340px; min-width: 340px; background: var(--bg-panel); border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
         .panel-section { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
-        .panel-title { font-size: 13px; font-weight: bold; color: var(--accent); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .panel-title { font-size: 13px; font-weight: bold; color: var(--accent); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+        .panel-title:hover { filter: brightness(1.35); }
+        .panel-title::after { content: '▾'; font-size: 11px; opacity: 0.55; transition: transform 0.2s; flex: none; }
+        .panel-section.collapsed > .panel-title::after { transform: rotate(-90deg); }
+        .panel-section.collapsed > :not(.panel-title) { display: none !important; }
+        .panel-toolbar { display: flex; gap: 6px; margin-bottom: 2px; }
+        .panel-toolbar button { width: auto; margin: 0; padding: 3px 10px; font-size: 11px; }
         label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 4px; margin-top: 8px; }
         input[type="text"], input[type="number"], select, textarea { width: 100%; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-main); padding: 6px 8px; border-radius: 4px; font-size: 12px; font-family: monospace; }
         input[type="range"] { width: 100%; accent-color: var(--accent); }
@@ -69,10 +75,6 @@
         .gen-mode-row button:hover { border-color: var(--accent); color: var(--text-main); }
         .gen-mode-row button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
 
-        .ai-palette-box { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; min-height: 24px; }
-        .ai-palette-swatch { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
-        .ai-palette-empty { font-size: 11px; color: var(--text-sub); line-height: 20px; }
-
         /* ===== 新增：云端生图模块样式 ===== */
         .cloud-size-btn { flex: 1; padding: 6px 4px; font-size: 11px; text-align: center; background: transparent; border: 1px solid var(--border); color: var(--text-sub); border-radius: 4px; cursor: pointer; transition: 0.2s; margin-top: 0; font-weight: 600; }
         .cloud-size-btn:hover, .cloud-size-btn.active { border-color: var(--accent); color: var(--text-main); background: rgba(108,92,231,0.15); }
@@ -84,13 +86,6 @@
         .cloud-progress { height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden; margin-top: 4px; }
         .cloud-progress > div { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s; }
         .cloud-warn { background: rgba(255,210,63,0.06); border: 1px solid rgba(255,210,63,0.25); border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #ffd23f; margin-top: 8px; }
-
-        .ai-code-bar { background: #0b0b10; border-top: 2px solid var(--accent); font-family: 'Consolas', 'Courier New', monospace; }
-        .ai-code-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; cursor: pointer; user-select: none; font-family: 'Segoe UI', sans-serif; border-bottom: 1px solid #222; }
-        .ai-code-head:hover { background: rgba(108, 92, 231, 0.12); }
-        .ai-code-title { font-size: 12px; font-weight: bold; color: #00e676; }
-        .ai-code-body { padding: 10px 14px 12px; }
-        #aiCodeEditorTextarea { width: 100%; min-height: 150px; background: #0b0b10; color: #d6e2ff; border: 1px solid #333; border-radius: 4px; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.5; white-space: pre; tab-size: 2; padding: 8px; resize: vertical; }
 
         /* ===== 新增：切片可视化 / 特效开关 / 微调控件 ===== */
         .fx-toggle-row { display: flex; align-items: center; gap: 6px; margin: 8px 0; padding: 8px; background: rgba(255, 210, 63, 0.06); border-radius: 4px; border: 1px solid rgba(255, 210, 63, 0.25); }
@@ -114,7 +109,7 @@
         /* ===== 128×128 像素画布编辑器 (模板B) ===== */
         #canvasView { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
         .cv-body { display: flex; flex: 1; overflow: hidden; }
-        .cv-tools { width: 56px; min-width: 56px; background: var(--bg-panel); border-right: 1px solid var(--border); padding: 8px 6px; display: flex; flex-direction: column; gap: 6px; }
+        .cv-tools { width: 56px; min-width: 56px; background: var(--bg-panel); border-right: 1px solid var(--border); padding: 8px 6px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
         .cv-tool { width: 44px; height: 44px; min-width: 44px; background: transparent; border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; cursor: pointer; font-size: 18px; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; }
         .cv-tool:hover { border-color: var(--accent); }
         .cv-tool.active { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -138,6 +133,20 @@
         .cv-frame-item .fdel:hover { color: #ff7675; border-color: #d63031; }
         .cv-btn-row { display: flex; gap: 6px; }
         .cv-btn-row button { margin: 0; flex: 1; }
+        .cv-btn-row { margin-top: 6px; }
+        .cv-lbl { font-size: 11px; color: var(--text-sub); align-self: center; }
+        .brush-btn.active, .rect-mode.active, .sym-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .cv-pal-tools { display: flex; gap: 6px; margin-top: 6px; }
+        .cv-pal-tools select { flex: 1; min-width: 0; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; font-size: 11px; padding: 4px; }
+        .cv-pal-tools button { width: auto; margin: 0; padding: 6px 8px; font-size: 11px; }
+        .cv-swatch { position: relative; }
+        .cv-statusbar { display: flex; gap: 14px; align-items: center; padding: 4px 12px; background: var(--bg-panel); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-sub); flex: none; }
+        .cv-statusbar b { color: var(--text-main); font-weight: 600; }
+        .cv-onion-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+        .cv-onion-row select { width: 56px; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; font-size: 11px; padding: 2px; }
+        .cv-repl-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+        .cv-repl-row input[type="color"] { width: 28px; height: 26px; padding: 0; border: 1px solid var(--border); background: transparent; cursor: pointer; }
+        .cv-repl-row span { font-size: 11px; color: var(--text-sub); }
         .cv-zoom-row { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; align-items: center; background: rgba(43,43,54,0.85); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; z-index: 10; }
         .cv-zoom-row button { width: auto; margin: 0; padding: 2px 8px; }
         .cv-zoom-row .zlabel { font-size: 12px; min-width: 44px; text-align: center; font-family: monospace; }
@@ -154,31 +163,102 @@
         .cv-ai-fields .field label { margin: 0; font-size: 11px; }
         .cv-ai-fields .field input, .cv-ai-fields .field select { width: auto; min-width: 90px; }
         .cv-ai-note { width: 100%; background: #11151c; color: #b9f6ca; border: 1px solid #234; border-radius: 4px; padding: 8px 10px; font-size: 12px; min-height: 40px; font-family: 'Consolas', monospace; white-space: pre-wrap; }
+
+        /* ===== 新增：AI 部件拆分 (骨骼) 样式 ===== */
+        .split-mode-row { display: flex; gap: 6px; }
+        .split-mode-row button { margin: 0; flex: 1; padding: 6px 4px; font-size: 11px; text-align: center; background: transparent; border: 1px solid var(--border); color: var(--text-sub); border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .split-mode-row button:hover { border-color: var(--accent); color: var(--text-main); }
+        .split-mode-row button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .split-parts-list { display: flex; flex-direction: column; gap: 4px; max-height: 170px; overflow-y: auto; margin-top: 8px; }
+        .split-part-item { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 11px; }
+        .split-part-item.active { border-color: var(--accent); box-shadow: 0 0 6px var(--accent); }
+        .split-part-item .sw { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+        .split-part-item .pn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .split-part-item .pts { color: var(--text-sub); font-size: 10px; }
+        .split-part-item button { width: auto; margin: 0; padding: 0 6px; font-size: 11px; background: transparent; border: 1px solid var(--border); color: var(--text-sub); line-height: 1.6; flex: none; cursor: pointer; }
+        .split-part-item button:hover { color: #ff7675; border-color: #d63031; }
+        .split-info { font-size: 11px; color: var(--text-sub); margin-top: 6px; line-height: 1.5; min-height: 30px; }
+        #cvSplitLayer { position: absolute; left: 0; top: 0; z-index: 4; pointer-events: none; image-rendering: pixelated; }
+
+        /* ===== 全局设置弹窗 ===== */
+        .header-right { display: flex; align-items: center; gap: 14px; }
+        .header-right .app-mode-row { margin: 0; }
+        #btnOpenSettings { width: auto; margin: 0; padding: 6px 14px; background: transparent; border: 1px solid var(--border); color: var(--text-sub); font-size: 12px; font-weight: 600; }
+        #btnOpenSettings:hover { border-color: var(--accent); color: var(--text-main); }
+        .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .modal-box { width: 400px; max-width: 92vw; max-height: 88vh; overflow-y: auto; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+        .modal-head span { font-size: 14px; font-weight: bold; color: var(--accent); }
+        .modal-head button { width: auto; margin: 0; padding: 2px 10px; background: transparent; border: 1px solid var(--border); color: var(--text-sub); font-size: 14px; line-height: 1.4; }
+        .modal-head button:hover { border-color: #d63031; color: #ff7675; }
+        .modal-body { padding: 14px 16px 16px; }
+        .modal-body input[type="password"] { background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-main); padding: 6px 8px; border-radius: 4px; font-size: 12px; font-family: monospace; width: 100%; }
+        .set-test-row { display: flex; gap: 6px; margin-top: 10px; }
+        .set-test-row button { margin: 0; flex: 1; padding: 6px 4px; font-size: 11px; }
+        .set-status { font-size: 11px; color: var(--text-sub); margin-top: 8px; min-height: 16px; line-height: 1.5; }
+                .set-tabs { display: flex; gap: 4px; margin: 0 auto; }
+                .set-tab { width: auto; margin: 0; padding: 4px 12px; font-size: 11px; background: transparent; border: 1px solid var(--border); color: var(--text-sub); border-radius: 4px; }
+                .set-tab:hover { border-color: var(--accent); color: var(--text-main); }
+                .set-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+                .set-help-block { margin-bottom: 10px; padding: 8px 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 6px; }
+                .set-help-title { font-size: 12px; font-weight: bold; color: var(--accent); margin-bottom: 4px; }
+                .set-help-block ul { margin: 0; padding-left: 16px; }
+                .set-help-block li { font-size: 11px; color: var(--text-sub); line-height: 1.6; margin-bottom: 2px; }
+        .set-hint { font-size: 11px; color: var(--text-sub); margin-top: 10px; line-height: 1.6; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>🎮 像素精灵帧工坊 (智能变换版)</h1>
-    <div class="app-mode-row">
-        <button type="button" id="appModeWorkshop" class="active">🛠 工坊模式</button>
-        <button type="button" id="appModeCanvas">🎨 画布模式</button>
+    <h1>🎮 像素精灵帧工坊</h1>
+    <div class="header-right">
+        <div class="app-mode-row">
+            <button type="button" id="appModeWorkshop" class="active">🛠 工坊模式</button>
+            <button type="button" id="appModeCanvas">🎨 画布模式</button>
+            <button type="button" id="appModeSplit">🤖 AI 拆分</button>
+        </div>
+        <button type="button" id="btnOpenSettings">⚙ 设置</button>
     </div>
-    <div style="font-size: 12px; color: var(--text-sub);">AI 动作规划 · 整体挤压拉伸 · 硬编码特效 · 纯前端渲染</div>
 </header>
 
 <div class="main-container">
     <div class="sidebar">
+        <div class="panel-toolbar">
+            <button type="button" class="secondary panel-tool" data-target=".sidebar">▾ 全部收起</button>
+            <button type="button" class="secondary panel-tool" data-target=".sidebar">▸ 全部展开</button>
+            <span style="font-size:11px;color:var(--text-sub);align-self:center;margin-left:auto;">点标题折叠</span>
+        </div>
         <!-- 1. 上传与去背景 -->
         <div class="panel-section">
             <div class="panel-title">📥 参考图 & 去背景</div>
             <input type="file" id="uploadInput" accept="image/png,image/jpeg,image/webp" style="display:none">
             <button onclick="document.getElementById('uploadInput').click()">📁 上传像素参考图</button>
+            <button type="button" class="secondary" id="btnImportFromCanvas">🎨 从画布模式导入</button>
             <label>去背景容差 (0-100)</label>
             <input type="range" id="toleranceSlider" min="0" max="100" value="30">
             <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-sub);"><span>精确</span><span id="tolVal">30</span><span>宽松</span></div>
+            <label>背景模式</label>
+            <select id="bgMode">
+                <option value="auto" selected>自动 (边缘纯色检测)</option>
+                <option value="manual">手动取色 (精确去除指定颜色)</option>
+            </select>
+            <div id="bgPickRow" style="display:none; margin-top:6px; align-items:center; gap:6px;">
+                <button type="button" class="secondary" id="btnBgPick" style="width:auto;margin:0;">🎯 点击画布取背景色</button>
+                <span id="bgPickSwatch" style="width:18px;height:18px;border:1px solid var(--border);border-radius:3px;background:#000;display:inline-block;flex:none;"></span>
+                <span id="bgPickVal" style="font-size:11px;color:var(--text-sub);">未取色</span>
+            </div>
+            <div class="checkbox-row" style="margin-top:6px;">
+                <input type="checkbox" id="bgSmoothToggle">
+                <label for="bgSmoothToggle" style="margin:0;">边缘平滑 (1px 柔化，减少锯齿)</label>
+            </div>
+            <label style="margin-top:8px;">收缩边缘 (吃掉残留背景色)</label>
+            <input type="range" id="shrinkSlider" min="0" max="10" value="0">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-sub);"><span>关闭</span><span id="shrinkVal">0 px</span><span>10px</span></div>
             <button class="secondary" id="btnRemoveBg" disabled>✨ 执行去背景</button>
             <button class="secondary" id="btnRestoreBg" disabled>↩ 还原去背景</button>
+            <div style="border-top:1px dashed var(--border); margin:10px 0 6px;"></div>
+            <button type="button" class="secondary" id="btnSaveState">💾 保存状态 (存档点)</button>
+            <button type="button" class="secondary" id="btnRestoreState" disabled>↩ 还原到保存点</button>
         </div>
 
         <!-- 1.5 像素化缩放 -->
@@ -194,20 +274,25 @@
                 不勾选：使用下方的复杂算法，适合<b>照片/高清图</b>转像素。
             </div>
 
-            <label>目标尺寸 (宽 × 高)</label>
+            <label>目标尺寸 (宽 × 高，最大 2048)</label>
             <div class="size-row">
-                <input type="number" id="targetW" value="32" min="1" max="256">
+                <input type="number" id="targetW" value="128" min="1" max="2048">
                 <span class="sep">×</span>
-                <input type="number" id="targetH" value="32" min="1" max="256">
+                <input type="number" id="targetH" value="128" min="1" max="2048">
             </div>
             <div class="preset-row">
-                <div class="preset-btn" data-size="16">16²</div>
-                <div class="preset-btn active" data-size="32">32²</div>
-                <div class="preset-btn" data-size="48">48²</div>
                 <div class="preset-btn" data-size="64">64²</div>
+                <div class="preset-btn active" data-size="128">128²</div>
+                <div class="preset-btn" data-size="256">256²</div>
+                <div class="preset-btn" data-size="512">512²</div>
+                <div class="preset-btn" data-size="1024">1024²</div>
             </div>
             
             <div id="advancedAlgoOptions" style="opacity: 0.5; pointer-events: none; transition: 0.3s;">
+                <div class="checkbox-row">
+                    <input type="checkbox" id="photoEnhanceToggle" checked>
+                    <label for="photoEnhanceToggle" style="margin:0;">照片增强预处理 (自动对比度/饱和度)</label>
+                </div>
                 <label>降采样算法 (仅照片模式)</label>
                 <select id="downscaleAlgo">
                     <option value="area">面积平均 (Area Average)</option>
@@ -228,6 +313,8 @@
                     <input type="checkbox" id="edgeEnhanceToggle" checked>
                     <label for="edgeEnhanceToggle" style="margin:0;">边缘锐化增强</label>
                 </div>
+                <label>锐化强度: <span id="sharpenVal">100%</span></label>
+                <input type="range" id="sharpenSlider" min="0" max="200" value="100">
             </div>
 
             <button class="secondary" id="btnPixelate" disabled>🔬 执行缩放</button>
@@ -235,44 +322,13 @@
             <div id="pixelInfo" class="info-badge" style="display:none;"></div>
         </div>
 
-        <!-- 4. 动画生成 (本地 / AI / 云端) -->
+        <!-- 4. 动画生成 (本地 / 云端) -->
         <div class="panel-section">
-            <div class="panel-title">🎬 动画生成 (本地 / AI / 云端)</div>
+            <div class="panel-title">🎬 动画生成 (本地 / 云端)</div>
 
             <div class="gen-mode-row">
                 <button type="button" id="genModeLocal" class="active">🛠 本地生成</button>
-                <button type="button" id="genModeAi">⚡ AI 生成</button>
                 <button type="button" id="genModeCloud">☁️ 云端生图</button>
-            </div>
-
-            <!-- 以下新增控件仅在 AI 生成模式显示 (setGenMode 控制) -->
-            <div id="genExtraControls" style="display:none;">
-                <div class="fx-toggle-row">
-                    <input type="checkbox" id="fxEnhanceToggle" checked>
-                    <label for="fxEnhanceToggle" style="margin:0; color:#ffd23f; font-weight:bold;">✨ 启用特效增强层 (大幅度动作)</label>
-                </div>
-
-                <!-- 切片可视化与手动微调 -->
-                <div class="slice-overlay-box">
-                    <div class="checkbox-row">
-                        <input type="checkbox" id="partShowSlice">
-                        <label for="partShowSlice" style="margin:0;">显示切片 (叠加部件边界与锚点)</label>
-                    </div>
-                    <div class="slice-tune-row">
-                        <label>躯干/腿 分割 Y</label>
-                        <input type="range" id="partBodyLegY" min="0" max="256" value="0">
-                        <input type="number" id="partBodyLegYNum" min="0" max="256" value="0">
-                    </div>
-                    <div class="slice-tune-row">
-                        <label>左/右腿 分割 X</label>
-                        <input type="range" id="partLegSplitX" min="0" max="256" value="0">
-                        <input type="number" id="partLegSplitXNum" min="0" max="256" value="0">
-                    </div>
-                    <div class="part-legend">
-                        <span class="pc-body">■ body</span><span class="pc-leg">■ legL/legR</span><span class="pc-arm">■ armL/armR</span><span class="pc-weapon">■ weapon</span>
-                    </div>
-                    <div id="partInfo" class="algo-desc" style="margin-top:4px;">未切片</div>
-                </div>
             </div>
 
             <!-- 本地生成控制区 -->
@@ -291,48 +347,36 @@
                 <input type="range" id="localFrameCount" min="2" max="12" value="4">
                 <button id="btnLocalGenerate">🛠 生成动画</button>
                 <div class="algo-desc" style="margin-top:6px;">基于自动切片逐部件变换：Tier1 纯变换保真，Tier2 叠加程序化特效。</div>
-            </div>
 
-            <!-- AI 生成控制区 (默认隐藏) -->
-            <div id="aiGenControls" style="display:none;">
-                <div class="panel-section" style="padding:10px; margin-bottom:10px;">
-                    <div class="panel-title">AI 配置</div>
-                    <label>API Base URL</label>
-                    <input type="text" id="aiApiBase" value="https://dashscope.aliyuncs.com/compatible-mode/v1">
-                    <label>API Key</label>
-                    <input type="password" id="aiApiKey" placeholder="sk-...">
-                    <label>Model</label>
-                    <input type="text" id="aiModel" value="qwen-vl-max">
-                    <div style="display:flex; gap:6px; margin-top:8px;">
-                        <button class="secondary" id="btnAiTestApi" style="margin-top:0; flex:1;">🔌 测试</button>
-                        <button id="btnAiSaveCfg" style="margin-top:0; flex:1;">💾 保存</button>
+                <!-- 特效开关 + 切片微调 (本地生成使用切片引擎) -->
+                <div id="genExtraControls" style="display:none;">
+                    <div class="fx-toggle-row">
+                        <input type="checkbox" id="fxEnhanceToggle" checked>
+                        <label for="fxEnhanceToggle" style="margin:0; color:#ffd23f; font-weight:bold;">✨ 启用特效增强层 (大幅度动作)</label>
                     </div>
-                    <div style="font-size:11px; color:var(--text-sub); margin-top:6px;" id="aiCfgStatus">未保存</div>
+
+                    <!-- 切片可视化与手动微调 -->
+                    <div class="slice-overlay-box">
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="partShowSlice">
+                            <label for="partShowSlice" style="margin:0;">显示切片 (叠加部件边界与锚点)</label>
+                        </div>
+                        <div class="slice-tune-row">
+                            <label>躯干/腿 分割 Y</label>
+                            <input type="range" id="partBodyLegY" min="0" max="256" value="0">
+                            <input type="number" id="partBodyLegYNum" min="0" max="256" value="0">
+                        </div>
+                        <div class="slice-tune-row">
+                            <label>左/右腿 分割 X</label>
+                            <input type="range" id="partLegSplitX" min="0" max="256" value="0">
+                            <input type="number" id="partLegSplitXNum" min="0" max="256" value="0">
+                        </div>
+                        <div class="part-legend">
+                            <span class="pc-body">■ body</span><span class="pc-leg">■ legL/legR</span><span class="pc-arm">■ armL/armR</span><span class="pc-weapon">■ weapon</span>
+                        </div>
+                        <div id="partInfo" class="algo-desc" style="margin-top:4px;">未切片</div>
+                    </div>
                 </div>
-
-                <label>提取的调色板</label>
-                <div class="ai-palette-box" id="aiPaletteBox"><span class="ai-palette-empty">上传并处理后自动提取</span></div>
-
-                <label>动作</label>
-                <select id="aiActionSelect">
-                    <option value="idle">idle (待机)</option>
-                    <option value="walk">walk (行走)</option>
-                    <option value="attack">attack (攻击)</option>
-                    <option value="skill">skill (技能)</option>
-                    <option value="hurt">hurt (受击)</option>
-                    <option value="death">death (死亡)</option>
-                    <option value="custom">custom (自定义)</option>
-                </select>
-                <textarea id="aiCustomAction" placeholder="描述自定义动作，例如：施法、吃东西..." style="display:none; margin-top:8px; min-height:45px;"></textarea>
-
-                <label>帧数: <span id="aiFrameCountVal">4</span></label>
-                <input type="range" id="aiFrameCount" min="2" max="12" value="4">
-
-                <label>额外指令 (可选)</label>
-                <textarea id="aiExtraPrompt" placeholder="例如：添加刀光特效 / 动作要夸张..." style="min-height:45px;"></textarea>
-
-                <button id="btnAiGenerate">⚡ AI 生成变换并应用</button>
-                <div class="algo-desc" style="margin-top:6px;">AI 只输出每帧变换+特效 JSON，前端用原图切片渲染，角色绝不变样。</div>
             </div>
 
             <!-- 云端生图控制区 (默认隐藏) -->
@@ -342,30 +386,7 @@
                     <button type="button" class="cloud-mode-btn active" data-cmode="ref" style="flex:1; padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:transparent; color:var(--text-sub); cursor:pointer; font-weight:600;">📷 参考图模式</button>
                     <button type="button" class="cloud-mode-btn" data-cmode="direct" style="flex:1; padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:transparent; color:var(--text-sub); cursor:pointer; font-weight:600;">🎨 直接生成模式</button>
                 </div>
-                <div class="algo-desc" id="cloudModeHint" style="margin-bottom:8px;">📷 参考图模式：需先上传参考图，「识图写提示词」可辅助，一致性更好。</div>
-                <div class="panel-section" style="padding:10px; margin-bottom:10px;">
-                    <div class="panel-title">☁️ 云端生图配置</div>
-                    <label>服务商预设 (仅填充，不锁定)</label>
-                    <select id="cloudPreset">
-                        <option value="custom">自定义</option>
-                        <option value="openai">OpenAI</option>
-                        <option value="aliyun">阿里云百炼</option>
-                        <option value="siliconflow">SiliconFlow</option>
-                        <option value="zhipu">智谱AI</option>
-                    </select>
-                    <label>Base URL (必填)</label>
-                    <input type="text" id="cloudApiBase" placeholder="https://api.openai.com/v1">
-                    <label>API Key (必填)</label>
-                    <input type="password" id="cloudApiKey" placeholder="sk-...">
-                    <label>模型名 (必填)</label>
-                    <input type="text" id="cloudModel" placeholder="dall-e-3 / wanx2.1-t2i-turbo / FLUX.1-schnell / cogview-4">
-                    <div style="display:flex; gap:6px; margin-top:8px;">
-                        <button class="secondary" id="btnCloudTest" style="margin-top:0; flex:1;">🔌 测试连接</button>
-                        <button id="btnCloudSave" style="margin-top:0; flex:1;">💾 保存</button>
-                    </div>
-                    <div style="font-size:11px; color:var(--text-sub); margin-top:6px;" id="cloudCfgStatus">未保存</div>
-                    <div id="cloudSampleBox" style="margin-top:6px; display:none;"><img id="cloudSampleImg" style="max-width:80px; max-height:80px; border:1px solid var(--border); border-radius:4px; image-rendering:pixelated;"></div>
-                </div>
+                <div class="algo-desc" id="cloudModeHint" style="margin-bottom:8px;">📷 参考图模式：需先上传参考图，「识图写提示词」可辅助，一致性更好。API 配置在右上角 ⚙ 设置。</div>
 
                 <label>动作</label>
                 <select id="cloudActionSelect">
@@ -434,7 +455,7 @@
                 <div class="algo-desc" style="margin-top:6px;">云端逐帧生成 → 自动降采样到精灵尺寸 → 写入时间轴，可播放/导出 PNG/ZIP。</div>
                 <!-- 直接生成模式专属：把当前帧设为参考图，用于后续 AI/本地动画生成 -->
                 <button class="secondary" id="btnCloudUseAsRef" style="margin-top:6px; display:none;">📌 当前帧设为参考图</button>
-                <div class="algo-desc" id="cloudDirectHint" style="margin-top:4px; display:none;">生成后挑一张满意的帧，点上方按钮设为参考图，再切到「AI 生成」做动画。</div>
+                <div class="algo-desc" id="cloudDirectHint" style="margin-top:4px; display:none;">生成后挑一张满意的帧，点上方按钮设为参考图，再切到「本地生成」做动画。</div>
             </div>
         </div>
 
@@ -478,17 +499,6 @@
                 <div style="color:var(--text-sub); font-size:12px; padding:20px;">暂无帧数据，请上传参考图并生成</div>
             </div>
         </div>
-
-        <!-- ===== 新增：AI 代码编辑栏 ===== -->
-        <div class="ai-code-bar" id="aiCodeEditor" style="display:none;">
-            <div class="ai-code-head" id="aiCodeHead">
-                <span class="ai-code-title">🪄 AI 生成代码 <span id="aiCodeState" style="font-weight:normal; color:var(--text-sub);">(点击收起)</span></span>
-                <button type="button" id="btnRunCode" style="width:auto;">▶ 应用变换</button>
-            </div>
-            <div class="ai-code-body" id="aiCodeBody">
-                <textarea id="aiCodeEditorTextarea" spellcheck="false" placeholder="// AI 返回的变换+特效 JSON 会显示在这里，可手动修改后点「▶ 应用变换」用原图切片重渲染"></textarea>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -502,7 +512,12 @@
             <button class="cv-tool" id="cvToolFill" title="填充 (G)">🪣</button>
             <button class="cv-tool" id="cvToolPicker" title="取色 (I)">💧</button>
             <button class="cv-tool" id="cvToolLine" title="直线 (L)">📏</button>
-            <button class="cv-tool" id="cvToolRect" title="矩形 (R)">▭</button>
+            <button class="cv-tool" id="cvToolRect" title="矩形 (R，描边/填充可切换)">▭</button>
+            <button class="cv-tool" id="cvToolEllipse" title="椭圆 (O)">⭕</button>
+            <button class="cv-tool" id="cvToolSelect" title="矩形选区 (M)">🔲</button>
+            <button class="cv-tool" id="cvToolLasso" title="套索选区">🪝</button>
+            <button class="cv-tool" id="cvToolWand" title="魔术棒 (W)">🪄</button>
+            <button class="cv-tool" id="cvToolMove" title="移动选区内容 (V)">✋</button>
         </div>
 
         <!-- 中央画布舞台 -->
@@ -511,6 +526,7 @@
                 <canvas id="cvOnionLayer" width="128" height="128"></canvas>
                 <canvas id="cvCanvas" width="128" height="128"></canvas>
                 <canvas id="cvGridOverlay" width="128" height="128"></canvas>
+                <canvas id="cvSplitLayer" width="128" height="128"></canvas>
             </div>
             <div class="cv-zoom-row">
                 <button id="cvZoomOut" title="缩小">−</button>
@@ -523,6 +539,11 @@
 
         <!-- 右侧 调色板 / 帧 / 操作 -->
         <div class="cv-side">
+            <div class="panel-toolbar">
+                <button type="button" class="secondary panel-tool" data-target=".cv-side">▾ 全部收起</button>
+                <button type="button" class="secondary panel-tool" data-target=".cv-side">▸ 全部展开</button>
+                <span style="font-size:11px;color:var(--text-sub);align-self:center;margin-left:auto;">点标题折叠</span>
+            </div>
             <div class="panel-section">
                 <div class="panel-title">调色板</div>
                 <div class="cv-color-row">
@@ -530,28 +551,87 @@
                     <input type="text" id="cvColorHex" value="#5fd3ff" style="flex:1;">
                 </div>
                 <div class="cv-palette-grid" id="cvPaletteGrid"></div>
-                <button class="secondary" id="cvExtractPalette" style="margin-top:6px;">🎨 从当前帧提取调色板</button>
+                <div class="cv-pal-tools">
+                    <select id="cvPalPreset">
+                        <option value="">— 预设色板 —</option>
+                        <option value="db16">DB16</option>
+                        <option value="pico8">PICO-8</option>
+                        <option value="sweetie16">Sweetie-16</option>
+                        <option value="nes">NES</option>
+                        <option value="gb">Game Boy</option>
+                    </select>
+                    <button class="secondary" id="cvPalImport" style="padding:6px 8px;">📥</button>
+                    <button class="secondary" id="cvPalExport" style="padding:6px 8px;">📤</button>
+                </div>
+                <input type="file" id="cvPalFile" accept=".gpl,.pal,.hex,.txt,image/png" style="display:none">
+                <div class="cv-btn-row">
+                    <button class="secondary" id="cvPalAdd" style="font-size:11px;">＋ 追加当前色</button>
+                    <button class="secondary" id="cvExtractPalette" style="font-size:11px;">🎨 提取帧色</button>
+                </div>
+                <div class="algo-desc" style="margin-top:4px;">右键色块删除 · 双击色块改色 · 点色块选色</div>
             </div>
             <div class="panel-section">
-                <div class="panel-title">帧管理</div>
+                <div class="panel-title">帧管理 <span style="font-size:10px;color:var(--text-sub);">(拖拽缩略图排序)</span></div>
                 <div class="cv-frames-list" id="cvFramesList"></div>
                 <div class="cv-btn-row" style="margin-top:8px;">
                     <button id="cvAddFrame" class="secondary">＋ 新帧</button>
                     <button id="cvDupFrame" class="secondary">⧉ 复制</button>
                     <button id="cvDelFrame" class="secondary">🗑 删除</button>
                 </div>
-                <div class="cv-checkbox-row" style="margin-top:8px;">
+                <div class="cv-onion-row">
                     <input type="checkbox" id="cvOnionToggle" checked>
-                    <label for="cvOnionToggle" style="margin:0;">洋葱皮 (显示上一帧)</label>
+                    <label for="cvOnionToggle" style="margin:0;">洋葱皮</label>
+                    <select id="cvOnionPrev">
+                        <option value="1" selected>前1帧</option>
+                        <option value="2">前2帧</option>
+                        <option value="3">前3帧</option>
+                    </select>
                 </div>
-                <div class="cv-checkbox-row">
+                <div class="cv-checkbox-row" style="margin-top:6px;">
                     <input type="checkbox" id="cvGridToggle">
                     <label for="cvGridToggle" style="margin:0;">显示网格</label>
+                </div>
+                <div class="cv-checkbox-row" style="margin-top:6px;">
+                    <input type="checkbox" id="cvPingPong">
+                    <label for="cvPingPong" style="margin:0;">往返播放 (ping-pong)</label>
+                </div>
+            </div>
+            <div class="panel-section">
+                <div class="panel-title">绘制选项</div>
+                <div class="cv-btn-row">
+                    <span class="cv-lbl">笔刷</span>
+                    <button class="secondary brush-btn active" data-brush="1">1px</button>
+                    <button class="secondary brush-btn" data-brush="2">2px</button>
+                    <button class="secondary brush-btn" data-brush="3">3px</button>
+                </div>
+                <div class="cv-btn-row">
+                    <button class="secondary sym-btn" id="cvSymH">⇋ 水平对称</button>
+                    <button class="secondary sym-btn" id="cvSymV">⇅ 垂直对称</button>
+                </div>
+                <div class="cv-checkbox-row" style="margin-top:6px;">
+                    <input type="checkbox" id="cvPixelPerfect">
+                    <label for="cvPixelPerfect" style="margin:0;">像素完美 (直线防阶梯重叠)</label>
+                </div>
+                <div class="cv-btn-row" id="cvRectModeRow" style="display:none;">
+                    <button class="secondary rect-mode active" data-rectmode="stroke">□ 描边</button>
+                    <button class="secondary rect-mode" data-rectmode="fill">■ 填充</button>
+                </div>
+            </div>
+            <div class="panel-section">
+                <div class="panel-title">选区</div>
+                <div class="algo-desc" style="margin-top:0;">🔲 矩形 / 🪝 套索 / 🪄 魔术棒 创建；✋ 移动工具拖内容；Ctrl+D 取消选区</div>
+                <div class="cv-btn-row">
+                    <button class="secondary" id="cvSelFill">🎨 填充选区</button>
+                    <button class="secondary" id="cvSelClear">🧹 清除选区</button>
+                </div>
+                <div class="cv-btn-row">
+                    <button class="secondary" id="cvSelCopy">📋 复制</button>
+                    <button class="secondary" id="cvSelPaste">📌 粘贴为新帧</button>
                 </div>
             </div>
             <div class="panel-section">
                 <div class="panel-title">画布操作</div>
-                <label>画布尺寸 (修改会清空帧)</label>
+                <label>画布尺寸 (修改会清空帧，最大 1024)</label>
                 <div class="size-row">
                     <select id="cvSizeSel">
                         <option value="16">16×16</option>
@@ -560,6 +640,10 @@
                         <option value="128" selected>128×128</option>
                         <option value="192">192×192</option>
                         <option value="256">256×256</option>
+                        <option value="384">384×384</option>
+                        <option value="512">512×512</option>
+                        <option value="768">768×768</option>
+                        <option value="1024">1024×1024</option>
                     </select>
                     <button class="secondary" id="cvApplySize" style="width:auto;margin:0;padding:8px 12px;">应用</button>
                 </div>
@@ -570,14 +654,112 @@
                 <button class="secondary" id="cvRestoreOrig" style="margin-top:6px;">⤺ 恢复原图 (清掉手绘)</button>
                 <button class="secondary" id="cvClearFrame">🗑 清空当前帧</button>
                 <button class="secondary" id="cvImportRef">📥 导入工坊参考图</button>
+                <div class="size-row" style="gap:6px; margin-top:6px;">
+                    <button type="button" class="secondary" id="cvSaveState" style="margin:0;flex:1;">💾 保存状态</button>
+                    <button type="button" class="secondary" id="cvRestoreState" style="margin:0;flex:1;" disabled>↩ 还原保存点</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">▶ 播放 & 导出</div>
                 <button id="cvPlay">▶ 播放</button>
                 <label>FPS: <span id="cvFpsVal">8</span></label>
                 <input type="range" id="cvFps" min="1" max="24" value="8">
                 <button id="cvExportSheet">📦 导出精灵图 PNG</button>
                 <button class="secondary" id="cvExportZip">🗜️ 导出单帧 ZIP</button>
+                <button class="secondary" id="cvExportGif">🎞️ 导出 GIF (循环)</button>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">变换 & 特效</div>
+                <div class="cv-btn-row">
+                    <button class="secondary" id="cvRotL">↺ 左旋90°</button>
+                    <button class="secondary" id="cvRotR">↻ 右旋90°</button>
+                    <button class="secondary" id="cvRot180">⟳ 180°</button>
+                </div>
+                <div class="cv-btn-row">
+                    <button class="secondary" id="cvFlipH">⇋ 水平翻转</button>
+                    <button class="secondary" id="cvFlipV">⇅ 垂直翻转</button>
+                    <button class="secondary" id="cvTrim">✂ 边框裁剪</button>
+                </div>
+                <div class="cv-btn-row">
+                    <button class="secondary" id="cvFxInvert">🌗 反相</button>
+                    <button class="secondary" id="cvFxGray">◐ 灰度</button>
+                    <button class="secondary" id="cvFxOutline">✏ 轮廓描边</button>
+                </div>
+                <div class="cv-repl-row">
+                    <input type="color" id="cvReplaceSrc" value="#ff5d8f">
+                    <span>→</span>
+                    <input type="color" id="cvReplaceDst" value="#5fd3ff">
+                    <button class="secondary" id="cvFxReplace" style="margin:0;flex:1;">🔁 替换颜色</button>
+                </div>
+                <div class="cv-btn-row">
+                    <span class="cv-lbl">亮度</span>
+                    <input type="range" id="cvBrightness" min="-100" max="100" value="0" style="flex:1;">
+                </div>
+                <div class="cv-btn-row">
+                    <span class="cv-lbl">对比度</span>
+                    <input type="range" id="cvContrast" min="-100" max="100" value="0" style="flex:1;">
+                </div>
+                <div class="cv-btn-row">
+                    <button class="secondary" id="cvFxBC">🌗 应用亮度/对比度</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">🎨 Remap 统一色板</div>
+                <div class="algo-desc" style="margin-top:0;">把当前帧像素映射到调色板最近色 (加权 RGB 距离)，统一 AI 素材风格；透明保持。</div>
+                <div class="cv-checkbox-row" style="margin-top:6px;">
+                    <input type="checkbox" id="cvRemapDither">
+                    <label for="cvRemapDither" style="margin:0;">Floyd-Steinberg 抖动 (照片转像素建议开)</label>
+                </div>
+                <div class="cv-btn-row">
+                    <button class="secondary" id="cvRemapFrame" style="font-size:11px;">🎯 映射当前帧</button>
+                    <button class="secondary" id="cvRemapAll" style="font-size:11px;">🎯 映射全部帧</button>
+                </div>
+            </div>
+
+            <!-- ===== AI 部件拆分 (骨骼)：仅 AI 拆分模式显示 ===== -->
+            <div class="panel-section" id="cvSplitPanel" style="display:none;">
+                <div class="panel-title">🤖 AI 部件拆分 (骨骼)</div>
+                <div id="splitTools">
+                    <div class="split-mode-row">
+                        <button type="button" class="split-smode active" data-smode="select">🖱 选择</button>
+                        <button type="button" class="split-smode" data-smode="point">📍 加点</button>
+                        <button type="button" class="split-smode" data-smode="rect">▭ 框选</button>
+                        <button type="button" class="split-smode" data-smode="pose">🦴 摆姿势</button>
+                    </div>
+                    <div class="split-mode-row" style="margin-top:6px;">
+                        <button type="button" id="btnSplitAi">🤖 AI 自动拆分</button>
+                        <button type="button" id="btnSplitNew" class="secondary" style="margin:0;">✂️ 添加/切割部件</button>
+                    </div>
+                    <div class="split-mode-row" style="margin-top:6px;">
+                        <button type="button" id="btnSplitClose" class="secondary" style="margin:0;">🔒 闭合部件</button>
+                        <button type="button" id="btnSplitAnchorC" class="secondary" style="margin:0;">🎯 锚点居中</button>
+                    </div>
+                    <div class="split-parts-list" id="splitPartsList"></div>
+                    <div class="split-info" id="splitInfo"></div>
+                    <div class="split-mode-row" style="margin-top:8px;">
+                        <button type="button" id="btnSplitPoseSave" class="secondary" style="margin:0;">📌 保存姿势为帧</button>
+                        <button type="button" id="btnSplitPoseReset" class="secondary" style="margin:0;">↺ 重置姿态</button>
+                    </div>
+                    <div class="split-mode-row" style="margin-top:6px;">
+                        <button type="button" id="btnSplitExportPng" class="secondary" style="margin:0;">🖼 导出部件 PNG</button>
+                        <button type="button" id="btnSplitExportZip" class="secondary" style="margin:0;">🗜 部件 ZIP</button>
+                    </div>
+                    <div class="split-mode-row" style="margin-top:6px;">
+                        <button type="button" id="btnSplitClear" class="secondary" style="margin:0;">🧹 清空拆分</button>
+                        <button type="button" id="btnSplitExit" class="secondary" style="margin:0;">🚪 退出拆分</button>
+                    </div>
+                    <div class="algo-desc" style="margin-top:6px;">姿势帧保存后点「▶ 播放」预览动画，再用「导出精灵图 PNG」导出序列帧；「导出部件 PNG/ZIP」导出各部件独立透明图。</div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- 底部状态栏 -->
+    <div class="cv-statusbar" id="cvStatusBar">坐标 <b id="cvStatXY">—</b> ｜ 颜色 <b id="cvStatColor">—</b> ｜ 缩放 <b id="cvStatZoom">800%</b> ｜ 帧 <b id="cvStatFrame">—</b></div>
+</div>
 
     <!-- 底部 AI 下一帧导航 (模板B) -->
     <div class="cv-ai-bar" id="cvAiBar">
@@ -600,10 +782,120 @@
             <button id="cvAiNav" style="width:auto; margin:0;">🧭 AI 导航下一帧</button>
             <button id="cvAiApply" class="secondary" style="width:auto; margin:0;">↻ 重新应用上次结果</button>
             <button id="cvAiClear" class="secondary" style="width:auto; margin:0;">✖ 清除导览</button>
-            <span style="font-size:11px;color:#888;align-self:center;">复用工坊模式 AI 配置 (Base / Key / Model)</span>
+            <span style="font-size:11px;color:#888;align-self:center;">使用右上角 ⚙ 设置 中的文本模型配置</span>
             <div class="cv-ai-note" id="cvAiNote">导航指南将显示在这里。
 「文字指导」模式：AI 输出分步绘制指南，并在画布上叠加区域导览 (🟩保留 🟨新画 🟦移动 🟥擦除)，不改动画布，你按指南手绘下一帧。
 「自动应用」模式：AI 指令直接套用到画布生成下一帧。</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 全局设置弹窗 (AI 接口配置 + 操作说明) ===== -->
+<div class="modal-mask" id="settingsModal" style="display:none;">
+    <div class="modal-box">
+        <div class="modal-head">
+            <span>⚙ 设置</span>
+            <div class="set-tabs">
+                <button type="button" id="setTabCfg" class="set-tab active">🔧 AI 接口配置</button>
+                <button type="button" id="setTabHelp" class="set-tab">📖 操作说明</button>
+            </div>
+            <button type="button" id="btnCloseSettings">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="setPanelCfg">
+                <label>服务商预设 (选择后自动填充)</label>
+                <select id="setPreset">
+                    <option value="custom">自定义</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="aliyun">阿里云百炼</option>
+                    <option value="siliconflow">SiliconFlow</option>
+                    <option value="zhipu">智谱AI</option>
+                </select>
+                <label>文本 Base URL (走 /chat/completions：AI 拆分 / 下一帧导航 / 识图)</label>
+                <input type="text" id="setTextBase" placeholder="https://api.openai.com/v1">
+                <label>生图 Base URL (走 /images/generations；留空则跟随文本 Base)</label>
+                <input type="text" id="setImageBase" placeholder="留空 = 与文本 Base 相同">
+                <label>API Key</label>
+                <input type="password" id="setApiKey" placeholder="sk-...">
+                <label>文本模型 (视觉多模态：AI 拆分 / 下一帧导航 / 识图写提示词)</label>
+                <input type="text" id="setTextModel" placeholder="qwen-vl-max">
+                <label>生图模型 (☁️ 云端生图)</label>
+                <input type="text" id="setImageModel" placeholder="wanx2.1-t2i-turbo">
+                <div class="set-test-row">
+                    <button type="button" class="secondary" id="btnSetTestText">🔌 测试文本模型</button>
+                    <button type="button" class="secondary" id="btnSetTestImage">🔌 测试生图模型</button>
+                </div>
+                <div class="set-status" id="setStatus"></div>
+                <button type="button" id="btnSetSave">💾 保存配置</button>
+                <div class="set-hint">API Key 仅保存在浏览器本地 (localStorage)。<br>文本模型走 /chat/completions，生图模型走 /images/generations；两者 Base URL 可不同，生图 Base 留空时自动跟随文本 Base。</div>
+            </div>
+            <div id="setPanelHelp" style="display:none;">
+                <div class="set-help-block"><div class="set-help-title">🧭 界面与布局</div><ul>
+                    <li>模式切换：右上角「🛠 工坊模式 / 🎨 画布模式 / 🤖 AI 拆分」三档互斥切换。</li>
+                    <li>侧栏面板可点标题折叠/展开（箭头 ▾ 指示），状态自动记忆；侧栏顶部「▾ 全部收起 / ▸ 全部展开」一键整理。</li>
+                    <li>新功能会放在对应面板：素材处理类在工坊侧栏，绘制/帧类在画布右侧栏；找不到时用「⚙ 设置 → 📖 操作说明」搜索。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">📥 上传 & 去背景</div><ul>
+                    <li>上传图片后调「去背景容差」：值越小越精确、越大越宽松；「🎨 从画布模式导入」可直接把画布模式的当前帧作为参考图导入。</li>
+                    <li>背景模式「自动」：自动检测边缘纯色背景；「手动取色」：把背景模式切到「手动取色」后点「🎯 点击画布取背景色」，再点击画布上的背景色即可精确去除指定颜色。</li>
+                    <li>「边缘平滑」：去背景后对边缘做 1 像素柔化，减少锯齿（像素画建议关闭）。</li>
+                    <li>「收缩边缘」：去背景后向内收缩 1~10 像素，清除边缘残留的背景色/晕边（照片抠图建议 1~3px；想直接去掉指定背景色及其相近色，用「手动取色」+ 调大容差）。</li>
+                    <li>「↩ 还原去背景」可撤销本次去背景；「💾 保存状态」可存档当前画面，之后任意修改后点「↩ 还原到保存点」回到存档状态。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">🔬 像素化缩放</div><ul>
+                    <li>「🎮 像素画模式」：最近邻硬边缘，适合像素素材二次缩放。</li>
+                    <li>照片/高清图建议关闭像素画模式，用「边缘感知」算法 + 「照片增强预处理」(自动对比度/饱和度)，转像素效果更好。</li>
+                    <li>目标尺寸支持 1~2048，预设 64/128/256/512/1024；真实人物图可用 128~256 得到清晰像素小人。</li>
+                    <li>颜色量化 + Floyd-Steinberg 抖动可统一色数风格；边缘锐化强度可调。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">🤖 AI 拆分 (骨骼)</div><ul>
+                    <li>顶部「🤖 AI 拆分」进入拆分模式，工具在画布右侧展开。</li>
+                    <li>选择模式：拖顶点(小方块)改轮廓；拖锚点(十字)改关节；拖部件内部 = 切割画面并整体移动像素 (松手即烘焙，Esc 取消)；Delete 键删除选中顶点。</li>
+                    <li>加点模式：点画布连续描点 → 「🔒 闭合部件」；框选模式：拖框直接切割矩形部件。</li>
+                    <li>新建/框选部件后自动弹出改名输入框，可在部件列表点名字随时改名。</li>
+                    <li>摆姿势模式：拖部件旋转、拖锚点平移 (源位置像素会被切割)；「📌 保存姿势为帧」烘焙成动画帧。</li>
+                    <li>「导出部件 PNG/ZIP」按框导出：框内像素保留、框外透明。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">🎬 动画生成 (本地 / 云端)</div><ul>
+                    <li>本地生成：基于自动切片逐部件变换，支持 7 种动作 + 特效增强层。</li>
+                    <li>云端生图：在「🔧 AI 接口配置」填生图 Base/Key/生图模型；「AI 识图写提示词」用文本模型看图写 prompt。</li>
+                    <li>固定种子 + 相同 prompt 可保持多帧角色一致。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">🎨 画布模式</div><ul>
+                    <li>左键绘制 · 中键拖拽平移 · 滚轮缩放 · Ctrl+Z 撤销 / Ctrl+Y 重做；底部状态栏实时显示坐标/颜色/缩放/帧号。</li>
+                    <li>画布尺寸支持 16~1024 (修改会清空帧)。</li>
+                    <li>「🧭 AI 下一帧导航」：文字指导或自动应用生成下一帧；「💾 保存状态 / ↩ 还原保存点」：画布操作面板可保存当前全部帧，任意修改后可一键还原（含帧内容、画布尺寸、当前帧）。</li>
+                    <li>快捷键：P 铅笔 · E 橡皮 · G 填充 · I 取色 · L 直线 · R 矩形 · O 椭圆 · M 矩形选区 · W 魔术棒 · V 移动选区内容 · 1-9 选调色板色 · [ / ] 调笔刷大小 · Ctrl+D 取消选区 · 空格+拖拽平移视图 · Alt+点击临时取色。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">🖌 绘制工具</div><ul>
+                    <li>笔刷 1/2/3px 可调；直线/矩形/椭圆支持「像素完美」防阶梯重叠。</li>
+                    <li>矩形/椭圆可在「□ 描边 / ■ 填充」间切换（选中矩形或椭圆工具时显示）。</li>
+                    <li>「⇋ 水平对称 / ⇅ 垂直对称」：开启后左右/上下镜像绘制，画布上显示粉色参考轴。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">🔲 选区系统</div><ul>
+                    <li>创建：M 拖框矩形 · 🪝 套索描边闭合 · W 魔术棒点击（加权色距容差，4 邻域连通）。</li>
+                    <li>✋ 移动工具：拖选区内容 = 切割源区域并整体移动，松手即烘焙；可「🎨 填充选区 / 🧹 清除选区 / 📋 复制」，「📌 粘贴为新帧」跨帧使用。</li>
+                    <li>Ctrl+D 取消选区。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">🎨 调色板系统</div><ul>
+                    <li>预设：DB16 / PICO-8 / Sweetie-16 / NES / Game Boy 一键应用。</li>
+                    <li>导入 5 格式：.gpl / .pal / .hex / .txt / .png（自动提取不透明色）；📤 导出 .gpl。</li>
+                    <li>点色块选色 · 右键删除 · 双击改色 ·「＋ 追加当前色」；「🎨 提取帧色」从当前帧自动收集颜色到调色板。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">🔁 Remap 统一色板</div><ul>
+                    <li>把当前帧/全部帧的像素映射到调色板最近色（加权 RGB 距离），统一 AI 素材风格，透明保持。</li>
+                    <li>「Floyd-Steinberg 抖动」：照片转像素建议开启，过渡更自然。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">🌀 变换 & 特效</div><ul>
+                    <li>旋转 90°/180°、水平/垂直翻转、「✂ 边框裁剪」（内容贴左上），均可撤销。</li>
+                    <li>特效：反相 / 灰度 / 轮廓描边（描边色=当前色）/ 替换颜色（源→目标，加权容差）/ 亮度 / 对比度。</li>
+                </ul></div>
+                <div class="set-help-block"><div class="set-help-title">⏱ 时间轴 & GIF</div><ul>
+                    <li>帧缩略图可拖拽排序（撤销历史同步移动）；「⧉ 复制」复制当前帧，「🗑 删除」删除帧。</li>
+                    <li>洋葱皮支持前 1/2/3 帧叠加参考；「往返播放」ping-pong 模式自动倒放。</li>
+                    <li>「🎞️ 导出 GIF」：GIF89a + LZW 压缩，透明背景、按 FPS 循环播放；「📦 导出精灵图 PNG / 🗜️ ZIP」导出序列帧。</li>
+                </ul></div>
+            </div>
         </div>
     </div>
 </div>
@@ -623,7 +915,8 @@ const state = {
     currentFrame: 0,
     isPlaying: false, playTimer: null, fps: 8,
     canvasWidth: 32, canvasHeight: 32,
-    isPixelated: false
+    isPixelated: false,
+    bgManualColor: null
 };
 const $ = (id) => document.getElementById(id);
 const canvas = $('mainCanvas');
@@ -705,9 +998,55 @@ $('uploadInput').addEventListener('change', async (e) => {
 });
 
 $('toleranceSlider').addEventListener('input', e => $('tolVal').textContent = e.target.value);
+$('shrinkSlider').addEventListener('input', e => $('shrinkVal').textContent = e.target.value + ' px');
+// 背景模式切换：选「手动取色」时显示取色器
+$('bgMode').addEventListener('change', e => {
+    $('bgPickRow').style.display = e.target.value === 'manual' ? 'flex' : 'none';
+    if (e.target.value === 'manual' && !state.bgManualColor) showToast('💡 请点击「🎯 点击画布取背景色」选择背景颜色', false);
+});
+// 手动取背景色：点击画布拾取
+$('btnBgPick').addEventListener('click', () => {
+    if (!state.cleanedImage) { showToast('❌ 请先上传图片', true); return; }
+    const btn = $('btnBgPick');
+    btn.textContent = '🎯 请点击画布上的背景颜色...';
+    const onPick = (e) => {
+        canvas.removeEventListener('click', onPick);
+        const rect = canvas.getBoundingClientRect();
+        const px = Math.floor((e.clientX - rect.left) / (rect.width / state.canvasWidth));
+        const py = Math.floor((e.clientY - rect.top) / (rect.height / state.canvasHeight));
+        if (px < 0 || px >= state.canvasWidth || py < 0 || py >= state.canvasHeight) {
+            btn.textContent = '🎯 点击画布取背景色';
+            showToast('❌ 取色点超出画布范围，请重试', true);
+            return;
+        }
+        let src = state.cleanedImage;
+        if (!src || src.width !== state.canvasWidth || src.height !== state.canvasHeight) {
+            try { src = ctx.getImageData(0, 0, canvas.width, canvas.height); } catch (_) { }
+        }
+        if (!src) { btn.textContent = '🎯 点击画布取背景色'; return; }
+        const i = (py * state.canvasWidth + px) * 4;
+        const r = src.data[i], g = src.data[i + 1], b = src.data[i + 2], a = src.data[i + 3];
+        if (a < 128) { showToast('❌ 该位置已是透明区域，请点击背景色区域', true); btn.textContent = '🎯 点击画布取背景色'; return; }
+        state.bgManualColor = { r, g, b };
+        $('bgMode').value = 'manual';   // 取色后自动切到手动模式，执行去背景直接生效
+        $('bgPickSwatch').style.background = `rgb(${r},${g},${b})`;
+        $('bgPickVal').textContent = `rgb(${r}, ${g}, ${b})`;
+        btn.textContent = '🎯 点击画布取背景色';
+        showToast(`✅ 已取背景色 rgb(${r},${g},${b})，点「执行去背景」生效`);
+    };
+    canvas.addEventListener('click', onPick);
+});
 $('btnRemoveBg').addEventListener('click', () => {
     if (!state.originalImage) return;
     const tolerance = parseInt($('toleranceSlider').value);
+    const opts = {
+        manualColor: $('bgMode').value === 'manual' ? (state.bgManualColor || null) : null,
+        smooth: $('bgSmoothToggle').checked,
+        shrink: parseInt($('shrinkSlider').value) || 0
+    };
+    if ($('bgMode').value === 'manual' && !opts.manualColor) {
+        showToast('❌ 请先点「🎯 点击画布取背景色」选取背景颜色', true); return;
+    }
     let base;
     if (state.isPixelated && state.pixelBaseImage) {
         // 在缩放后的结果上执行去背景，尺寸保持缩放后的大小，不再回到原图大小
@@ -716,12 +1055,12 @@ $('btnRemoveBg').addEventListener('click', () => {
         // 直接读取当前画布内容作为源图，避免重绘原图导致尺寸/内容错乱
         base = ctx.getImageData(0, 0, canvas.width, canvas.height);
     }
-    removeBackground(base, tolerance);
+    removeBackground(base, tolerance, opts);
     state.cleanedImage = base;
     // 同步 fullResImage 为去背景后版本，否则后续"改大小"会从带背景的原图重新采样导致背景回归
     if (state.isPixelated && state.fullResImage) {
         const f = cloneImageData(state.fullResImage);
-        removeBackground(f, tolerance);
+        removeBackground(f, tolerance, opts);
         state.fullResImage = f;
     } else {
         state.fullResImage = base;
@@ -751,30 +1090,120 @@ $('btnRestoreBg').addEventListener('click', () => {
     showToast('↩ 已还原');
 });
 
-function removeBackground(imageData, tolerance) {
+// ---------- 存档点：保存当前状态 / 还原到保存点 ----------
+state.snapshot = null;
+$('btnSaveState').addEventListener('click', () => {
+    if (!state.cleanedImage && !state.originalImage) { showToast('❌ 没有可保存的内容，请先上传或导入图片', true); return; }
+    state.snapshot = {
+        originalImage: state.originalImage,
+        cleanedImage: cloneImageData(state.cleanedImage),
+        fullResImage: state.fullResImage ? cloneImageData(state.fullResImage) : null,
+        pixelBaseImage: state.pixelBaseImage ? cloneImageData(state.pixelBaseImage) : null,
+        isPixelated: !!state.isPixelated,
+        canvasWidth: state.canvasWidth, canvasHeight: state.canvasHeight,
+        bgManualColor: state.bgManualColor ? { ...state.bgManualColor } : null
+    };
+    $('btnRestoreState').disabled = false;
+    showToast('💾 已保存当前状态，可随时还原到该存档点');
+});
+$('btnRestoreState').addEventListener('click', () => {
+    const s = state.snapshot;
+    if (!s) { showToast('❌ 还没有保存过状态', true); return; }
+    state.originalImage = s.originalImage;
+    state.cleanedImage = cloneImageData(s.cleanedImage);
+    state.fullResImage = s.fullResImage ? cloneImageData(s.fullResImage) : null;
+    state.pixelBaseImage = s.pixelBaseImage ? cloneImageData(s.pixelBaseImage) : null;
+    state.isPixelated = s.isPixelated;
+    state.canvasWidth = s.canvasWidth; state.canvasHeight = s.canvasHeight;
+    state.bgManualColor = s.bgManualColor ? { ...s.bgManualColor } : null;
+    canvas.width = s.canvasWidth; canvas.height = s.canvasHeight;
+    ctx.putImageData(state.cleanedImage, 0, 0);
+    resetView();
+    showToast('↩ 已还原到保存点');
+});
+
+// ---------- 从画布模式导入：把画布模式当前帧作为参考图导入 ----------
+$('btnImportFromCanvas').addEventListener('click', () => {
+    if (!cvState.frames || !cvState.frames.length) { showToast('❌ 画布模式还没有内容，请先在画布模式绘制', true); return; }
+    const src = cvState.frames[cvState.frame];
+    if (!src) { showToast('❌ 画布模式无当前帧', true); return; }
+    let hasPixel = false;
+    for (let i = 3; i < src.data.length; i += 4) { if (src.data[i] > 0) { hasPixel = true; break; } }
+    if (!hasPixel) { showToast('⚠️ 画布模式当前帧是空的（全透明）', true); return; }
+    const tmp = document.createElement('canvas');
+    tmp.width = src.width; tmp.height = src.height;
+    tmp.getContext('2d').putImageData(src, 0, 0);
+    state.originalImage = tmp;
+    state.canvasWidth = src.width; state.canvasHeight = src.height;
+    canvas.width = src.width; canvas.height = src.height;
+    const copy = cloneImageData(src);
+    ctx.putImageData(copy, 0, 0);
+    state.cleanedImage = copy;
+    state.fullResImage = cloneImageData(copy);
+    state.pixelBaseImage = null;
+    state.isPixelated = false;
+    $('btnRemoveBg').disabled = false;
+    $('btnRestoreBg').disabled = false;
+    $('btnPixelate').disabled = false;
+    $('btnResetSize').disabled = true;
+    $('pixelInfo').style.display = 'none';
+    setAppMode('workshop');
+    resetView();
+    showToast('✅ 已从画布模式导入 ' + src.width + '×' + src.height);
+});
+
+function removeBackground(imageData, tolerance, opts) {
+    opts = opts || {};
     const { data, width, height } = imageData;
     const total = width * height;
     const tolSq = (tolerance * 2.55) ** 2;
 
-    /* 阶段A：估计背景色 —— 整条边框采样取众数，跳过已透明的像素 */
-    const hist = new Map();
-    const addSample = (x, y) => {
-        const i = (y * width + x) * 4;
-        if (data[i + 3] < 128) return;
-        const key = (data[i] >> 4) + ',' + (data[i + 1] >> 4) + ',' + (data[i + 2] >> 4);
-        hist.set(key, (hist.get(key) || 0) + 1);
-    };
-    const step = Math.max(1, Math.floor(Math.max(width, height) / 48));
-    for (let x = 0; x < width; x += step) { addSample(x, 0); addSample(x, height - 1); }
-    for (let y = 0; y < height; y += step) { addSample(0, y); addSample(width - 1, y); }
-    let bgColor;
-    if (hist.size) {
-        let best = null, bestN = 0;
-        hist.forEach((n, key) => { if (n > bestN) { bestN = n; best = key; } });
-        const p = best.split(',');
-        bgColor = { r: parseInt(p[0]) * 16 + 8, g: parseInt(p[1]) * 16 + 8, b: parseInt(p[2]) * 16 + 8 };
+    /* 阶段A：确定背景色
+     *  手动取色：直接用用户点选的颜色；
+     *  自动：优先检测四角纯色背景 (四角颜色一致性高时四角均值最准)，否则回退边框采样众数。 */
+    let bgColor = null;
+    if (opts.manualColor) {
+        bgColor = opts.manualColor;
     } else {
-        bgColor = { r: 0, g: 0, b: 0 };
+        // A1: 四角 5×5 区域均值 + 一致性检查
+        const corner = [];
+        [[2, 2], [width - 3, 2], [2, height - 3], [width - 3, height - 3]].forEach(([cx, cy]) => {
+            let r = 0, g = 0, b = 0, n = 0;
+            for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+                const x = cx + dx, y = cy + dy;
+                if (x < 0 || x >= width || y < 0 || y >= height) continue;
+                const i = (y * width + x) * 4;
+                if (data[i + 3] < 128) continue;
+                r += data[i]; g += data[i + 1]; b += data[i + 2]; n++;
+            }
+            if (n > 0) corner.push([r / n, g / n, b / n]);
+        });
+        if (corner.length >= 3) {
+            const avg = corner.reduce((a, c) => [a[0] + c[0], a[1] + c[1], a[2] + c[2]], [0, 0, 0]).map(v => v / corner.length);
+            const maxDev = Math.max(...corner.map(c => Math.hypot(c[0] - avg[0], c[1] - avg[1], c[2] - avg[2])));
+            if (maxDev < 40) bgColor = { r: avg[0], g: avg[1], b: avg[2] };   // 纯色背景：四角均值
+        }
+        // A2: 边框采样众数 (非纯色背景 / 四角被角色遮挡时)
+        if (!bgColor) {
+            const hist = new Map();
+            const addSample = (x, y) => {
+                const i = (y * width + x) * 4;
+                if (data[i + 3] < 128) return;
+                const key = (data[i] >> 4) + ',' + (data[i + 1] >> 4) + ',' + (data[i + 2] >> 4);
+                hist.set(key, (hist.get(key) || 0) + 1);
+            };
+            const step = Math.max(1, Math.floor(Math.max(width, height) / 48));
+            for (let x = 0; x < width; x += step) { addSample(x, 0); addSample(x, height - 1); }
+            for (let y = 0; y < height; y += step) { addSample(0, y); addSample(width - 1, y); }
+            if (hist.size) {
+                let best = null, bestN = 0;
+                hist.forEach((n, key) => { if (n > bestN) { bestN = n; best = key; } });
+                const p = best.split(',');
+                bgColor = { r: parseInt(p[0]) * 16 + 8, g: parseInt(p[1]) * 16 + 8, b: parseInt(p[2]) * 16 + 8 };
+            } else {
+                bgColor = { r: 0, g: 0, b: 0 };
+            }
+        }
     }
 
     /* 阶段B：从整条边框发起泛洪填充 —— 透明像素或与背景色相近的像素置为透明 */
@@ -852,6 +1281,55 @@ function removeBackground(imageData, tolerance) {
             for (let p = 0; p < total; p++) if (compId[p] === c) data[p * 4 + 3] = 0;
         }
     }
+
+    /* 阶段C' (可选)：收缩边缘 —— 向内腐蚀 n 像素，清除边缘残留的背景色/晕边 */
+    if (opts.shrink > 0) {
+        let alpha = new Uint8Array(total);
+        for (let p = 0; p < total; p++) alpha[p] = data[p * 4 + 3] ? 1 : 0;
+        for (let it = 0; it < opts.shrink; it++) {
+            const next = new Uint8Array(total);
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const p = y * width + x;
+                    if (!alpha[p]) continue;
+                    let hit = false;
+                    for (let dy = -1; dy <= 1 && !hit; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            if (!dx && !dy) continue;
+                            const nx = x + dx, ny = y + dy;
+                            if (nx < 0 || nx >= width || ny < 0 || ny >= height) { hit = true; break; }
+                            if (!alpha[ny * width + nx]) { hit = true; break; }
+                        }
+                    }
+                    next[p] = hit ? 0 : 1;
+                }
+            }
+            alpha = next;
+        }
+        for (let p = 0; p < total; p++) if (!alpha[p]) data[p * 4 + 3] = 0;
+    }
+
+    /* 阶段D (可选)：边缘平滑 —— 对紧贴不透明像素的透明像素补 1px 半透明柔边，减少锯齿 */
+    if (opts.smooth) {
+        const orig = new Uint8ClampedArray(data);
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const i = (y * width + x) * 4;
+                if (orig[i + 3] > 0) continue;                       // 只处理透明像素
+                let r = 0, g = 0, b = 0, n = 0;
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const nx = x + dx, ny = y + dy;
+                        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                        const ni = (ny * width + nx) * 4;
+                        if (orig[ni + 3] > 0) { r += orig[ni]; g += orig[ni + 1]; b += orig[ni + 2]; n++; }
+                    }
+                }
+                if (n > 0) { data[i] = r / n; data[i + 1] = g / n; data[i + 2] = b / n; data[i + 3] = 120; }
+            }
+        }
+    }
 }
 function getPixelColor(data, width, x, y) { const i=(y*width+x)*4; return {r:data[i],g:data[i+1],b:data[i+2],a:data[i+3]}; }
 
@@ -880,6 +1358,27 @@ $('quantizeSlider').addEventListener('input', e => {
     const v = parseInt(e.target.value);
     $('quantVal').textContent = v === 0 ? '关闭' : v + '色';
 });
+$('sharpenSlider').addEventListener('input', e => $('sharpenVal').textContent = e.target.value + '%');
+
+// 照片增强预处理：自动对比度拉伸 + 饱和度提升，让照片转像素时轮廓与色彩更突出
+function enhancePhoto(srcData) {
+    const d = cloneImageData(srcData);
+    const { data } = d;
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] === 0) continue;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        const sat = 1.25;                              // 饱和度系数
+        const con = 1.15;                              // 对比度系数
+        let nr = (lum + (r - lum) * sat - 128) * con + 128;
+        let ng = (lum + (g - lum) * sat - 128) * con + 128;
+        let nb = (lum + (b - lum) * sat - 128) * con + 128;
+        data[i]     = Math.max(0, Math.min(255, nr));
+        data[i + 1] = Math.max(0, Math.min(255, ng));
+        data[i + 2] = Math.max(0, Math.min(255, nb));
+    }
+    return d;
+}
 
 function pixelateImage(srcData, targetW, targetH, algo) {
     if ($('pixelArtModeToggle').checked) {
@@ -896,6 +1395,9 @@ function pixelateImage(srcData, targetW, targetH, algo) {
         rCtx.drawImage(tempCanvas, 0, 0, targetW, targetH);
         return rCtx.getImageData(0, 0, targetW, targetH);
     }
+
+    // 照片模式：可选增强预处理 (自动对比度/饱和度)
+    if ($('photoEnhanceToggle').checked) srcData = enhancePhoto(srcData);
 
     const srcW = srcData.width, srcH = srcData.height;
     const src = srcData.data;
@@ -962,7 +1464,8 @@ function pixelateImage(srcData, targetW, targetH, algo) {
             }
         }
         if ($('edgeEnhanceToggle').checked) {
-            sharpenEdges(result);
+            const strength = (+$('sharpenSlider').value || 100) / 100;
+            sharpenEdges(result, strength);
         }
     } else {
         for (let dy = 0; dy < targetH; dy++) {
@@ -1025,24 +1528,27 @@ function gray(data, width, x, y) {
     const i = (y * width + x) * 4;
     return 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
 }
-function sharpenEdges(imageData) {
+function sharpenEdges(imageData, strength) {
     const { data, width, height } = imageData;
+    const s = (strength === undefined ? 1 : strength);
+    if (s <= 0.01) return;
     const original = new Uint8ClampedArray(data);
-    const kernel = [0, -1, 0, -1, 5, -1, 0, -1, 0];
+    const c = 1 + 4 * s;
+    const kernel = [0, -s, 0, -s, c, -s, 0, -s, 0];
     for (let y = 1; y < height - 1; y++) {
         for (let x = 1; x < width - 1; x++) {
             const di = (y * width + x) * 4;
             if (original[di + 3] === 0) continue;
-            for (let c = 0; c < 3; c++) {
+            for (let ch = 0; ch < 3; ch++) {
                 let val = 0;
                 let ki = 0;
                 for (let dy = -1; dy <= 1; dy++) {
                     for (let dx = -1; dx <= 1; dx++) {
-                        const si = ((y + dy) * width + (x + dx)) * 4 + c;
+                        const si = ((y + dy) * width + (x + dx)) * 4 + ch;
                         val += original[si] * kernel[ki++];
                     }
                 }
-                data[di + c] = Math.max(0, Math.min(255, val));
+                data[di + ch] = Math.max(0, Math.min(255, val));
             }
         }
     }
@@ -1130,8 +1636,8 @@ $('btnPixelate').addEventListener('click', () => {
     if (!state.fullResImage) { showToast('❌ 请先上传图片', true); return; }
     const targetW = parseInt($('targetW').value);
     const targetH = parseInt($('targetH').value);
-    if (targetW < 1 || targetH < 1 || targetW > 256 || targetH > 256) {
-        showToast('❌ 目标尺寸须在 1~256 之间', true); return;
+    if (targetW < 1 || targetH < 1 || targetW > 2048 || targetH > 2048) {
+        showToast('❌ 目标尺寸须在 1~2048 之间', true); return;
     }
     const algo = $('downscaleAlgo').value;
     const srcW = state.fullResImage.width, srcH = state.fullResImage.height;
@@ -1271,20 +1777,14 @@ function showToast(msg,err=false){const t=$('toast');t.textContent=msg;t.classNa
 /* ---------- 5.1 模式切换 (本地为默认) ---------- */
 function setGenMode(mode) {
     const isLocal = mode === 'local';
-    const isAi = mode === 'ai';
     const isCloud = mode === 'cloud';
     $('localGenControls').style.display = isLocal ? 'block' : 'none';
-    $('aiGenControls').style.display = isAi ? 'block' : 'none';
     $('cloudGenControls').style.display = isCloud ? 'block' : 'none';
-    $('aiCodeEditor').style.display = isAi ? 'block' : 'none';
-    $('genExtraControls').style.display = isAi ? 'block' : 'none';   // 切片/FX 控件仅在 AI 模式显示
     $('genModeLocal').classList.toggle('active', isLocal);
-    $('genModeAi').classList.toggle('active', isAi);
     $('genModeCloud').classList.toggle('active', isCloud);
-    if (isAi) refreshAiPalette();
     if (isCloud && typeof cloudRefreshSpriteSize === 'function') cloudRefreshSpriteSize();
-    // 切到非 AI 模式时关闭切片可视化，避免覆盖预览
-    if (!isAi && state.sliceVisible) {
+    // 切到非本地模式时关闭切片可视化，避免覆盖预览
+    if (!isLocal && state.sliceVisible) {
         state.sliceVisible = false;
         $('partShowSlice').checked = false;
         if (state.frames && state.frames.length) selectFrame(state.currentFrame);
@@ -1292,16 +1792,9 @@ function setGenMode(mode) {
     }
 }
 $('genModeLocal').addEventListener('click', () => setGenMode('local'));
-$('genModeAi').addEventListener('click', () => setGenMode('ai'));
 $('genModeCloud').addEventListener('click', () => setGenMode('cloud'));
 
 $('localFrameCount').addEventListener('input', e => $('localFrameCountVal').textContent = e.target.value);
-$('aiFrameCount').addEventListener('input', e => $('aiFrameCountVal').textContent = e.target.value);
-$('aiActionSelect').addEventListener('change', e => {
-    const isCustom = e.target.value === 'custom';
-    $('aiCustomAction').style.display = isCustom ? 'block' : 'none';
-    if (isCustom) $('aiCustomAction').focus();
-});
 
 /* ---------- 5.2 本地生成 (纯前端逐帧变换) ---------- */
 $('btnLocalGenerate').addEventListener('click', () => {
@@ -1350,60 +1843,183 @@ function commitFramesFromImageData(frames) {
     selectFrame(0);
 }
 
-/* ---------- 5.4 AI 配置子面板 (独立 localStorage，刷新自动恢复) ---------- */
+/* ---------- 5.4 全局设置弹窗 (文本模型 + 生图模型，localStorage 持久化) ---------- */
 const AI_CFG_KEY = 'pixelWorkshop.aiGenConfig';
 
+const API_PRESETS = {
+    custom:      { textBase: '', imageBase: '', textModel: '', imageModel: '' },
+    openai:      { textBase: 'https://api.openai.com/v1', imageBase: 'https://api.openai.com/v1', textModel: 'gpt-4o', imageModel: 'dall-e-3' },
+    aliyun:      { textBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1', imageBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1', textModel: 'qwen-vl-max', imageModel: 'wanx2.1-t2i-turbo' },
+    siliconflow: { textBase: 'https://api.siliconflow.cn/v1', imageBase: 'https://api.siliconflow.cn/v1', textModel: 'Qwen/Qwen2.5-VL-32B-Instruct', imageModel: 'Kwai-Kolors/Kolors' },
+    zhipu:       { textBase: 'https://open.bigmodel.cn/api/paas/v4', imageBase: 'https://open.bigmodel.cn/api/paas/v4', textModel: 'glm-4v-plus', imageModel: 'cogview-4' }
+};
+
+// 统一读取入口：所有 AI 调用 (拆分 / 导航 / 识图 / 云端生图) 都从这里取配置
+function getAiCfg() {
+    const textBase = ($('setTextBase').value || '').trim().replace(/\/$/, '');
+    const imageBase = ($('setImageBase').value || '').trim().replace(/\/$/, '');
+    return {
+        textBase,
+        imageBase: imageBase || textBase,     // 生图 Base 留空则自动跟随文本 Base
+        key: ($('setApiKey').value || '').trim(),
+        textModel: ($('setTextModel').value || '').trim(),
+        imageModel: ($('setImageModel').value || '').trim()
+    };
+}
+
+function aiSetStatus(msg, ok) {
+    const st = $('setStatus');
+    st.textContent = msg; st.style.color = ok ? '#00b894' : '#ff7675';
+}
+
 function aiSaveCfg() {
-    const base = $('aiApiBase').value.trim();
-    const key = $('aiApiKey').value.trim();
-    const model = $('aiModel').value.trim();
-    if (!base || !key || !model) { showToast('❌ 配置不完整，未保存', true); return; }
+    const c = getAiCfg();
+    if (!c.textBase || !c.key) { aiSetStatus('❌ 请至少填写文本 Base URL 和 API Key', false); return; }
     try {
-        localStorage.setItem(AI_CFG_KEY, JSON.stringify({ base, key, model }));
-        const st = $('aiCfgStatus');
-        st.textContent = '已保存 ✓'; st.style.color = '#00b894';
-        showToast('✅ AI 配置已保存');
-    } catch (e) { showToast('❌ 保存失败: ' + e.message, true); }
+        localStorage.setItem(AI_CFG_KEY, JSON.stringify(c));
+        aiSetStatus('已保存 ✓ (文本模型: ' + (c.textModel || '未填') + ' / 生图模型: ' + (c.imageModel || '未填') + ')', true);
+        showToast('✅ 设置已保存');
+    } catch (e) { aiSetStatus('❌ 保存失败: ' + e.message, false); }
 }
 
 function aiLoadCfg() {
     try {
+        let cfg = null;
         const raw = localStorage.getItem(AI_CFG_KEY);
-        if (raw) {
-            const cfg = JSON.parse(raw);
-            if (cfg.base) $('aiApiBase').value = cfg.base;
-            if (cfg.key) $('aiApiKey').value = cfg.key;
-            if (cfg.model) $('aiModel').value = cfg.model;
-            const st = $('aiCfgStatus');
-            st.textContent = '已保存 ✓'; st.style.color = '#00b894';
+        if (raw) cfg = JSON.parse(raw);
+        // 旧格式迁移：{base,key,model} → base 作为文本 Base，model 作为文本模型
+        if (cfg && cfg.base && !cfg.textBase) cfg.textBase = cfg.base;
+        if (cfg && cfg.model && !cfg.textModel) cfg.textModel = cfg.model;
+        // 旧云端配置迁移：imageModel 缺失时从旧键补充
+        if (!cfg || !cfg.imageModel) {
+            try {
+                const oldCloud = JSON.parse(localStorage.getItem('pixelWorkshop.cloudGenConfig') || 'null');
+                if (oldCloud && oldCloud.model) { cfg = cfg || {}; if (!cfg.imageModel) cfg.imageModel = oldCloud.model; }
+            } catch (_) { }
         }
+        if (cfg) {
+            if (cfg.textBase) $('setTextBase').value = cfg.textBase;
+            if (cfg.imageBase) $('setImageBase').value = cfg.imageBase;
+            if (cfg.key) $('setApiKey').value = cfg.key;
+            if (cfg.textModel) $('setTextModel').value = cfg.textModel;
+            if (cfg.imageModel) $('setImageModel').value = cfg.imageModel;
+        }
+        if (cfg && (cfg.textBase || cfg.key)) aiSetStatus('已加载已保存配置 ✓', true);
+        else aiSetStatus('未配置 (可选填，仅 AI 功能需要)', false);
     } catch (e) { }
 }
 
-$('btnAiSaveCfg').addEventListener('click', aiSaveCfg);
-$('btnAiTestApi').addEventListener('click', async () => {
-    const base = $('aiApiBase').value.replace(/\/$/, '');
-    const key = $('aiApiKey').value.trim();
-    const model = $('aiModel').value.trim();
-    if (!base || !key || !model) { showToast('❌ 请填写完整配置', true); return; }
-    $('btnAiTestApi').disabled = true; $('btnAiTestApi').textContent = '⏳ 测试中...';
-    try {
-        const resp = await fetch(`${base}/chat/completions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Reply OK' }], max_tokens: 5 })
+// 弹窗开关
+$('btnOpenSettings').addEventListener('click', () => { $('settingsModal').style.display = 'flex'; });
+$('btnCloseSettings').addEventListener('click', () => { $('settingsModal').style.display = 'none'; });
+$('settingsModal').addEventListener('click', e => { if (e.target === $('settingsModal')) $('settingsModal').style.display = 'none'; });
+$('btnSetSave').addEventListener('click', aiSaveCfg);
+
+// ---------- 面板折叠：点标题展开/收起，状态记忆 localStorage ----------
+(function initPanelCollapse() {
+    const KEY = 'psw_panel_collapsed_v1';
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
+    const panels = Array.from(document.querySelectorAll('.panel-section'));
+    panels.forEach(p => {
+        const title = p.querySelector(':scope > .panel-title');
+        if (!title) return;
+        const name = title.textContent.trim();
+        if (saved[name]) p.classList.add('collapsed');
+        title.addEventListener('click', () => {
+            p.classList.toggle('collapsed');
+            saved[name] = p.classList.contains('collapsed');
+            try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) { }
         });
-        if (resp.ok) showToast('✅ API 连接成功！');
-        else showToast('❌ API ' + resp.status + ': ' + (await resp.text()).substring(0, 120), true);
-    } catch (err) {
-        showToast('❌ 连接失败: ' + err.message, true);
-    } finally {
-        $('btnAiTestApi').disabled = false; $('btnAiTestApi').textContent = '🔌 测试';
-    }
+    });
+    // 全部收起/全部展开（按 data-target 容器作用）
+    document.querySelectorAll('.panel-tool').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const scope = document.querySelector(btn.dataset.target || '.sidebar');
+            if (!scope) return;
+            const collapse = btn.textContent.indexOf('收起') > -1;
+            scope.querySelectorAll('.panel-section').forEach(p => {
+                const title = p.querySelector(':scope > .panel-title');
+                if (!title) return;
+                const name = title.textContent.trim();
+                p.classList.toggle('collapsed', collapse);
+                saved[name] = collapse;
+            });
+            try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) { }
+        });
+    });
+})();
+
+// 预设下拉：自动填充 base + 模型
+$('setPreset').addEventListener('change', e => {
+    const p = API_PRESETS[e.target.value];
+    if (!p) return;
+    if (p.textBase) $('setTextBase').value = p.textBase;
+    if (p.imageBase) $('setImageBase').value = p.imageBase;
+    if (p.textModel) $('setTextModel').value = p.textModel;
+    if (p.imageModel) $('setImageModel').value = p.imageModel;
+    aiSetStatus('已填充预设「' + e.target.options[e.target.selectedIndex].text + '」，可继续修改', true);
 });
+
+// 设置弹窗 tab 切换 (AI 接口配置 / 操作说明)
+function setShowTab(tab) {
+    $('setPanelCfg').style.display = tab === 'cfg' ? 'block' : 'none';
+    $('setPanelHelp').style.display = tab === 'help' ? 'block' : 'none';
+    $('setTabCfg').classList.toggle('active', tab === 'cfg');
+    $('setTabHelp').classList.toggle('active', tab === 'help');
+}
+$('setTabCfg').addEventListener('click', () => setShowTab('cfg'));
+$('setTabHelp').addEventListener('click', () => setShowTab('help'));
+
+// 测试文本模型 (/chat/completions)
+$('btnSetTestText').addEventListener('click', async () => {
+    const c = getAiCfg();
+    if (!c.textBase || !c.key || !c.textModel) { aiSetStatus('❌ 请填写文本 Base / Key / 文本模型', false); return; }
+    const btn = $('btnSetTestText');
+    btn.disabled = true; btn.textContent = '⏳ 测试中...';
+    try {
+        const resp = await fetch(`${c.textBase}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + c.key },
+            body: JSON.stringify({ model: c.textModel, messages: [{ role: 'user', content: 'Reply OK' }], max_tokens: 5 })
+        });
+        if (resp.ok) { aiSetStatus('✅ 文本模型连接成功 (' + c.textModel + ')', true); showToast('✅ 文本模型连接成功'); }
+        else aiSetStatus('❌ API ' + resp.status + ': ' + (await resp.text()).substring(0, 120), false);
+    } catch (err) { aiSetStatus('❌ 连接失败: ' + err.message, false); }
+    finally { btn.disabled = false; btn.textContent = '🔌 测试文本模型'; }
+});
+
+// 测试生图模型 (/images/generations)
+$('btnSetTestImage').addEventListener('click', async () => {
+    const c = getAiCfg();
+    if (!c.imageBase || !c.key || !c.imageModel) { aiSetStatus('❌ 请填写生图 Base / Key / 生图模型', false); return; }
+    const btn = $('btnSetTestImage');
+    btn.disabled = true; btn.textContent = '⏳ 测试中...';
+    try {
+        const resp = await fetch(`${c.imageBase}/images/generations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + c.key },
+            body: JSON.stringify({ model: c.imageModel, prompt: 'a simple red square on white background', size: '512x512', n: 1 })
+        });
+        if (!resp.ok) {
+            const txt = (await resp.text()).substring(0, 160);
+            if (resp.status === 401) aiSetStatus('❌ API Key 无效或未授权', false);
+            else if (resp.status === 404) aiSetStatus('❌ 模型名错误或 Base URL 路径不正确 (需支持 /images/generations)', false);
+            else aiSetStatus('❌ HTTP ' + resp.status + ': ' + txt, false);
+            return;
+        }
+        const result = await resp.json();
+        const item = result.data && result.data[0];
+        if (!item || (!item.url && !item.b64_json)) { aiSetStatus('❌ 后端未返回同步图片数据 (可能不支持同步接口)', false); return; }
+        aiSetStatus('✅ 生图模型连接成功 (' + c.imageModel + ')，已产生测试图', true);
+        showToast('✅ 生图模型连接成功');
+    } catch (err) { aiSetStatus('❌ 无法访问该地址: ' + err.message, false); }
+    finally { btn.disabled = false; btn.textContent = '🔌 测试生图模型'; }
+});
+
 aiLoadCfg();
 
-/* ---------- 5.5 调色板提取 ---------- */
+/* ---------- 5.5 调色板提取 (云端识图写提示词复用) ---------- */
 function extractPalette(imageData, maxColors = 16) {
     const colors = [], seen = new Set();
     if (!imageData) return colors;
@@ -1422,122 +2038,9 @@ function extractPalette(imageData, maxColors = 16) {
     return colors;
 }
 
-function renderPaletteBox(colors) {
-    const box = $('aiPaletteBox');
-    box.innerHTML = '';
-    if (!colors || !colors.length) {
-        box.innerHTML = '<span class="ai-palette-empty">未提取到颜色</span>';
-        return;
-    }
-    colors.forEach(c => {
-        const sw = document.createElement('span');
-        sw.className = 'ai-palette-swatch';
-        sw.style.background = c;
-        sw.title = c;
-        box.appendChild(sw);
-    });
-}
+/* ---------- 5.6 (工坊 AI 生成已移除：AI 能力集中在画布模式的 AI 拆分 / 下一帧导航，配置见右上角 ⚙ 设置) ---------- */
 
-function refreshAiPalette() {
-    renderPaletteBox(state.cleanedImage ? extractPalette(state.cleanedImage) : []);
-}
-
-/* ---------- 5.6 AI 生成代码并运行 ---------- */
-$('btnAiGenerate').addEventListener('click', async () => {
-    if (!state.cleanedImage) { showToast('❌ 请先上传并处理参考图', true); return; }
-    const base = $('aiApiBase').value.replace(/\/$/, '');
-    const key = $('aiApiKey').value.trim();
-    const model = $('aiModel').value.trim();
-    if (!base || !key || !model) { showToast('❌ 请先填写 AI 配置', true); return; }
-
-    let action = $('aiActionSelect').value;
-    let actionDesc = action;
-    if (action === 'custom') {
-        actionDesc = $('aiCustomAction').value.trim();
-        if (!actionDesc) { showToast('❌ 请输入自定义动作描述', true); return; }
-    }
-    const frameCount = parseInt($('aiFrameCount').value) || 4;
-    const extra = $('aiExtraPrompt').value.trim();
-
-    // 方案A：序列化切片结构 + 调色板作为上下文；vision 让模型看见造型
-    const parts = getParts();
-    if (!parts || !parts.length) { showToast('❌ 切片失败，无法生成变换', true); return; }
-    const partNames = parts.map(p => p.name);
-    const aiCtx = buildAiContext(action, actionDesc, frameCount, extra, parts);
-    renderPaletteBox(aiCtx.palette);
-
-    const refBase64 = getSrcCanvas().toDataURL('image/png');
-
-    $('btnAiGenerate').disabled = true;
-    $('btnAiGenerate').textContent = '⏳ 思考中...';
-    try {
-        const resp = await fetch(`${base}/chat/completions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-            body: JSON.stringify({
-                model,
-                temperature: 0.15,
-                max_tokens: 2500,
-                messages: [
-                    { role: 'system', content: aiSysPromptJSON(aiCtx) },
-                    { role: 'user', content: [
-                        { type: 'image_url', image_url: { url: refBase64 } },
-                        { type: 'text', text: `请按系统指令输出 ${frameCount} 帧 ${action} 动画的变换+特效 JSON。部件名: ${JSON.stringify(partNames)}` }
-                    ] }
-                ]
-            })
-        });
-        if (!resp.ok) throw new Error('API ' + resp.status + ': ' + (await resp.text()).substring(0, 200));
-
-        const result = await resp.json();
-        let content = result.choices?.[0]?.message?.content || '';
-        if (!content.trim()) throw new Error('AI 未返回内容');
-
-        let frames = parseAiJson(content);                       // 去 ```json / 截取 [..] / JSON.parse
-        frames = validateAiFrames(frames, partNames);            // 校验 + 钳制
-
-        $('aiCodeEditorTextarea').value = JSON.stringify(frames, null, 2);  // 写入编辑栏 (可手改)
-        $('aiCodeBody').style.display = 'block';
-
-        applyTransformsFromFrames(frames, parts);                // 用原图切片渲染 (+特效) → 接入时间轴/播放/导出
-        showToast('✅ AI 变换已应用: ' + frames.length + ' 帧动画！');
-    } catch (err) {
-        console.error(err);
-        showToast('❌ AI 生成失败: ' + err.message, true);
-    } finally {
-        $('btnAiGenerate').disabled = false;
-        $('btnAiGenerate').textContent = '⚡ AI 生成变换并应用';
-    }
-});
-
-/* ---------- 5.7 (旧"代码沙盒重画"范式已废弃，改为方案A JSON 解析/校验，见文末新增模块) ---------- */
-
-/* ---------- 5.8 代码编辑栏：应用变换 & 折叠 ---------- */
-$('btnRunCode').addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!state.cleanedImage) { showToast('❌ 请先上传并处理参考图', true); return; }
-    const txt = $('aiCodeEditorTextarea').value;
-    if (!txt.trim()) { showToast('❌ JSON 为空', true); return; }
-    try {
-        const parts = getParts();
-        if (!parts || !parts.length) { showToast('❌ 无可用切片，无法应用变换', true); return; }
-        const partNames = parts.map(p => p.name);
-        let frames = parseAiJson(txt);                 // 解析编辑栏 JSON (允许手改)
-        frames = validateAiFrames(frames, partNames);  // 校验 + 钳制
-        applyTransformsFromFrames(frames, parts);      // 用原图切片重渲染
-        showToast('✅ 已应用变换: ' + frames.length + ' 帧');
-    } catch (err) {
-        showToast('❌ 应用失败: ' + err.message, true);
-    }
-});
-
-let aiCodeCollapsed = false;
-$('aiCodeHead').addEventListener('click', () => {
-    aiCodeCollapsed = !aiCodeCollapsed;
-    $('aiCodeBody').style.display = aiCodeCollapsed ? 'none' : 'block';
-    const st = $('aiCodeState');
-    if (st) st.textContent = aiCodeCollapsed ? '(点击展开)' : '(点击收起)';
-});
+/* ---------- 5.8 (代码编辑栏随 AI 生成一并移除) ---------- */
 
 // ========== 新增：切片引擎 ==========
 // 方案A 核心：自动按 alpha 通道把处理后原图切成 body / legL / legR / armL / armR / weapon
@@ -1800,15 +2303,6 @@ function effectActive(e, frameIdx) {
     return frameIdx >= lo && frameIdx <= hi;
 }
 
-// 用一组变换帧规格渲染并接入时间轴/播放/导出
-function applyTransformsFromFrames(frames, parts) {
-    if (!parts || !parts.length) { showToast('❌ 无可用切片', true); return; }
-    const w = state.canvasWidth, h = state.canvasHeight;
-    const names = parts.map(p => p.name);
-    const imgs = frames.map(s => renderFrame(parts, clampFrameSpec(s, names), w, h, state.fxEnabled));
-    commitFramesFromImageData(imgs);
-}
-
 // ========== 新增：本地骨骼动画 (基于切片，对齐模板A节奏：rot 用弧度，effects 数组) ==========
 function localBuildSpecs(action, frameCount, parts) {
     const names = parts.map(p => p.name);
@@ -1948,112 +2442,6 @@ function localGenerateFramesLegacy(action, frameCount) {
     return out;
 }
 
-// ========== 新增：AI 变换生成 (方案A：AI 输出变换+特效 JSON) ==========
-// 构造喂给 AI 的上下文：序列化 parts + 调色板 + 动作/帧数/特效开关/额外指令
-function buildAiContext(action, actionDesc, frameCount, extra, parts) {
-    const palette = extractPalette(state.cleanedImage);
-    const partNames = parts.map(p => p.name);
-    const sliceInfo = parts.length
-        ? '已切片。部件列表：' + parts.map(p => `${p.name} region=[${p.src.sx},${p.src.sy},${p.src.sw},${p.src.sh}] anchor=[${p.anchor.ax},${p.anchor.ay}]`).join(' ; ')
-        : '未切片。工具按 躯干/腿分割Y、左右腿分割X 自动分割：body=分割Y以上，legL/legR=分割Y以下按分割X左右分，armL/armR/weapon 由你根据图像判断大致区域';
-    return {
-        w: state.canvasWidth, h: state.canvasHeight,
-        partNames, palette, sliceInfo,
-        fxOn: state.fxEnabled ? 'on' : 'off',
-        action: actionDesc, frameCount, extra
-    };
-}
-
-// System Prompt（模板 A）：强约束 AI 只输出变换+特效 JSON 数组，禁止重画主体
-function aiSysPromptJSON(c) {
-    return `# 角色
-你是 2D 像素序列帧生成工具内置的"像素动画导演"。
-你不生成图像，只输出变换指令 JSON 数组；工具会逐像素执行平移/旋转/缩放来渲染每一帧，原图像素绝不被重新生成。
-
-========== 输入上下文（工具自动填充） ==========
-动作: ${c.action}
-帧数: ${c.frameCount}
-精灵尺寸: ${c.w}x${c.h}
-切片状态: ${c.sliceInfo}
-提取调色板: ${JSON.stringify(c.palette)}
-特效增强层: ${c.fxOn}   // on | off
-额外指令: ${c.extra || '无'}
-参考图: 见附件
-
-========== 输出 schema（字段名与结构必须完全一致，工具逐字段解析） ==========
-[
-  {
-    "frame": 0,
-    "global": { "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1 },
-    "parts": {
-      "body":   { "dx": 0, "dy": 0, "rot": 0 },
-      "legL":   { "dx": 0, "dy": 0, "rot": 0 },
-      "legR":   { "dx": 0, "dy": 0, "rot": 0 },
-      "armL":   { "dx": 0, "dy": 0, "rot": 0 },
-      "armR":   { "dx": 0, "dy": 0, "rot": 0 },
-      "weapon": { "dx": 0, "dy": 0, "rot": 0 }
-    },
-    "effects": []
-  }
-]
-数组长度必须等于帧数，frame 从 0 到 ${c.frameCount - 1} 顺序排列。
-
-========== 硬约束 ==========
-1. frame 0 为站立基准帧：global/parts 全部为 0/1，effects 为空数组。
-2. dx/dy 为整数像素，取值 [-8, 8]；rot 为角度，取值 [-60, 60]；sx/sy 取值 [0.9, 1.1]。
-3. 连续性：相邻帧之间单个部件 |Δrot| ≤ 25°，|Δdx|、|Δdy| ≤ 3；动作中途不得突然反向。
-4. 旋转围绕部件锚点（关节）发生；有切片锚点时以锚点为依据规划摆幅。
-5. 图中不存在的部件（如无武器）该部件保持全 0，不得虚构。
-6. 仅当特效增强层 = on 时允许 effects，每项格式：
-   { "type": "slash|glow|dust|afterimage|impact",
-     "color": "<必须取自调色板>",
-     "x": , "y": ,          // 相对精灵左上角
-     "rot": , "len": , "w": ,
-     "frames": [n1, n2] }   // 仅在这些帧出现
-7. 一切颜色（含特效）只能取自提取调色板，禁止自造 hex。
-8. 只输出纯 JSON 数组，无 markdown、无注释、无解释文字。
-
-========== 动作节奏参考 ==========
-- attack: 前30%蓄力(手臂后摆/上抬) → 20%挥出(arm/weapon 的 rot 大幅变化，可加 slash) → 后50%收势回正
-- walk: 双腿交替前后摆，body 的 dy 每帧 ±1 起伏，手臂与同侧腿反向摆、幅度为腿的60%
-- idle: 仅 body 的 dy ±1 呼吸起伏，手臂 rot ±3 微动
-- jump: 前段下蹲(body dy+1、腿 rot 收) → 中段上升(body dy 负值、腿伸展) → 末段落地缓冲
-- hurt: body rot 后仰 10~15°，global dx 后退 2~3，手臂后张
-- die: 逐帧旋转倒地，末帧 body rot ±90°、dy 落到地面线
-- 若额外指令非空则优先满足（如"动作要夸张"可把约束3放宽1.5倍）
-
-现在观察参考图，输出 ${c.frameCount} 帧的完整 JSON。`;
-}
-
-// 解析 AI 返回：去 ```json 标记 → 截取首个 '[' 到末个 ']' → JSON.parse
-function parseAiJson(raw) {
-    let s = String(raw || '').trim();
-    s = s.replace(/```json/gi, '').replace(/```/g, '').trim();
-    const a = s.indexOf('['), b = s.lastIndexOf(']');
-    if (a === -1 || b === -1 || b < a) throw new Error('未找到 JSON 数组');
-    return JSON.parse(s.slice(a, b + 1));
-}
-
-// 校验 + 兜底：非空数组、补齐 global/parts/effects、rot 由角度转弧度、特效字段过滤
-function validateAiFrames(frames, partNames) {
-    if (!Array.isArray(frames) || !frames.length) throw new Error('帧数组为空');
-    const D2R = Math.PI / 180;
-    return frames.map((f, i) => {
-        if (typeof f !== 'object' || f === null) throw new Error('第 ' + i + ' 帧非对象');
-        f.global = f.global || {};
-        f.parts = f.parts || {};
-        // rot: 模板A 输出为角度 → 转弧度
-        f.global.rot = clampN(f.global.rot, 0, -60, 60) * D2R;
-        Object.keys(f.parts).forEach(k => {
-            const p = (f.parts[k] || (f.parts[k] = { dx: 0, dy: 0, rot: 0 }));
-            p.rot = clampN(p.rot, 0, -60, 60) * D2R;
-        });
-        // effects 过滤：必须有 type
-        f.effects = Array.isArray(f.effects) ? f.effects.filter(e => e && typeof e === 'object' && typeof e.type === 'string') : [];
-        return clampFrameSpec(f, partNames);
-    });
-}
-
 // ========== 新增：UI 接线 (特效开关 / 切片可视化 / 手动微调) ==========
 $('fxEnhanceToggle').addEventListener('change', e => { state.fxEnabled = e.target.checked; });
 
@@ -2123,7 +2511,18 @@ const cvState = {
     drawing: false, lastPx: null, lineStart: null, _snap: null,
     panX: 0, panY: 0, panning: false, panLastX: 0, panLastY: 0,  // 中键拖拽平移 + 滚轮缩放视图
     navMode: 'guide', navOverlay: false, navFrame: -1,           // AI 导航: 文字指导叠加 / 当前导览帧
-    undoStacks: [], redoStacks: []                               // 每帧撤销/重做快照 (与 frames 索引对齐)
+    undoStacks: [], redoStacks: [],                             // 每帧撤销/重做快照 (与 frames 索引对齐)
+    // ===== 画布增强 (Aseprite 风格) =====
+    brushSize: 1,        // 笔刷 1/2/3px
+    symH: false, symV: false,   // 对称绘制
+    pixelPerfect: false,        // 直线像素完美
+    rectMode: 'stroke',         // 矩形描边/填充
+    selection: null,            // { x,y,w,h,mask:Uint8Array } | null
+    selClip: null,              // 剪贴板 ImageData (选区复制)
+    selDrag: null,              // 选区内容拖拽中 { canvas, ox, oy, lastX, lastY }
+    lassoPts: null,             // 套索进行中的点集
+    pingPong: false,            // 往返播放
+    onionPrev: 1                // 洋葱皮前 N 帧
 };
 const cvCanvas = $('cvCanvas');
 const cvCtx = cvCanvas.getContext('2d', { willReadFrequently: true });
@@ -2136,22 +2535,27 @@ cvOnionCtx.imageSmoothingEnabled = false;
 
 // ---------- 顶层模式切换 ----------
 function setAppMode(mode) {
-    const isCanvas = mode === 'canvas';
+    const isCanvas = mode === 'canvas' || mode === 'split';
     document.querySelector('.main-container').style.display = isCanvas ? 'none' : 'flex';
     $('canvasView').style.display = isCanvas ? 'flex' : 'none';
-    $('appModeWorkshop').classList.toggle('active', !isCanvas);
-    $('appModeCanvas').classList.toggle('active', isCanvas);
+    $('appModeWorkshop').classList.toggle('active', mode === 'workshop');
+    $('appModeCanvas').classList.toggle('active', mode === 'canvas');
+    $('appModeSplit').classList.toggle('active', mode === 'split');
     if (isCanvas) {
         if (!cvState.frames.length) cvNewFrame(true);
         cvApplyZoom();
         cvRenderAll();
         cvRenderFramesList();
+        if (mode === 'split') { if (typeof splitEnter === 'function') splitEnter(); }
+        else if (cvState.split && cvState.split.active) splitExit();
     } else {
         cvStopPlay();
+        if (cvState.split && cvState.split.active) splitExit();
     }
 }
 $('appModeWorkshop').addEventListener('click', () => setAppMode('workshop'));
 $('appModeCanvas').addEventListener('click', () => setAppMode('canvas'));
+$('appModeSplit').addEventListener('click', () => setAppMode('split'));
 
 // ---------- 帧管理 ----------
 function cvBlankFrame() { return cvCtx.createImageData(CV_SIZE, CV_SIZE); }
@@ -2240,7 +2644,7 @@ function cvRestoreOrig() {
 
 // ---------- 自定义画布尺寸 ----------
 function cvResize(newSize) {
-    newSize = Math.max(16, Math.min(256, newSize | 0));
+    newSize = Math.max(16, Math.min(1024, newSize | 0));
     if (newSize === CV_SIZE) { showToast('尺寸未变化'); return; }
     const hasContent = cvState.frames.some(f => f && f.data.some((v, idx) => idx % 4 === 3 && v > 0));
     if (hasContent && !confirm(`修改画布尺寸为 ${newSize}×${newSize} 将清空所有帧与撤销历史，是否继续？`)) return;
@@ -2248,6 +2652,7 @@ function cvResize(newSize) {
     cvCanvas.width = cvCanvas.height = CV_SIZE;
     cvGridCanvas.width = cvGridCanvas.height = CV_SIZE;
     cvOnionCanvas.width = cvOnionCanvas.height = CV_SIZE;
+    const cvSL = $('cvSplitLayer'); if (cvSL) { cvSL.width = CV_SIZE; cvSL.height = CV_SIZE; cvSL.getContext('2d').imageSmoothingEnabled = false; }
     cvCtx.imageSmoothingEnabled = false;
     cvOnionCtx.imageSmoothingEnabled = false;
     cvState.frames = [cvBlankFrame()];
@@ -2262,8 +2667,8 @@ function cvResize(newSize) {
 $('cvAddFrame').addEventListener('click', () => cvNewFrame());
 $('cvDupFrame').addEventListener('click', cvDupFrame);
 $('cvDelFrame').addEventListener('click', cvDelFrame);
-$('cvUndo').addEventListener('click', cvUndo);
-$('cvRedo').addEventListener('click', cvRedo);
+$('cvUndo').addEventListener('click', () => { cvUndo(); splitGeoAfterUndo(); });
+$('cvRedo').addEventListener('click', () => { cvRedo(); splitGeoAfterRedo(); });
 $('cvRestoreOrig').addEventListener('click', cvRestoreOrig);
 $('cvApplySize').addEventListener('click', () => cvResize(+$('cvSizeSel').value));
 // Ctrl+Z 撤销 / Ctrl+Y 或 Ctrl+Shift+Z 重做 (仅画布模式)
@@ -2272,9 +2677,9 @@ document.addEventListener('keydown', e => {
         const t = (e.target.tagName || '').toUpperCase();
         if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
         e.preventDefault();
-        if (e.shiftKey) cvRedo(); else cvUndo();
+        if (e.shiftKey) { cvRedo(); splitGeoAfterRedo(); } else { cvUndo(); splitGeoAfterUndo(); }
     } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y') && $('canvasView').style.display === 'flex') {
-        e.preventDefault(); cvRedo();
+        e.preventDefault(); cvRedo(); splitGeoAfterRedo();
     }
 });
 
@@ -2284,6 +2689,7 @@ function cvRenderFramesList() {
     cvState.frames.forEach((f, i) => {
         const item = document.createElement('div');
         item.className = 'cv-frame-item' + (i === cvState.frame ? ' active' : '');
+        item.draggable = true;      // 拖拽排序
         const thumb = document.createElement('canvas');
         thumb.width = CV_SIZE; thumb.height = CV_SIZE;
         thumb.getContext('2d').putImageData(f, 0, 0);
@@ -2292,8 +2698,29 @@ function cvRenderFramesList() {
         del.addEventListener('click', (e) => { e.stopPropagation(); cvState.frame = i; cvDelFrame(); });
         item.appendChild(thumb); item.appendChild(idx); item.appendChild(del);
         item.addEventListener('click', () => cvSelectFrame(i));
+        // 拖拽排序 (帧数据 + 撤销栈一起移动)
+        item.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', String(i)); item.classList.add('dragging'); });
+        item.addEventListener('dragover', e => e.preventDefault());
+        item.addEventListener('drop', e => {
+            e.preventDefault();
+            const from = +e.dataTransfer.getData('text/plain');
+            if (isNaN(from) || from === i) { cvRenderFramesList(); return; }
+            const f = cvState.frames.splice(from, 1)[0];
+            const u = cvState.undoStacks.splice(from, 1)[0];
+            const r = cvState.redoStacks.splice(from, 1)[0];
+            cvState.frames.splice(i, 0, f);
+            cvState.undoStacks.splice(i, 0, u);
+            cvState.redoStacks.splice(i, 0, r);
+            if (cvState.frame === from) cvState.frame = i;
+            else if (from < cvState.frame && i >= cvState.frame) cvState.frame--;
+            else if (from > cvState.frame && i <= cvState.frame) cvState.frame++;
+            cvRenderFramesList(); cvRenderAll();
+            showToast('🔀 帧已移动到 #' + (i + 1));
+        });
+        item.addEventListener('dragend', () => item.classList.remove('dragging'));
         list.appendChild(item);
     });
+    const sb = $('cvStatFrame'); if (sb) sb.textContent = cvState.frames.length ? (cvState.frame + 1) + ' / ' + cvState.frames.length : '—';
 }
 function cvDrawGrid() {
     cvGridCtx.clearRect(0, 0, CV_SIZE, CV_SIZE);
@@ -2308,6 +2735,15 @@ function cvDrawGrid() {
     // AI 导航区域导览 (非破坏性，仅描边；仅在与导览相同的帧上显示，切到别的帧自动隐藏)
     if (cvState.navOverlay && cvState.lastNav && cvState.navFrame === cvState.frame) {
         cvDrawNavRegions(cvState.lastNav);
+    }
+    // 对称绘制参考轴 (虚线)
+    if (cvState.symH || cvState.symV) {
+        cvGridCtx.setLineDash([4 / cvState.zoom, 3 / cvState.zoom]);
+        cvGridCtx.lineWidth = 1 / cvState.zoom;
+        cvGridCtx.strokeStyle = 'rgba(255,80,200,0.55)';
+        if (cvState.symH) { const mx = Math.floor(CV_SIZE / 2) + 0.5; cvGridCtx.beginPath(); cvGridCtx.moveTo(mx, 0); cvGridCtx.lineTo(mx, CV_SIZE); cvGridCtx.stroke(); }
+        if (cvState.symV) { const my = Math.floor(CV_SIZE / 2) + 0.5; cvGridCtx.beginPath(); cvGridCtx.moveTo(0, my); cvGridCtx.lineTo(CV_SIZE, my); cvGridCtx.stroke(); }
+        cvGridCtx.setLineDash([]);
     }
 }
 // 在网格层上描出 keep/move/draw/erase 区域，作为手绘参考 (不写入主画布)
@@ -2334,10 +2770,15 @@ function cvRenderAll() {
     const cur = cvState.frames[cvState.frame];
     if (cur) cvCtx.putImageData(cur, 0, 0);
     cvOnionCtx.clearRect(0, 0, CV_SIZE, CV_SIZE);
-    if (cvState.onion && cvState.frame > 0 && cvState.frames[cvState.frame - 1]) {
-        cvOnionCtx.putImageData(cvState.frames[cvState.frame - 1], 0, 0);
+    if (cvState.onion) {
+        const n = Math.max(1, cvState.onionPrev | 0);
+        for (let k = n; k >= 1; k--) {          // 远帧先画，近帧覆盖
+            const f = cvState.frames[cvState.frame - k];
+            if (f) cvOnionCtx.putImageData(f, 0, 0);
+        }
     }
     cvDrawGrid();
+    cvRenderSelection();    // 选区/拖拽/套索覆盖层
 }
 function cvCommitRender() {
     cvCtx.putImageData(cvState.frames[cvState.frame], 0, 0);
@@ -2346,16 +2787,18 @@ function cvCommitRender() {
 }
 function cvApplyZoom() {
     const px = CV_SIZE * cvState.zoom;
-    [cvCanvas, cvGridCanvas, cvOnionCanvas].forEach(c => { c.style.width = px + 'px'; c.style.height = px + 'px'; });
+    [cvCanvas, cvGridCanvas, cvOnionCanvas, $('cvSplitLayer')].forEach(c => { if (c) { c.style.width = px + 'px'; c.style.height = px + 'px'; } });
     $('cvCanvasWrap').style.transform = `translate(${cvState.panX}px, ${cvState.panY}px)`;
     $('cvZoomLabel').textContent = Math.round(cvState.zoom * 100) + '%';
+    const sz = $('cvStatZoom'); if (sz) sz.textContent = Math.round(cvState.zoom * 100) + '%';
     cvDrawGrid();
+    cvRenderSelection();    // 缩放/平移后重绘覆盖层 (canvas 尺寸变化会清空)
 }
 $('cvZoomIn').addEventListener('click', () => { cvState.zoom = Math.min(40, cvState.zoom * 1.25); cvApplyZoom(); });
-$('cvZoomOut').addEventListener('click', () => { cvState.zoom = Math.max(1, cvState.zoom / 1.25); cvApplyZoom(); });
-$('cvZoomReset').addEventListener('click', () => { cvState.zoom = 8; cvState.panX = 0; cvState.panY = 0; cvApplyZoom(); });
+$('cvZoomOut').addEventListener('click', () => { cvState.zoom = Math.max(0.25, cvState.zoom / 1.25); cvApplyZoom(); });
+$('cvZoomReset').addEventListener('click', () => { cvState.zoom = 1; cvState.panX = 0; cvState.panY = 0; cvApplyZoom(); });
 // 滚轮缩放 + 中键平移 (右键留给浏览器菜单)
-$('cvStage').addEventListener('wheel', e => { e.preventDefault(); cvState.zoom = Math.max(1, Math.min(40, cvState.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); cvApplyZoom(); }, { passive: false });
+$('cvStage').addEventListener('wheel', e => { e.preventDefault(); cvState.zoom = Math.max(0.25, Math.min(40, cvState.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); cvApplyZoom(); }, { passive: false });
 // 中键拖拽平移画布视图
 $('cvStage').addEventListener('pointerdown', e => {
     if (e.button !== 1) return;            // 仅中键平移 (0=左键绘制, 2=右键菜单)
@@ -2389,22 +2832,48 @@ $('cvOnionToggle').addEventListener('change', e => { cvState.onion = e.target.ch
 // ---------- 工具 ----------
 function cvSetTool(t) {
     cvState.tool = t;
-    ['Pencil','Eraser','Fill','Picker','Line','Rect'].forEach(k => {
+    ['Pencil','Eraser','Fill','Picker','Line','Rect','Ellipse','Select','Lasso','Wand','Move'].forEach(k => {
         const el = $('cvTool' + k);
         if (el) el.classList.toggle('active', t === k.toLowerCase());
     });
+    const row = $('cvRectModeRow');
+    if (row) row.style.display = t === 'rect' ? 'flex' : 'none';
+    if (t !== 'move' && cvState.selDrag) { cvState.selDrag = null; }
 }
-['pencil','eraser','fill','picker','line','rect'].forEach(t => {
+['pencil','eraser','fill','picker','line','rect','ellipse','select','lasso','wand','move'].forEach(t => {
     const el = $('cvTool' + t.charAt(0).toUpperCase() + t.slice(1));
     if (el) el.addEventListener('click', () => cvSetTool(t));
 });
+// 绘制选项绑定
+function cvSetBrush(n) { cvState.brushSize = n; document.querySelectorAll('.brush-btn').forEach(b => b.classList.toggle('active', +b.dataset.brush === n)); }
+document.querySelectorAll('.brush-btn').forEach(b => b.addEventListener('click', () => cvSetBrush(+b.dataset.brush)));
+$('cvSymH').addEventListener('click', () => { cvState.symH = !cvState.symH; $('cvSymH').classList.toggle('active', cvState.symH); cvDrawGrid(); });
+$('cvSymV').addEventListener('click', () => { cvState.symV = !cvState.symV; $('cvSymV').classList.toggle('active', cvState.symV); cvDrawGrid(); });
+$('cvPixelPerfect').addEventListener('change', e => cvState.pixelPerfect = e.target.checked);
+document.querySelectorAll('.rect-mode').forEach(b => b.addEventListener('click', () => {
+    cvState.rectMode = b.dataset.rectmode;
+    document.querySelectorAll('.rect-mode').forEach(x => x.classList.toggle('active', x === b));
+}));
 function cvRenderPalette() {
     const g = $('cvPaletteGrid'); g.innerHTML = '';
-    cvState.palette.forEach(col => {
+    cvState.palette.forEach((col, i) => {
         const s = document.createElement('div');
         s.className = 'cv-swatch' + (col.toLowerCase() === cvState.color.toLowerCase() ? ' active' : '');
         s.style.background = col; s.title = col;
         s.addEventListener('click', () => cvSetColor(col));
+        // 右键删除
+        s.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            cvState.palette.splice(i, 1);
+            cvRenderPalette();
+            showToast('🗑 已从调色板删除 ' + col);
+        });
+        // 双击改色
+        s.addEventListener('dblclick', () => {
+            const inp = document.createElement('input'); inp.type = 'color'; inp.value = col;
+            inp.addEventListener('input', () => { cvState.palette[i] = inp.value; cvRenderPalette(); });
+            inp.click();
+        });
         g.appendChild(s);
     });
 }
@@ -2451,22 +2920,214 @@ function cvFillBucket(img, x, y, rgba) {
 }
 
 // ---------- 绘制事件 ----------
+/* 带对称/笔刷的像素写入 */
+function cvPaintPixel(img, x, y, rgba) {
+    const r = Math.floor((cvState.brushSize - 1) / 2);
+    const pts = [];
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) pts.push([x + dx, y + dy]);
+    if (cvState.symH) for (const [sx, sy] of pts.slice()) pts.push([CV_SIZE - 1 - sx, sy]);
+    if (cvState.symV) for (const [sx, sy] of pts.slice()) pts.push([sx, CV_SIZE - 1 - sy]);
+    for (const [sx, sy] of pts) cvSetPixel(img, sx, sy, rgba);
+}
+/* 像素完美直线：连续两步对角时跳过中间点，避免阶梯重叠 */
+function cvLinePP(x0, y0, x1, y1, cb) {
+    let dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+    let sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, err = dx - dy, cx = x0, cy = y0;
+    let lx = x0, ly = y0, skip = false;
+    while (true) {
+        if (!skip) cb(cx, cy);
+        if (cx === x1 && cy === y1) break;
+        const e2 = 2 * err;
+        const mX = e2 > -dy, mY = e2 < dx;
+        if (mX) err -= dy;
+        if (mY) err += dx;
+        skip = (mX && mY) && (Math.abs(cx - lx) === 1 && Math.abs(cy - ly) === 1);
+        lx = cx; ly = cy;
+        if (mX) cx += sx;
+        if (mY) cy += sy;
+    }
+}
+/* 中点椭圆轮廓 */
+function cvDrawEllipse(x0, y0, x1, y1, cb) {
+    const ax = Math.min(x0, x1), ay = Math.min(y0, y1), bx = Math.max(x0, x1), by = Math.max(y0, y1);
+    const rx = Math.round((bx - ax) / 2), ry = Math.round((by - ay) / 2), cx = ax + rx, cy = ay + ry;
+    if (rx === 0 && ry === 0) { cb(cx, cy); return; }
+    if (rx === 0) { for (let y = ay; y <= by; y++) cb(cx, y); return; }
+    if (ry === 0) { for (let x = ax; x <= bx; x++) cb(x, cy); return; }
+    const rx2 = rx * rx, ry2 = ry * ry;
+    let x = 0, y = ry, p = ry2 - rx2 * ry + rx2 * 0.25;
+    const put = (px, py) => { cb(cx + px, cy + py); cb(cx - px, cy + py); cb(cx + px, cy - py); cb(cx - px, cy - py); };
+    put(x, y);
+    while (ry2 * x < rx2 * y) {
+        x++;
+        if (p < 0) p += 2 * ry2 * x + ry2;
+        else { y--; p += 2 * ry2 * x - 2 * rx2 * y + ry2; }
+        put(x, y);
+    }
+    p = ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1) * (y - 1) - rx2 * ry2;
+    while (y > 0) {
+        y--;
+        if (p > 0) p += rx2 - 2 * rx2 * y;
+        else { x++; p += 2 * ry2 * x - 2 * rx2 * y + rx2; }
+        put(x, y);
+    }
+}
+/* 填充椭圆 (扫描线) */
+function cvFillEllipse(x0, y0, x1, y1, cb) {
+    const ax = Math.min(x0, x1), ay = Math.min(y0, y1), bx = Math.max(x0, x1), by = Math.max(y0, y1);
+    const hw = (bx - ax) / 2, hh = (by - ay) / 2, cx = (ax + bx) / 2, cy = (ay + by) / 2;
+    for (let y = ay; y <= by; y++) {
+        const t = hh ? (y - cy) / hh : 0;
+        const half = Math.round(hw * Math.sqrt(Math.max(0, 1 - t * t)));
+        for (let x = Math.round(cx - half); x <= Math.round(cx + half); x++) cb(x, y);
+    }
+}
+/* 矩形/椭圆/直线落笔 (描边或填充) */
+function cvCommitShape(s, en) {
+    const img = cvState.frames[cvState.frame];
+    const put = (x, y) => cvPaintPixel(img, x, y, cvHexToRgba(cvState.color, 255));
+    if (cvState.tool === 'line') {
+        if (cvState.pixelPerfect) cvLinePP(s.x, s.y, en.x, en.y, put);
+        else cvBresenham(s.x, s.y, en.x, en.y, put);
+    } else if (cvState.tool === 'rect') {
+        const x = Math.min(s.x, en.x), y = Math.min(s.y, en.y);
+        const w = Math.abs(en.x - s.x) + 1, h = Math.abs(en.y - s.y) + 1;
+        if (cvState.rectMode === 'stroke') {
+            for (let xx = 0; xx < w; xx++) { put(x + xx, y); put(x + xx, y + h - 1); }
+            for (let yy = 0; yy < h; yy++) { put(x, y + yy); put(x + w - 1, y + yy); }
+        } else {
+            for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) put(x + xx, y + yy);
+        }
+    } else if (cvState.tool === 'ellipse') {
+        if (cvState.rectMode === 'stroke') cvDrawEllipse(s.x, s.y, en.x, en.y, put);
+        else cvFillEllipse(s.x, s.y, en.x, en.y, put);
+    }
+}
 function cvDrawShapePreview(start, end) {
     cvCtx.putImageData(cvState._snap, 0, 0);
     cvCtx.fillStyle = cvState.color;
     if (cvState.tool === 'line') {
-        cvBresenham(start.x, start.y, end.x, end.y, (x, y) => cvCtx.fillRect(x, y, 1, 1));
+        if (cvState.pixelPerfect) cvLinePP(start.x, start.y, end.x, end.y, (x, y) => cvCtx.fillRect(x, y, 1, 1));
+        else cvBresenham(start.x, start.y, end.x, end.y, (x, y) => cvCtx.fillRect(x, y, 1, 1));
     } else if (cvState.tool === 'rect') {
         const x = Math.min(start.x, end.x), y = Math.min(start.y, end.y);
         const w = Math.abs(end.x - start.x) + 1, h = Math.abs(end.y - start.y) + 1;
-        cvCtx.fillRect(x, y, w, h);
+        if (cvState.rectMode === 'stroke') {
+            cvCtx.fillRect(x, y, w, 1); cvCtx.fillRect(x, y + h - 1, w, 1);
+            cvCtx.fillRect(x, y, 1, h); cvCtx.fillRect(x + w - 1, y, 1, h);
+        } else cvCtx.fillRect(x, y, w, h);
+    } else if (cvState.tool === 'ellipse') {
+        if (cvState.rectMode === 'stroke') cvDrawEllipse(start.x, start.y, end.x, end.y, (x, y) => cvCtx.fillRect(x, y, 1, 1));
+        else cvFillEllipse(start.x, start.y, end.x, end.y, (x, y) => cvCtx.fillRect(x, y, 1, 1));
     }
+}
+/* ---------- 选区工具 ---------- */
+function cvSelFromRect(x0, y0, x1, y1) {
+    const x = Math.min(x0, x1), y = Math.min(y0, y1);
+    const w = Math.abs(x1 - x0) + 1, h = Math.abs(y1 - y0) + 1;
+    cvState.selection = { x, y, w, h, mask: new Uint8Array(w * h).fill(1) };
+    cvRenderSelection();
+}
+function cvSelRenderOverlay() {
+    cvSplitCtx.clearRect(0, 0, CV_SIZE, CV_SIZE);
+    if (cvState.split.active) return;
+    // 选区内容拖拽预览
+    if (cvState.selDrag) cvSplitCtx.drawImage(cvState.selDrag.canvas, Math.round(cvState.selDrag.ox), Math.round(cvState.selDrag.oy));
+    const s = cvState.selection;
+    if (s) {
+        cvSplitCtx.strokeStyle = '#ffffff'; cvSplitCtx.lineWidth = 1;
+        cvSplitCtx.setLineDash([2, 2]);
+        cvSplitCtx.strokeRect(s.x + 0.5, s.y + 0.5, s.w - 1, s.h - 1);
+        cvSplitCtx.setLineDash([]);
+    }
+    // 套索进行中折线预览
+    if (cvState.lassoPts && cvState.lassoPts.length > 1) {
+        cvSplitCtx.strokeStyle = '#ffffff'; cvSplitCtx.lineWidth = 1;
+        cvSplitCtx.beginPath();
+        cvSplitCtx.moveTo(cvState.lassoPts[0][0] + 0.5, cvState.lassoPts[0][1] + 0.5);
+        for (let i = 1; i < cvState.lassoPts.length; i++) cvSplitCtx.lineTo(cvState.lassoPts[i][0] + 0.5, cvState.lassoPts[i][1] + 0.5);
+        cvSplitCtx.stroke();
+    }
+    // 矩形选区拖框预览
+    if (cvState.selStart) {
+        const s0 = cvState.selStart, s1 = cvState.selEnd || s0;
+        const x = Math.min(s0.x, s1.x), y = Math.min(s0.y, s1.y);
+        const w = Math.abs(s1.x - s0.x) + 1, h = Math.abs(s1.y - s0.y) + 1;
+        cvSplitCtx.strokeStyle = 'rgba(255,255,255,0.9)'; cvSplitCtx.lineWidth = 1;
+        cvSplitCtx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    }
+}
+function cvRenderSelection() { cvSelRenderOverlay(); }
+/* 魔术棒：BFS 泛洪 */
+function cvMagicWand(img, sx, sy, tolerance) {
+    const mask = new Uint8Array(CV_SIZE * CV_SIZE);
+    const t = cvGetPixel(img, sx, sy);
+    mask[sy * CV_SIZE + sx] = 1;
+    const q = [[sx, sy]];
+    while (q.length) {
+        const [x, y] = q.pop();
+        for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+            if (nx < 0 || ny < 0 || nx >= CV_SIZE || ny >= CV_SIZE) continue;
+            const i = ny * CV_SIZE + nx;
+            if (mask[i]) continue;
+            const px = cvGetPixel(img, nx, ny);
+            const dr = px[0] - t[0], dg = px[1] - t[1], db = px[2] - t[2];
+            if (2 * dr * dr + 4 * dg * dg + 3 * db * db <= tolerance * tolerance) { mask[i] = 1; q.push([nx, ny]); }
+        }
+    }
+    return mask;
+}
+function cvSelFromMask(mask) {
+    let minX = CV_SIZE, minY = CV_SIZE, maxX = -1, maxY = -1;
+    for (let y = 0; y < CV_SIZE; y++) for (let x = 0; x < CV_SIZE; x++) {
+        if (mask[y * CV_SIZE + x]) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+    }
+    if (maxX < 0) { cvState.selection = null; cvRenderSelection(); return; }
+    const w = maxX - minX + 1, h = maxY - minY + 1;
+    const bm = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) bm[y * w + x] = mask[(minY + y) * CV_SIZE + minX + x];
+    cvState.selection = { x: minX, y: minY, w, h, mask: bm };
+    cvRenderSelection();
+}
+/* 选区内容切出 (移动用)：复制并清除源区域 */
+function cvSelCutContent() {
+    const s = cvState.selection;
+    const img = cvState.frames[cvState.frame];
+    if (!s || !img) return null;
+    const c = document.createElement('canvas'); c.width = s.w; c.height = s.h;
+    const cc = c.getContext('2d'); const out = cc.createImageData(s.w, s.h);
+    let any = false;
+    for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) {
+        const mi = y * s.w + x;
+        if (!s.mask[mi]) continue;
+        const si = ((s.y + y) * CV_SIZE + s.x + x) * 4, di = mi * 4;
+        out.data[di] = img.data[si]; out.data[di + 1] = img.data[si + 1]; out.data[di + 2] = img.data[si + 2]; out.data[di + 3] = img.data[si + 3];
+        img.data[si + 3] = 0;
+        any = true;
+    }
+    if (!any) return null;
+    cc.putImageData(out, 0, 0);
+    return c;
 }
 cvCanvas.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;            // 仅左键绘制；中键平移，右键浏览器菜单
+    if (cvState.split.active) { cvSplitOnDown(e); return; }   // AI 拆分模式接管
     e.preventDefault(); cvCanvas.setPointerCapture(e.pointerId);
     const p = cvClientToPixel(e);
     const img = cvState.frames[cvState.frame];
+    // 空格按住 + 拖拽 = 视图平移
+    if (cvState.spacePan) {
+        cvState.panning = true; cvState.panLastX = e.clientX; cvState.panLastY = e.clientY;
+        cvCanvas.style.cursor = 'grabbing';
+        return;
+    }
+    // Alt + 点击 = 临时取色 (不切换工具)
+    if (e.altKey && cvState.tool !== 'picker') {
+        const apx = cvGetPixel(img, p.x, p.y);
+        if (apx[3] > 0) cvSetColor('#' + [apx[0], apx[1], apx[2]].map(v => v.toString(16).padStart(2, '0')).join(''));
+        showToast('💧 临时取色 ' + cvState.color);
+        return;
+    }
     if (cvState.tool === 'picker') {
         const px = cvGetPixel(img, p.x, p.y);
         if (px[3] > 0) cvSetColor('#' + [px[0],px[1],px[2]].map(v => v.toString(16).padStart(2,'0')).join(''));
@@ -2477,43 +3138,132 @@ cvCanvas.addEventListener('pointerdown', e => {
         cvFillBucket(img, p.x, p.y, cvHexToRgba(cvState.color, 255));
         cvCommitRender(); return;
     }
+    if (cvState.tool === 'select') {
+        cvState.selStart = p; cvState.selEnd = p;
+        cvSelRenderOverlay(); return;
+    }
+    if (cvState.tool === 'lasso') {
+        cvState.lassoPts = [[p.x, p.y]];
+        cvSelRenderOverlay(); return;
+    }
+    if (cvState.tool === 'wand') {
+        const mask = cvMagicWand(img, p.x, p.y, 60);
+        cvSelFromMask(mask);
+        showToast('🪄 魔术棒选区完成，Ctrl+D 取消');
+        return;
+    }
+    if (cvState.tool === 'move') {
+        const s = cvState.selection;
+        if (s && p.x >= s.x && p.x < s.x + s.w && p.y >= s.y && p.y < s.y + s.h) {
+            cvPushUndo();
+            const cut = cvSelCutContent();
+            if (cut) { cvState.selDrag = { canvas: cut, ox: s.x, oy: s.y, lastX: p.x, lastY: p.y }; cvCommitRender(); cvSelRenderOverlay(); }
+        }
+        return;
+    }
     cvPushUndo();
     cvState.drawing = true; cvState.lastPx = p;
-    if (cvState.tool === 'line' || cvState.tool === 'rect') {
+    if (cvState.tool === 'line' || cvState.tool === 'rect' || cvState.tool === 'ellipse') {
         cvState._snap = cvCtx.createImageData(CV_SIZE, CV_SIZE);
         cvState._snap.data.set(img.data);
         cvState.lineStart = p;
     } else {
         const rgba = cvState.tool === 'eraser' ? [0,0,0,0] : cvHexToRgba(cvState.color, 255);
-        cvSetPixel(img, p.x, p.y, rgba);
+        cvPaintPixel(img, p.x, p.y, rgba);
         cvCommitRender();
     }
 });
 cvCanvas.addEventListener('pointermove', e => {
+    if (cvState.split.active) { cvSplitOnMove(e); return; }   // AI 拆分模式接管
+    // 状态栏：坐标 + 颜色
+    const sp = cvClientToPixel(e);
+    const sxy = $('cvStatXY'), scol = $('cvStatColor');
+    if (sxy) sxy.textContent = sp.x + ', ' + sp.y;
+    if (scol && cvState.frames[cvState.frame]) {
+        const px = cvGetPixel(cvState.frames[cvState.frame], sp.x, sp.y);
+        scol.textContent = px[3] > 0 ? '#' + [px[0], px[1], px[2]].map(v => v.toString(16).padStart(2, '0')).join('') : '透明';
+    }
+    if (cvState.tool === 'select' && cvState.selStart) {
+        cvState.selEnd = cvClientToPixel(e);
+        cvSelRenderOverlay(); return;
+    }
+    if (cvState.tool === 'lasso' && cvState.lassoPts) {
+        const p = cvClientToPixel(e);
+        const last = cvState.lassoPts[cvState.lassoPts.length - 1];
+        if (Math.abs(p.x - last[0]) + Math.abs(p.y - last[1]) >= 2) { cvState.lassoPts.push([p.x, p.y]); cvSelRenderOverlay(); }
+        return;
+    }
+    if (cvState.tool === 'move' && cvState.selDrag) {
+        const p = cvClientToPixel(e);
+        cvState.selDrag.ox += p.x - cvState.selDrag.lastX;
+        cvState.selDrag.oy += p.y - cvState.selDrag.lastY;
+        cvState.selDrag.lastX = p.x; cvState.selDrag.lastY = p.y;
+        cvSelRenderOverlay(); return;
+    }
     if (!cvState.drawing) return;
     const p = cvClientToPixel(e);
     const img = cvState.frames[cvState.frame];
-    if (cvState.tool === 'line' || cvState.tool === 'rect') {
+    if (cvState.tool === 'line' || cvState.tool === 'rect' || cvState.tool === 'ellipse') {
         cvDrawShapePreview(cvState.lineStart, p);
     } else {
         const rgba = cvState.tool === 'eraser' ? [0,0,0,0] : cvHexToRgba(cvState.color, 255);
-        cvBresenham(cvState.lastPx.x, cvState.lastPx.y, p.x, p.y, (x, y) => cvSetPixel(img, x, y, rgba));
+        cvBresenham(cvState.lastPx.x, cvState.lastPx.y, p.x, p.y, (x, y) => cvPaintPixel(img, x, y, rgba));
         cvState.lastPx = p; cvCommitRender();
     }
 });
 window.addEventListener('pointerup', e => {
+    if (cvState.split.active) { cvSplitOnUp(e); return; }   // AI 拆分模式接管
+    if (cvState.tool === 'select' && cvState.selStart) {
+        const s0 = cvState.selStart, s1 = cvClientToPixel(e);
+        cvSelFromRect(s0.x, s0.y, s1.x, s1.y);
+        cvState.selStart = null; cvState.selEnd = null;
+        return;
+    }
+    if (cvState.tool === 'lasso' && cvState.lassoPts) {
+        const pts = cvState.lassoPts;
+        cvState.lassoPts = null;
+        if (pts.length >= 3) {
+            let minX = CV_SIZE, minY = CV_SIZE, maxX = -1, maxY = -1;
+            pts.forEach(([x, y]) => { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; });
+            const w = maxX - minX + 1, h = maxY - minY + 1;
+            const mask = new Uint8Array(CV_SIZE * CV_SIZE);
+            for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
+                if (splitPtInPoly(x, y, pts)) mask[y * CV_SIZE + x] = 1;
+            }
+            cvSelFromMask(mask);
+            showToast('🪝 套索选区完成，Ctrl+D 取消');
+        }
+        cvSelRenderOverlay(); return;
+    }
+    if (cvState.tool === 'move' && cvState.selDrag) {
+        // 松手：把选区内容烘焙回帧
+        const d = cvState.selDrag;
+        cvState.selDrag = null;
+        const img = cvState.frames[cvState.frame];
+        if (img && d.canvas) {
+            const tc = document.createElement('canvas'); tc.width = d.canvas.width; tc.height = d.canvas.height;
+            tc.getContext('2d').drawImage(d.canvas, 0, 0);
+            const px = tc.getContext('2d').getImageData(0, 0, tc.width, tc.height);
+            const bx = Math.round(d.ox), by = Math.round(d.oy);
+            for (let y = 0; y < px.height; y++) for (let x = 0; x < px.width; x++) {
+                const tx = bx + x, ty = by + y;
+                if (tx < 0 || tx >= CV_SIZE || ty < 0 || ty >= CV_SIZE) continue;
+                const si = (y * px.width + x) * 4;
+                if (px.data[si + 3] < 128) continue;
+                const di = (ty * CV_SIZE + tx) * 4;
+                img.data[di] = px.data[si]; img.data[di + 1] = px.data[si + 1]; img.data[di + 2] = px.data[si + 2]; img.data[di + 3] = px.data[si + 3];
+            }
+            cvCommitRender();
+        }
+        cvSelRenderOverlay();
+        showToast('✅ 选区内容已移动烘焙 (Ctrl+Z 撤销)');
+        return;
+    }
     if (!cvState.drawing) return;
     cvState.drawing = false;
-    if (cvState.tool === 'line' || cvState.tool === 'rect') {
-        const img = cvState.frames[cvState.frame];
+    if (cvState.tool === 'line' || cvState.tool === 'rect' || cvState.tool === 'ellipse') {
         const s = cvState.lineStart, en = cvClientToPixel(e);
-        if (cvState.tool === 'line') {
-            cvBresenham(s.x, s.y, en.x, en.y, (x, y) => cvSetPixel(img, x, y, cvHexToRgba(cvState.color, 255)));
-        } else {
-            const x = Math.min(s.x, en.x), y = Math.min(s.y, en.y);
-            const w = Math.abs(en.x - s.x) + 1, h = Math.abs(en.y - s.y) + 1;
-            for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) cvSetPixel(img, x+xx, y+yy, cvHexToRgba(cvState.color, 255));
-        }
+        cvCommitShape(s, en);
         cvState._snap = null; cvState.lineStart = null;
         cvCommitRender();
     }
@@ -2561,6 +3311,41 @@ $('cvImportRef').addEventListener('click', () => {
     cvRenderAll(); cvRenderFramesList();
     showToast(`✅ 已导入处理后的图 (${w}×${h}，1:1 居中放入 ${CV_SIZE}×${CV_SIZE})`);
 });
+
+// ---------- 画布模式存档点：保存当前全部帧 / 还原到保存点 ----------
+const cvCloneFrames = () => cvState.frames.map(f => {
+    const c = cvCtx.createImageData(f.width, f.height);
+    c.data.set(f.data);
+    return c;
+});
+cvState.snapshot = null;
+$('cvSaveState').addEventListener('click', () => {
+    if (!cvState.frames.length) { showToast('❌ 画布模式还没有帧', true); return; }
+    cvState.snapshot = { size: CV_SIZE, frames: cvCloneFrames(), frame: cvState.frame };
+    $('cvRestoreState').disabled = false;
+    showToast('💾 已保存画布状态（全部帧），可随时还原');
+});
+$('cvRestoreState').addEventListener('click', () => {
+    const s = cvState.snapshot;
+    if (!s) { showToast('❌ 还没有保存过状态', true); return; }
+    if (s.size !== CV_SIZE) {   // 画布尺寸被改过：重建画布元素
+        CV_SIZE = s.size;
+        cvCanvas.width = cvCanvas.height = CV_SIZE;
+        cvGridCanvas.width = cvGridCanvas.height = CV_SIZE;
+        cvOnionCanvas.width = cvOnionCanvas.height = CV_SIZE;
+        $('cvSizeSel').value = String(CV_SIZE);
+    }
+    cvState.frames = s.frames.map(f => { const c = cvCtx.createImageData(f.width, f.height); c.data.set(f.data); return c; });
+    cvState.frame = Math.min(s.frame, cvState.frames.length - 1);
+    cvState.undoStacks = cvState.frames.map(() => []);   // 还原后撤销历史重置，避免与帧不匹配
+    cvState.redoStacks = cvState.frames.map(() => []);
+    cvState.selection = null; cvState.selClip = null; cvState.selDrag = null; cvState.lassoPts = null;
+    cvState.playing = false;
+    if (cvState.playTimer) { clearInterval(cvState.playTimer); cvState.playTimer = null; }
+    $('cvPlay').textContent = '▶ 播放';
+    cvRenderAll(); cvRenderFramesList();
+    showToast('↩ 已还原到画布保存点');
+});
 $('cvExtractPalette').addEventListener('click', () => {
     const cur = cvState.frames[cvState.frame];
     if (!cur) { showToast('❌ 无当前帧', true); return; }
@@ -2573,7 +3358,15 @@ $('cvPlay').addEventListener('click', () => {
     if (cvState.playing) { cvStopPlay(); return; }
     if (cvState.frames.length < 2) { showToast('❌ 至少需要 2 帧才能播放', true); return; }
     cvState.playing = true; $('cvPlay').textContent = '⏸ 停止';
-    cvState.playTimer = setInterval(() => cvSelectFrame((cvState.frame + 1) % cvState.frames.length), 1000 / cvState.fps);
+    cvState.playDir = 1;
+    cvState.playTimer = setInterval(() => {
+        let nf = cvState.frame + cvState.playDir;
+        if (cvState.pingPong) {
+            if (nf >= cvState.frames.length) { cvState.playDir = -1; nf = cvState.frames.length - 2; }
+            else if (nf < 0) { cvState.playDir = 1; nf = 1; }
+        } else nf = nf % cvState.frames.length;
+        cvSelectFrame(nf);
+    }, 1000 / cvState.fps);
 });
 function cvStopPlay() {
     cvState.playing = false;
@@ -2782,10 +3575,9 @@ function cvShowNavGuide(nav) {
     $('cvAiNote').textContent = cvFormatNavNote(nav, false);
 }
 $('cvAiNav').addEventListener('click', async () => {
-    const base = ($('aiApiBase').value || '').replace(/\/$/, '');
-    const key = ($('aiApiKey').value || '').trim();
-    const model = ($('aiModel').value || '').trim();
-    if (!base || !key || !model) { showToast('❌ 请先在工坊模式填写 AI 配置 (Base / Key / Model)', true); return; }
+    const cfg = getAiCfg();
+    const base = cfg.textBase, key = cfg.key, model = cfg.textModel;
+    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写文本 Base / Key / 文本模型', true); return; }
     if (!cvState.frames.length) { showToast('❌ 无当前帧', true); return; }
     const cur = cvState.frames[cvState.frame];
     const isFirst = cvIsEmpty(cur) && cvState.frame === 0;
@@ -2877,6 +3669,7 @@ window.addEventListener('keydown', e => {
     if ($('canvasView').style.display === 'none') return;
     const t = e.target.tagName;
     if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+    if (cvState.split.active) return;    // AI 拆分模式：禁用画笔快捷键
     const map = { p:'pencil', e:'eraser', g:'fill', i:'picker', l:'line', r:'rect' };
     const k = (e.key || '').toLowerCase();
     if (map[k]) { cvSetTool(map[k]); e.preventDefault(); }
@@ -2886,17 +3679,9 @@ window.addEventListener('keydown', e => {
 cvRenderPalette();
 cvSetTool('pencil');
 
-// ========== 新增：云端生图(OpenAI 兼容 /images/generations) 配置与预设 / 识图写prompt / 同步调用取图 / 单帧重生成 ==========
+// ========== 新增：云端生图(OpenAI 兼容 /images/generations)：识图写prompt / 同步调用取图 / 单帧重生成 ==========
 // 铁律：生图只走 POST {base}/images/generations 同步接口；识图走 /chat/completions。两者独立。
-// 与原逻辑交互只读取 state / 追加字段，不改任何已有函数体。新 DOM ID 均以 cloud* 前缀。
-const CLOUD_CFG_KEY = 'pixelWorkshop.cloudGenConfig';
-const CLOUD_PRESETS = {
-    custom:       { base: '',                                              model: '' },
-    openai:       { base: 'https://api.openai.com/v1',                     model: 'dall-e-3' },
-    aliyun:       { base: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'wanx2.1-t2i-turbo' },
-    siliconflow:  { base: 'https://api.siliconflow.cn/v1',                 model: 'FLUX.1-schnell' },
-    zhipu:        { base: 'https://open.bigmodel.cn/api/paas/v4',          model: 'cogview-4' }
-};
+// API 配置统一在右上角 ⚙ 设置：生图用「生图模型」，识图用「文本模型」，Base/Key 共用。
 state.cloudCancel = false;
 state.cloudBusy = false;
 state.cloudSeedOk = true;   // 运行时降级：若后端 400 报 seed，置 false 并提示
@@ -2910,8 +3695,8 @@ document.querySelectorAll('.cloud-mode-btn').forEach(btn => {
         const isDirect = btn.dataset.cmode === 'direct';
         state.cloudDirectMode = isDirect;
         $('cloudModeHint').textContent = isDirect
-            ? '🎨 直接生成模式：无需参考图，按提示词直接生图。挑一张满意的帧点「📌 设为参考图」后可切到 AI 生成做动画，或当普通生图 AI 用。'
-            : '📷 参考图模式：需先上传参考图，「识图写提示词」可辅助，一致性更好。';
+            ? '🎨 直接生成模式：无需参考图，按提示词直接生图。挑一张满意的帧点「📌 设为参考图」后可切到本地生成做动画，或当普通生图 AI 用。'
+            : '📷 参考图模式：需先上传参考图，「识图写提示词」可辅助，一致性更好。API 配置在右上角 ⚙ 设置。';
         $('btnCloudVision').style.display = isDirect ? 'none' : '';
         $('btnCloudUseAsRef').style.display = isDirect ? '' : 'none';
         $('cloudDirectHint').style.display = isDirect ? '' : 'none';
@@ -2930,7 +3715,7 @@ $('btnCloudUseAsRef').addEventListener('click', () => {
     ctx.putImageData(state.cleanedImage, 0, 0);
     resetView();
     cloudRefreshSpriteSize();
-    showToast('✅ 当前帧已设为参考图，可切换到「AI 生成」做动画');
+    showToast('✅ 当前帧已设为参考图，可切换到「本地生成」做动画');
 });
 
 function cloudRefreshSpriteSize() {
@@ -2944,40 +3729,6 @@ function cloudRefreshSpriteSize() {
         hint.style.color = '#5fd3ff';
     }
 }
-
-function cloudSaveCfg() {
-    const base = $('cloudApiBase').value.trim();
-    const key = $('cloudApiKey').value.trim();
-    const model = $('cloudModel').value.trim();
-    const preset = $('cloudPreset').value;
-    try {
-        localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify({ base, key, model, preset }));
-        const st = $('cloudCfgStatus');
-        st.textContent = '已保存 ✓'; st.style.color = '#00b894';
-        showToast('✅ 云端配置已保存');
-    } catch (e) { showToast('❌ 保存失败: ' + e.message, true); }
-}
-function cloudLoadCfg() {
-    try {
-        const raw = localStorage.getItem(CLOUD_CFG_KEY);
-        if (!raw) return;
-        const cfg = JSON.parse(raw);
-        if (cfg.preset) $('cloudPreset').value = cfg.preset;
-        if (cfg.base) $('cloudApiBase').value = cfg.base;
-        if (cfg.key) $('cloudApiKey').value = cfg.key;
-        if (cfg.model) $('cloudModel').value = cfg.model;
-        const st = $('cloudCfgStatus');
-        st.textContent = '已保存 ✓'; st.style.color = '#00b894';
-    } catch (e) { }
-}
-$('cloudPreset').addEventListener('change', e => {
-    const p = CLOUD_PRESETS[e.target.value];
-    if (!p) return;
-    if (p.base) $('cloudApiBase').value = p.base;
-    if (p.model) $('cloudModel').value = p.model;
-});
-$('btnCloudSave').addEventListener('click', cloudSaveCfg);
-cloudLoadCfg();
 
 // ---------- 提示词模板 (通用角色 / 像素风 / 写实风) ----------
 const CLOUD_PROMPT_TEMPLATES = {
@@ -3035,47 +3786,6 @@ $('cloudSeedToggle').addEventListener('change', e => {
     $('cloudSeedHint').textContent = on ? '固定相同种子+prompt 强约束可保持角色一致。' : '当前不固定种子，一致性依赖 prompt 约束。';
 });
 
-// ---------- 测试连接 (按 HTTP 状态码分类) ----------
-$('btnCloudTest').addEventListener('click', async () => {
-    const base = $('cloudApiBase').value.replace(/\/$/, '');
-    const key = $('cloudApiKey').value.trim();
-    const model = $('cloudModel').value.trim();
-    if (!base || !key || !model) { showToast('❌ 请填写完整云端配置', true); return; }
-    $('btnCloudTest').disabled = true; $('btnCloudTest').textContent = '⏳ 测试中...';
-    $('cloudSampleBox').style.display = 'none';
-    try {
-        const resp = await fetch(`${base}/images/generations`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-            body: JSON.stringify({ model, prompt: 'a simple red square on white background', size: '512x512', n: 1 })
-        });
-        if (!resp.ok) {
-            const txt = (await resp.text()).substring(0, 160);
-            if (resp.status === 401) showToast('❌ API Key 无效或未授权', true);
-            else if (resp.status === 404) showToast('❌ 模型名错误或 Base URL 路径不正确，请确认该服务商支持 /images/generations', true);
-            else if (resp.status === 400 || resp.status === 422) showToast('❌ 参数错误，请检查 size/model 是否被该后端支持: ' + txt, true);
-            else showToast('❌ HTTP ' + resp.status + ': ' + txt, true);
-            return;
-        }
-        const result = await resp.json();
-        const item = result.data && result.data[0];
-        if (!item || (!item.url && !item.b64_json)) {
-            showToast('❌ 该后端未返回同步图片数据，可能不支持同步 /images/generations（异步 task 模式）', true);
-            return;
-        }
-        showToast('✅ 连接成功');
-        try {
-            const url = item.b64_json ? 'data:image/png;base64,' + item.b64_json : item.url;
-            $('cloudSampleImg').src = url;
-            $('cloudSampleBox').style.display = 'block';
-        } catch (_) { }
-    } catch (err) {
-        showToast('❌ 无法访问该地址，请检查 Base URL 或本地代理设置: ' + err.message, true);
-    } finally {
-        $('btnCloudTest').disabled = false; $('btnCloudTest').textContent = '🔌 测试连接';
-    }
-});
-
 // ---------- 识图写 prompt (复用 AI 视觉配置 /chat/completions，与生图端点独立) ----------
 function cloudVisionSysPrompt(ctx) {
     return `你是像素动画的"提示词工程师"。观察用户提供的角色参考图，为云端文生图模型撰写生成单帧像素图的提示词。
@@ -3086,10 +3796,9 @@ negative: deformed, extra limbs, inconsistent character, different outfit, blurr
 }
 $('btnCloudVision').addEventListener('click', async () => {
     if (!state.cleanedImage) { showToast('❌ 请先上传并处理参考图', true); return; }
-    const base = $('aiApiBase').value.replace(/\/$/, '');
-    const key = $('aiApiKey').value.trim();
-    const model = $('aiModel').value.trim();
-    if (!base || !key || !model) { showToast('❌ 请先在「AI 生成」档配置视觉模型 (Base/Key/Model)', true); return; }
+    const cfg = getAiCfg();
+    const { textBase: base, key } = cfg; const model = cfg.textModel;
+    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写文本 Base / Key / 文本模型', true); return; }
     let action = $('cloudActionSelect').value, actionDesc = action;
     if (action === 'custom') actionDesc = $('cloudCustomAction').value.trim() || 'custom';
     const ctx = { action: actionDesc, total: +$('cloudFrameCount').value || 4, extra: $('cloudExtraPrompt').value.trim(), palette: state.cleanedImage ? extractPalette(state.cleanedImage) : [] };
@@ -3230,10 +3939,9 @@ async function cloudGenerateAll(regenIndices) {
     if (state.cloudBusy) { showToast('❌ 正在生成中，请稍候', true); return; }
     // 直接生成模式无需参考图；参考图模式必须有 cleanedImage
     if (!state.cloudDirectMode && !state.cleanedImage) { showToast('❌ 请先上传并处理参考图，或切到「直接生成模式」', true); return; }
-    const base = $('cloudApiBase').value.replace(/\/$/, '');
-    const key = $('cloudApiKey').value.trim();
-    const model = $('cloudModel').value.trim();
-    if (!base || !key || !model) { showToast('❌ 请填写完整云端配置', true); return; }
+    const cfg = getAiCfg();
+    const base = cfg.imageBase, key = cfg.key, model = cfg.imageModel;
+    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写生图 Base / Key / 生图模型', true); return; }
     const positive = $('cloudPromptPos').value.trim();
     if (!positive) { showToast('❌ 请先填写或生成 Positive Prompt', true); return; }
     let action = $('cloudActionSelect').value, customDesc = '';
@@ -3314,6 +4022,1216 @@ $('btnCloudRegenFrame').addEventListener('click', () => {
     cloudGenerateAll([state.currentFrame]);
 });
 $('btnCloudCancel').addEventListener('click', () => { state.cloudCancel = true; showToast('⏹ 已请求取消，完成当前帧后停止'); });
+
+// ========== 新增：AI 部件拆分 + 轻量骨骼摆姿势 ==========
+// 在画布模式内：AI 视觉识别角色部件(头/躯干/手/脚等) → 多边形拆分；也可手动加点拆分。
+// 每个部件有锚点(关节)，可摆姿势旋转/平移生成动画帧；支持导出部件独立透明 PNG/ZIP。
+const cvSplitCanvas = $('cvSplitLayer');
+const cvSplitCtx = cvSplitCanvas.getContext('2d');
+cvSplitCtx.imageSmoothingEnabled = false;
+
+const SPLIT_COLORS = ['#ff5d8f', '#5fd3ff', '#ffd23f', '#7dff8a', '#c39bff', '#ff8800', '#00b894', '#fdcb6e', '#ff6b6b', '#74b9ff'];
+
+cvState.split = { active: false, mode: 'select', parts: [], cur: -1, selPt: -1, drag: null, poseFrames: [], pendingRename: -1, cutDrag: null, lastBake: null };
+
+function splitCurPart() { return cvState.split.parts[cvState.split.cur] || null; }
+
+/* ---------- 进入 / 退出拆分模式 ---------- */
+function splitEnter() {
+    if (cvState.split.active) return;
+    cvState.split.active = true;
+    const tools = $('splitTools');
+    if (tools) tools.style.display = 'block';
+    const panel = $('cvSplitPanel');
+    if (panel) panel.style.display = 'block';
+    cvSetSplitMode('select');
+    cvSplitCanvas.width = CV_SIZE; cvSplitCanvas.height = CV_SIZE;
+    cvSplitCtx.imageSmoothingEnabled = false;
+    splitRenderOverlay();
+    showToast('✅ 已进入 AI 拆分模式：AI 自动识别或手动加点拆分，可导出部件与摆姿势动画');
+}
+function splitExit() {
+    if (!cvState.split.active) return;
+    cvState.split.active = false;
+    cvState.split.drag = null;
+    // 退出时若有未松手的切割移动：恢复源像素与顶点位置
+    if (cvState.split.cutDrag) {
+        const cut = cvState.split.cutDrag;
+        const part = cvState.split.parts[cut.idx];
+        if (part) { part.points = cut.origPoints; if (cut.origAnchor) part.anchor = cut.origAnchor; }
+        cvState.split.cutDrag = null;
+        cvUndo();
+    }
+    const tools = $('splitTools');
+    if (tools) tools.style.display = 'none';
+    const panel = $('cvSplitPanel');
+    if (panel) panel.style.display = 'none';
+    cvSplitCtx.clearRect(0, 0, CV_SIZE, CV_SIZE);
+    cvRenderAll();
+    showToast('🚪 已退出 AI 拆分模式');
+}
+
+/* ---------- 模式切换 (选择 / 加点 / 摆姿势) ---------- */
+function cvSetSplitMode(m) {
+    cvState.split.mode = m;
+    document.querySelectorAll('.split-smode').forEach(b => b.classList.toggle('active', b.dataset.smode === m));
+    splitRenderOverlay(); splitRenderPartsList();
+}
+document.querySelectorAll('.split-smode').forEach(b => {
+    b.addEventListener('click', () => cvSetSplitMode(b.dataset.smode));
+});
+
+/* ---------- 部件管理 ---------- */
+function splitNewPart() {
+    const idx = cvState.split.parts.length + 1;
+    const p = {
+        name: 'part' + idx,
+        points: [], anchor: null,
+        color: SPLIT_COLORS[(idx - 1) % SPLIT_COLORS.length],
+        rot: 0, dx: 0, dy: 0
+    };
+    cvState.split.parts.push(p);
+    cvState.split.cur = cvState.split.parts.length - 1;
+    cvState.split.selPt = -1;
+    cvState.split.pendingRename = cvState.split.cur;   // 创建后自动弹出改名输入框
+    cvSetSplitMode('point');   // 直接进入描点模式，立刻在画布上切割
+    showToast('✂️ 已创建部件：直接在画布上点击描点切割，点「🔒 闭合部件」完成');
+    return p;
+}
+function splitDeletePart(i) {
+    const name = cvState.split.parts[i] ? cvState.split.parts[i].name : '';
+    cvState.split.parts.splice(i, 1);
+    if (cvState.split.cur >= cvState.split.parts.length) cvState.split.cur = cvState.split.parts.length - 1;
+    splitRenderOverlay(); splitRenderPartsList();
+    showToast('🗑 已删除部件「' + name + '」');
+}
+function splitAutoAnchor(p) {
+    if (!p || p.points.length < 3) return;
+    let minX = CV_SIZE, minY = CV_SIZE, maxX = -1, maxY = -1;
+    p.points.forEach(([x, y]) => { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; });
+    p.anchor = [Math.round((minX + maxX) / 2), Math.round((minY + maxY) / 2)];
+}
+function splitClosePart() {
+    const p = splitCurPart();
+    if (!p) { showToast('❌ 请先选中或新建部件', true); return; }
+    if (p.points.length < 3) { showToast('❌ 至少需要 3 个顶点才能闭合', true); return; }
+    if (!p.anchor) splitAutoAnchor(p);
+    cvState.split.selPt = -1;
+    splitRenderOverlay(); splitRenderPartsList();
+    showToast('✅ 部件「' + p.name + '」已闭合 (锚点已定位，可在选择模式拖动调整)');
+}
+function splitAnchorCenter() {
+    const p = splitCurPart();
+    if (!p) { showToast('❌ 请先选中部件', true); return; }
+    splitAutoAnchor(p);
+    splitRenderOverlay();
+    showToast('🎯 锚点已居中于「' + p.name + '」');
+}
+
+/* ---------- AI 自动拆分 (视觉识别手/脚等部件) ---------- */
+function splitAiSysPrompt(w, h) {
+    return `# 角色
+你是 2D 像素角色精灵图的"部件拆分助手"。用户提供一张角色像素图。
+你的任务：识别图中所有可独立活动的身体部件，输出每个部件的外轮廓多边形与关节锚点。
+
+========== 部件识别规则 ==========
+1. 常见部件（按图中实际可见为准，不要虚构不存在的）：head 头 / body 躯干 / armL armR 左右臂(含手) / handL handR 左右手(可选) / legL legR 左右腿 / footL footR 左右脚(可选) / weapon 武器道具(可选)。
+2. 输出顺序必须"从里到外"：先 body，再 legL legR armL armR，最后 handL handR footL footR weapon。重叠像素归属后输出的部件（外层）。
+3. 每个部件：points 是沿部件轮廓的顶点（顺时针或逆时针），8~20 个点，必须紧贴该部件的真实像素（覆盖率≥85%），不能框到其他部件或空白区域。
+4. anchor 是关节位置：头→脖子底部中心；躯干→胯部中心；臂→肩关节；手→手腕；腿→胯部/髋关节；脚→脚踝；武器→握持点。
+5. 左右按图中角色自身方向判断（镜像区分，按实际姿态输出）。
+
+========== 输出 schema（只输出纯 JSON） ==========
+{"parts":[
+  {"name":"head","points":[[x,y],...],"anchor":[x,y]},
+  ...
+]}
+
+========== 硬约束 ==========
+- 坐标为整数，0 <= x < ${w}，0 <= y < ${h}。
+- 每个部件 points 至少 4 个点，且不共线成退化多边形。
+- 部件之间允许少量重叠（1~3px），禁止大面积重叠或留大缝。
+- 只输出纯 JSON，无 markdown、无注释、无解释。`;
+}
+function splitParseJson(raw) {
+    let s = String(raw || '').trim();
+    s = s.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const a = s.indexOf('{'), b = s.lastIndexOf('}');
+    if (a === -1 || b === -1 || b < a) throw new Error('未找到 JSON 对象');
+    return JSON.parse(s.slice(a, b + 1));
+}
+async function splitAiDetect() {
+    const cfg = getAiCfg();
+    const base = cfg.textBase, key = cfg.key, model = cfg.textModel;
+    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写文本 Base / Key / 文本模型', true); return; }
+    const img = cvState.frames[cvState.frame];
+    if (!img || cvIsEmpty(img)) { showToast('❌ 当前帧为空，请先导入工坊参考图或画上角色', true); return; }
+    const c = document.createElement('canvas'); c.width = CV_SIZE; c.height = CV_SIZE;
+    c.getContext('2d').putImageData(img, 0, 0);
+    const b64 = c.toDataURL('image/png');
+    $('btnSplitAi').disabled = true; $('btnSplitAi').textContent = '⏳ AI 识别部件中...';
+    try {
+        const resp = await fetch(`${base}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+            body: JSON.stringify({
+                model, temperature: 0.2, max_tokens: 3000,
+                messages: [
+                    { role: 'system', content: splitAiSysPrompt(CV_SIZE, CV_SIZE) },
+                    { role: 'user', content: [
+                        { type: 'image_url', image_url: { url: b64 } },
+                        { type: 'text', text: '请识别图中角色的身体部件并输出纯 JSON。' }
+                    ] }
+                ]
+            })
+        });
+        if (!resp.ok) throw new Error('API ' + resp.status + ': ' + (await resp.text()).substring(0, 200));
+        const result = await resp.json();
+        const content = result.choices?.[0]?.message?.content || '';
+        if (!content.trim()) throw new Error('AI 未返回内容');
+        const data = splitParseJson(content);
+        const parts = data.parts;
+        if (!Array.isArray(parts) || !parts.length) throw new Error('未识别到部件');
+        const cl = (v) => Math.max(0, Math.min(CV_SIZE - 1, Math.round(+v)));
+        cvState.split.parts = parts.map((p, i) => ({
+            name: String(p.name || ('part' + (i + 1))).slice(0, 20),
+            points: (Array.isArray(p.points) ? p.points : []).map(pt =>
+                (Array.isArray(pt) && pt.length >= 2 && !isNaN(+pt[0]) && !isNaN(+pt[1])) ? [cl(pt[0]), cl(pt[1])] : null
+            ).filter(Boolean),
+            anchor: (Array.isArray(p.anchor) && p.anchor.length >= 2 && !isNaN(+p.anchor[0]) && !isNaN(+p.anchor[1]))
+                ? [cl(p.anchor[0]), cl(p.anchor[1])] : null,
+            color: SPLIT_COLORS[i % SPLIT_COLORS.length],
+            rot: 0, dx: 0, dy: 0
+        })).filter(p => p.points.length >= 3);
+        if (!cvState.split.parts.length) throw new Error('AI 返回的多边形均无效');
+        cvState.split.parts.forEach(p => { if (!p.anchor) splitAutoAnchor(p); });
+        cvState.split.cur = -1; cvState.split.selPt = -1;
+        splitRenderOverlay(); splitRenderPartsList();
+        showToast('✅ AI 识别到 ' + cvState.split.parts.length + ' 个部件: ' + cvState.split.parts.map(p => p.name).join('、'));
+    } catch (err) {
+        console.error(err);
+        showToast('❌ AI 拆分失败: ' + err.message, true);
+    } finally {
+        $('btnSplitAi').disabled = false; $('btnSplitAi').textContent = '🤖 AI 自动拆分';
+    }
+}
+
+/* ---------- 几何工具 ---------- */
+function splitPtInPoly(x, y, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+        if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+}
+function splitPolyMask(pts) {
+    const m = new Uint8Array(CV_SIZE * CV_SIZE);
+    for (let y = 0; y < CV_SIZE; y++) {
+        for (let x = 0; x < CV_SIZE; x++) {
+            if (splitPtInPoly(x, y, pts)) m[y * CV_SIZE + x] = 1;
+        }
+    }
+    return m;
+}
+// 命中检测：顶点 > 锚点 > 多边形内部 (后画的部件优先)
+function splitHitTest(x, y) {
+    const parts = cvState.split.parts;
+    for (let i = parts.length - 1; i >= 0; i--) {
+        const p = parts[i];
+        for (let k = 0; k < p.points.length; k++) {
+            const px = p.points[k][0], py = p.points[k][1];
+            if (Math.abs(px - x) <= 3 && Math.abs(py - y) <= 3) return { type: 'pt', idx: i, k };
+        }
+        if (p.anchor && Math.abs(p.anchor[0] - x) <= 3 && Math.abs(p.anchor[1] - y) <= 3) return { type: 'anchor', idx: i };
+    }
+    for (let i = parts.length - 1; i >= 0; i--) {
+        if (parts[i].points.length >= 3 && splitPtInPoly(x, y, parts[i].points)) return { type: 'poly', idx: i };
+    }
+    return null;
+}
+
+/* ---------- Overlay 渲染 (多边形 / 顶点 / 锚点) ---------- */
+function splitRenderOverlay() {
+    cvSplitCtx.clearRect(0, 0, CV_SIZE, CV_SIZE);
+    if (!cvState.split.active) return;
+    if (cvState.split.mode === 'pose') { splitRenderPosePreview(); return; }
+    // 切割移动预览：拖动中的部件像素块 (源区域已从帧中清除，这里画移动后的位置)
+    const cut = cvState.split.cutDrag;
+    if (cut) cvSplitCtx.drawImage(cut.canvas, Math.round(cut.ox), Math.round(cut.oy));
+    const parts = cvState.split.parts;
+    parts.forEach(p => {
+        if (p.points.length < 3) return;
+        cvSplitCtx.fillStyle = p.color; cvSplitCtx.globalAlpha = 0.28;
+        cvSplitCtx.beginPath();
+        p.points.forEach((pt, k) => k ? cvSplitCtx.lineTo(pt[0] + 0.5, pt[1] + 0.5) : cvSplitCtx.moveTo(pt[0] + 0.5, pt[1] + 0.5));
+        cvSplitCtx.closePath(); cvSplitCtx.fill();
+        cvSplitCtx.globalAlpha = 1;
+        cvSplitCtx.strokeStyle = p.color; cvSplitCtx.lineWidth = 1;
+        cvSplitCtx.stroke();
+    });
+    parts.forEach((p, i) => {
+        const isCur = i === cvState.split.cur;
+        p.points.forEach((pt, k) => {
+            // 细小顶点：2×2 像素，选中顶点白色高亮，避免遮挡画面
+            cvSplitCtx.fillStyle = (isCur && cvState.split.selPt === k) ? '#ffffff' : p.color;
+            cvSplitCtx.fillRect(pt[0], pt[1], 2, 2);
+        });
+        if (p.anchor) {
+            cvSplitCtx.strokeStyle = '#ffffff'; cvSplitCtx.lineWidth = 1;
+            cvSplitCtx.beginPath(); cvSplitCtx.moveTo(p.anchor[0] - 2, p.anchor[1]); cvSplitCtx.lineTo(p.anchor[0] + 2, p.anchor[1]); cvSplitCtx.stroke();
+            cvSplitCtx.beginPath(); cvSplitCtx.moveTo(p.anchor[0], p.anchor[1] - 2); cvSplitCtx.lineTo(p.anchor[0], p.anchor[1] + 2); cvSplitCtx.stroke();
+        }
+        if (isCur && p.points.length) {
+            cvSplitCtx.fillStyle = '#ffffff';
+            cvSplitCtx.font = '9px monospace';
+            cvSplitCtx.fillText(p.name, p.points[0][0], Math.max(7, p.points[0][1] - 2));
+        }
+    });
+    // 框选切割预览
+    const d = cvState.split.drag;
+    if (d && d.type === 'rect') {
+        const rx = Math.min(d.x0, d.x1), ry = Math.min(d.y0, d.y1);
+        const rw = Math.abs(d.x1 - d.x0) + 1, rh = Math.abs(d.y1 - d.y0) + 1;
+        cvSplitCtx.fillStyle = 'rgba(255,255,255,0.25)';
+        cvSplitCtx.fillRect(rx, ry, rw, rh);
+        cvSplitCtx.strokeStyle = '#ffffff'; cvSplitCtx.lineWidth = 1;
+        cvSplitCtx.strokeRect(rx + 0.5, ry + 0.5, rw - 1, rh - 1);
+    }
+}
+
+/* ---------- 切割快照：把部件 mask 内像素从帧中切出并清除源区域 (移动切割用) ---------- */
+function splitCutSnapshot(idx) {
+    const img = cvState.frames[cvState.frame];
+    if (!img) return null;
+    const part = cvState.split.parts[idx];
+    if (!part || part.points.length < 3) return null;
+    const mask = splitPolyMask(part.points);
+    let minX = CV_SIZE, minY = CV_SIZE, maxX = -1, maxY = -1;
+    part.points.forEach(([x, y]) => { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; });
+    const bw = maxX - minX + 1, bh = maxY - minY + 1;
+    const c = document.createElement('canvas'); c.width = bw; c.height = bh;
+    const cctx = c.getContext('2d'); cctx.imageSmoothingEnabled = false;
+    const out = cctx.createImageData(bw, bh);
+    let any = false;
+    for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+            const g = y * CV_SIZE + x;
+            if (mask[g]) {
+                const si = g * 4, di = ((y - minY) * bw + (x - minX)) * 4;
+                out.data[di] = img.data[si]; out.data[di + 1] = img.data[si + 1];
+                out.data[di + 2] = img.data[si + 2]; out.data[di + 3] = img.data[si + 3];
+                img.data[si + 3] = 0;                 // 清除源区域像素
+                any = true;
+            }
+        }
+    }
+    if (!any) return null;
+    cctx.putImageData(out, 0, 0);
+    return { idx, canvas: c, ox: minX, oy: minY };
+}
+
+/* ---------- 部件裁剪 (多边形归属：外层部件优先占像素，避免旋转后重叠区重影) ---------- */
+function splitBuildPartCache() {
+    const img = cvState.frames[cvState.frame];
+    if (!img) return [];
+    const parts = cvState.split.parts.filter(p => p.points.length >= 3);
+    if (!parts.length) return [];
+    const masks = parts.map(p => splitPolyMask(p.points));
+    const owned = new Uint8Array(CV_SIZE * CV_SIZE);
+    const crops = [];
+    for (let i = parts.length - 1; i >= 0; i--) {
+        let minX = CV_SIZE, minY = CV_SIZE, maxX = -1, maxY = -1;
+        parts[i].points.forEach(([x, y]) => { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; });
+        const bw = maxX - minX + 1, bh = maxY - minY + 1;
+        const c = document.createElement('canvas'); c.width = bw; c.height = bh;
+        const cctx = c.getContext('2d'); cctx.imageSmoothingEnabled = false;
+        const out = cctx.createImageData(bw, bh);
+        let any = false;
+        for (let y = minY; y <= maxY; y++) {
+            for (let x = minX; x <= maxX; x++) {
+                const g = y * CV_SIZE + x;
+                if (masks[i][g] && !owned[g]) {
+                    const si = g * 4, di = ((y - minY) * bw + (x - minX)) * 4;
+                    out.data[di] = img.data[si]; out.data[di + 1] = img.data[si + 1]; out.data[di + 2] = img.data[si + 2]; out.data[di + 3] = img.data[si + 3];
+                    owned[g] = 1; any = true;
+                }
+            }
+        }
+        if (any) { cctx.putImageData(out, 0, 0); crops.push({ canvas: c, ox: minX, oy: minY, part: parts[i] }); }
+    }
+    return crops.reverse();
+}
+
+/* ---------- 摆姿势预览 (按锚点旋转 + 平移渲染裁剪部件；源位置像素被切割清除，无重影) ---------- */
+function splitRenderPosePreview() {
+    const cur = cvState.frames[cvState.frame];
+    if (!cur) return;
+    cvSplitCtx.clearRect(0, 0, CV_SIZE, CV_SIZE);
+    // 底图：复制当前帧，并把"被移动/旋转部件"的源区域像素清除 (切割效果)
+    const buf = cvSplitCtx.createImageData(CV_SIZE, CV_SIZE);
+    buf.data.set(cur.data);
+    cvState.split.parts.forEach(p => {
+        if (p.points.length < 3) return;
+        if (Math.abs(p.rot) < 1e-4 && Math.abs(p.dx) < 1e-4 && Math.abs(p.dy) < 1e-4) return;
+        const mask = splitPolyMask(p.points);
+        for (let i = 0; i < mask.length; i++) if (mask[i]) buf.data[i * 4 + 3] = 0;
+    });
+    cvSplitCtx.putImageData(buf, 0, 0);
+    const crops = splitBuildPartCache();
+    if (!crops.length) { splitUpdatePoseInfo(); return; }
+    crops.forEach(({ canvas, ox, oy, part }) => {
+        cvSplitCtx.save();
+        const ax = part.anchor ? part.anchor[0] : (ox + canvas.width / 2);
+        const ay = part.anchor ? part.anchor[1] : (oy + canvas.height / 2);
+        cvSplitCtx.translate(ax + part.dx, ay + part.dy);
+        cvSplitCtx.rotate(part.rot);
+        cvSplitCtx.translate(-ax, -ay);
+        cvSplitCtx.drawImage(canvas, ox, oy);
+        cvSplitCtx.restore();
+    });
+    // 叠加轻量骨架指示：锚点十字 + 部件名
+    cvState.split.parts.forEach((p, i) => {
+        if (!p.anchor) return;
+        cvSplitCtx.strokeStyle = '#ffffff'; cvSplitCtx.lineWidth = 1;
+        cvSplitCtx.beginPath(); cvSplitCtx.moveTo(p.anchor[0] - 2, p.anchor[1]); cvSplitCtx.lineTo(p.anchor[0] + 2, p.anchor[1]); cvSplitCtx.stroke();
+        cvSplitCtx.beginPath(); cvSplitCtx.moveTo(p.anchor[0], p.anchor[1] - 2); cvSplitCtx.lineTo(p.anchor[0], p.anchor[1] + 2); cvSplitCtx.stroke();
+        if (i === cvState.split.cur && p.points.length) {
+            cvSplitCtx.fillStyle = '#ffffff';
+            cvSplitCtx.font = '9px monospace';
+            cvSplitCtx.fillText(p.name, p.points[0][0], Math.max(7, p.points[0][1] - 2));
+        }
+    });
+    splitUpdatePoseInfo();
+}
+
+/* ---------- 拆分模式交互事件 (由 cvCanvas 分发) ---------- */
+function cvSplitOnDown(e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    try { cvCanvas.setPointerCapture(e.pointerId); } catch (_) { }
+    const p = cvClientToPixel(e);
+    const mode = cvState.split.mode;
+    const hit = splitHitTest(p.x, p.y);
+    if (mode === 'point') {
+        const cur = splitCurPart();
+        if (!cur) { showToast('💡 请先点「＋ 新部件」创建部件，再点击画布加点', true); return; }
+        if (cur.points.length >= 3 && splitPtInPoly(p.x, p.y, cur.points)) {
+            showToast('💡 当前部件已闭合，如需新部件请点「＋ 新部件」', true); return;
+        }
+        cur.points.push([p.x, p.y]);
+        cvState.split.selPt = cur.points.length - 1;
+        cvState.split.drag = { type: 'add', idx: cvState.split.cur };
+        splitRenderOverlay(); splitRenderPartsList();
+        return;
+    }
+    if (mode === 'select') {
+        if (hit && hit.type === 'pt') {
+            cvState.split.cur = hit.idx; cvState.split.selPt = hit.k;
+            cvState.split.drag = { type: 'pt', idx: hit.idx, k: hit.k };
+        } else if (hit && hit.type === 'anchor') {
+            cvState.split.cur = hit.idx; cvState.split.selPt = -1;
+            cvState.split.drag = { type: 'anchor', idx: hit.idx };
+        } else if (hit && hit.type === 'poly') {
+            // 拖部件内部 = 切割画面并整体移动像素 (顶点+锚点+像素一起平移)；单击不移动仅选中
+            // 切割延迟到首次真实移动时执行 (见 cvSplitOnMove)，保证 Ctrl+Z 快照的是原始帧
+            cvState.split.cur = hit.idx; cvState.split.selPt = -1;
+            cvState.split.drag = { type: 'movePart', idx: hit.idx, lastX: p.x, lastY: p.y, started: false };
+        } else {
+            cvState.split.cur = -1; cvState.split.selPt = -1;
+        }
+        splitRenderOverlay(); splitRenderPartsList();
+        return;
+    }
+    if (mode === 'rect') {
+        cvState.split.drag = { type: 'rect', x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+        splitRenderOverlay();
+        return;
+    }
+    if (mode === 'pose') {
+        if (hit && hit.type === 'anchor') {
+            cvState.split.cur = hit.idx;
+            cvState.split.drag = { type: 'move', idx: hit.idx, lastX: p.x, lastY: p.y };
+        } else if (hit && hit.type === 'poly') {
+            cvState.split.cur = hit.idx;
+            const part = cvState.split.parts[hit.idx];
+            const a = part.anchor || [0, 0];
+            cvState.split.drag = { type: 'rot', idx: hit.idx, baseAng: Math.atan2(p.y - a[1], p.x - a[0]), baseRot: part.rot };
+        } else {
+            cvState.split.cur = -1;
+        }
+        splitRenderOverlay(); splitRenderPartsList();
+        return;
+    }
+}
+function cvSplitOnMove(e) {
+    const d = cvState.split.drag;
+    if (!d) return;
+    const p = cvClientToPixel(e);
+    if (d.type === 'rect') {
+        d.x1 = p.x; d.y1 = p.y;
+        splitRenderOverlay();
+        return;
+    }
+    if (d.type === 'add') {
+        const cur = splitCurPart();
+        if (cur && cur.points.length) { cur.points[cur.points.length - 1] = [p.x, p.y]; splitRenderOverlay(); }
+        return;
+    }
+    if (d.type === 'pt') {
+        const part = cvState.split.parts[d.idx];
+        if (part) { part.points[d.k] = [p.x, p.y]; splitRenderOverlay(); }
+        return;
+    }
+    if (d.type === 'anchor') {
+        const part = cvState.split.parts[d.idx];
+        if (part) { part.anchor = [p.x, p.y]; splitRenderOverlay(); }
+        return;
+    }
+    if (d.type === 'movePart') {
+        const part = cvState.split.parts[d.idx];
+        if (!part) return;
+        const dx = p.x - d.lastX, dy = p.y - d.lastY;
+        // 首次真实移动：先快照原始帧 (源像素未清除)，再切出像素块
+        if (!d.started && (dx !== 0 || dy !== 0)) {
+            d.started = true;
+            cvPushUndo();
+            const cut = splitCutSnapshot(d.idx);
+            if (cut) {
+                cut.origOx = cut.ox; cut.origOy = cut.oy;
+                cut.origPoints = part.points.map(pt => [pt[0], pt[1]]);
+                cut.origAnchor = part.anchor ? [part.anchor[0], part.anchor[1]] : null;
+                cvState.split.cutDrag = cut;
+                cvCommitRender();
+            }
+        }
+        part.points.forEach(pt => { pt[0] += dx; pt[1] += dy; });
+        if (part.anchor) { part.anchor[0] += dx; part.anchor[1] += dy; }
+        // 切割块跟随移动 (像素实时随框走)
+        if (cvState.split.cutDrag) { cvState.split.cutDrag.ox += dx; cvState.split.cutDrag.oy += dy; }
+        d.lastX = p.x; d.lastY = p.y;
+        splitRenderOverlay();
+        return;
+    }
+    if (d.type === 'rot') {
+        const part = cvState.split.parts[d.idx];
+        if (!part) return;
+        const a = part.anchor || [0, 0];
+        const ang = Math.atan2(p.y - a[1], p.x - a[0]);
+        part.rot = d.baseRot + (ang - d.baseAng);
+        splitRenderOverlay();
+        return;
+    }
+    if (d.type === 'move') {
+        const part = cvState.split.parts[d.idx];
+        if (!part) return;
+        part.dx += p.x - d.lastX; part.dy += p.y - d.lastY;
+        d.lastX = p.x; d.lastY = p.y;
+        splitRenderOverlay();
+    }
+}
+function cvSplitOnUp(e) {
+    const d = cvState.split.drag;
+    if (d && d.type === 'movePart' && cvState.split.cutDrag) {
+        // 松手：把切割块烘焙到帧的新位置 (像素写入目标区域，超出画布部分裁掉)
+        const cut = cvState.split.cutDrag;
+        const img = cvState.frames[cvState.frame];
+        const part = cvState.split.parts[d.idx];
+        if (img && cut.canvas) {
+            const tc = document.createElement('canvas'); tc.width = cut.canvas.width; tc.height = cut.canvas.height;
+            tc.getContext('2d').drawImage(cut.canvas, 0, 0);
+            const px = tc.getContext('2d').getImageData(0, 0, tc.width, tc.height);
+            const bx = Math.round(cut.ox), by = Math.round(cut.oy);
+            for (let y = 0; y < px.height; y++) {
+                for (let x = 0; x < px.width; x++) {
+                    const tx = bx + x, ty = by + y;
+                    if (tx < 0 || tx >= CV_SIZE || ty < 0 || ty >= CV_SIZE) continue;
+                    const si = (y * px.width + x) * 4;
+                    if (px.data[si + 3] < 128) continue;
+                    const di = (ty * CV_SIZE + tx) * 4;
+                    img.data[di] = px.data[si]; img.data[di + 1] = px.data[si + 1]; img.data[di + 2] = px.data[si + 2]; img.data[di + 3] = px.data[si + 3];
+                }
+            }
+            cvCommitRender();
+            // 记录本次切割烘焙的几何快照：撤销/重做帧像素时同步回退/恢复顶点与锚点
+            const st = cvState.undoStacks[cvState.frame];
+            cvState.split.lastBake = {
+                idx: d.idx,
+                frame: cvState.frame,
+                undoMark: st ? st.length : 0,
+                origPoints: cut.origPoints,
+                origAnchor: cut.origAnchor,
+                bakedPoints: part ? part.points.map(pt => [pt[0], pt[1]]) : null,
+                bakedAnchor: (part && part.anchor) ? [part.anchor[0], part.anchor[1]] : null,
+                consumed: false
+            };
+            if (part) showToast('✅ 已切割移动部件「' + part.name + '」并烘焙像素 (Ctrl+Z 撤销)');
+        }
+        cvState.split.cutDrag = null;
+    }
+    if (d && d.type === 'rect') {
+        const x = Math.min(d.x0, d.x1), y = Math.min(d.y0, d.y1);
+        const w = Math.abs(d.x1 - d.x0) + 1, h = Math.abs(d.y1 - d.y0) + 1;
+        if (w >= 3 && h >= 3) {
+            const idx = cvState.split.parts.length + 1;
+            cvState.split.parts.push({
+                name: 'part' + idx,
+                points: [[x, y], [x + w - 1, y], [x + w - 1, y + h - 1], [x, y + h - 1]],
+                anchor: [Math.round(x + w / 2), Math.round(y + h / 2)],
+                color: SPLIT_COLORS[(idx - 1) % SPLIT_COLORS.length],
+                rot: 0, dx: 0, dy: 0
+            });
+            cvState.split.cur = cvState.split.parts.length - 1;
+            cvState.split.pendingRename = cvState.split.cur;   // 框选完成后自动弹出改名输入框
+            showToast('✅ 已框选切割出部件 (' + w + '×' + h + ')，可直接改名');
+        }
+    }
+    cvState.split.drag = null;
+    cvState.split.selPt = -1;
+    splitRenderOverlay(); splitRenderPartsList();
+}
+
+/* ---------- 切割移动的顶点同步回退/重做 (与帧像素撤销栈联动) ---------- */
+function splitGeoAfterUndo() {
+    const lb = cvState.split.lastBake;
+    if (!lb || lb.consumed || lb.frame !== cvState.frame) return;
+    const st = cvState.undoStacks[lb.frame];
+    if (st && st.length < lb.undoMark) {
+        const part = cvState.split.parts[lb.idx];
+        if (part && lb.origPoints) {
+            part.points = lb.origPoints.map(pt => [pt[0], pt[1]]);
+            part.anchor = lb.origAnchor ? [lb.origAnchor[0], lb.origAnchor[1]] : null;
+        }
+        lb.consumed = true;
+        splitRenderOverlay(); splitRenderPartsList();
+    }
+}
+function splitGeoAfterRedo() {
+    const lb = cvState.split.lastBake;
+    if (!lb || !lb.consumed || lb.frame !== cvState.frame) return;
+    const st = cvState.undoStacks[lb.frame];
+    if (st && st.length >= lb.undoMark) {
+        const part = cvState.split.parts[lb.idx];
+        if (part && lb.bakedPoints) {
+            part.points = lb.bakedPoints.map(pt => [pt[0], pt[1]]);
+            part.anchor = lb.bakedAnchor ? [lb.bakedAnchor[0], lb.bakedAnchor[1]] : null;
+        }
+        lb.consumed = false;   // 保留 lastBake，支持多轮 undo/redo 循环
+        splitRenderOverlay(); splitRenderPartsList();
+    }
+}
+
+/* ---------- 姿势帧 (轻量骨骼动画) ---------- */
+function splitSavePose() {
+    const parts = cvState.split.parts.filter(p => p.points.length >= 3);
+    if (!parts.length) { showToast('❌ 请先闭合至少一个部件', true); return; }
+    splitRenderPosePreview();
+    const img = cvSplitCtx.getImageData(0, 0, CV_SIZE, CV_SIZE);
+    const snap = { rot: {}, dx: {}, dy: {} };
+    parts.forEach(p => { snap.rot[p.name] = p.rot; snap.dx[p.name] = p.dx; snap.dy[p.name] = p.dy; });
+    const at = cvState.frame + 1;
+    cvState.frames.splice(at, 0, img);
+    cvState.undoStacks.splice(at, 0, []);
+    cvState.redoStacks.splice(at, 0, []);
+    cvState.split.poseFrames.splice(at, 0, snap);
+    cvState.frame = at;
+    // 保存后归零姿态参数：新帧即基准位图，从静止开始摆下一帧
+    cvState.split.parts.forEach(p => { p.rot = 0; p.dx = 0; p.dy = 0; });
+    cvRenderAll(); cvRenderFramesList(); splitRenderOverlay();
+    showToast('📌 已保存姿势为第 ' + (at + 1) + ' 帧 (继续摆下一姿势，或点 ▶ 播放预览)');
+}
+function splitResetPose() {
+    cvState.split.parts.forEach(p => { p.rot = 0; p.dx = 0; p.dy = 0; });
+    splitRenderOverlay();
+    showToast('↺ 已重置所有部件姿态');
+}
+function splitUpdatePoseInfo() {
+    const info = $('splitInfo');
+    if (!info) return;
+    const cur = splitCurPart();
+    if (cvState.split.mode === 'pose' && cur && cur.points.length >= 3) {
+        info.textContent = `「${cur.name}」旋转 ${(cur.rot * 180 / Math.PI).toFixed(1)}°  位移 (${cur.dx}, ${cur.dy})`;
+    } else if (cvState.split.mode === 'pose') {
+        info.textContent = '🦴 摆姿势：点选部件拖动=旋转，拖锚点(十字)=平移，点「📌 保存姿势为帧」烘焙成动画帧。';
+    } else if (cvState.split.mode === 'point') {
+        info.textContent = '📍 加点切割：点击画布添加顶点(可拖动微调)，点「🔒 闭合部件」生成多边形并定位锚点。';
+    } else if (cvState.split.mode === 'rect') {
+        info.textContent = '▭ 框选切割：在画布上按住拖动框出区域，松手自动生成矩形部件(锚点居中)，再用选择模式拖顶点精修。';
+    } else {
+        info.textContent = '🖱 选择：点部件选中；拖顶点(小方块)改轮廓；拖锚点(十字)改关节；拖部件内部=切割画面整体移动像素 (Esc 取消)；Delete 删选中顶点。';
+    }
+}
+
+/* ---------- 导出部件 (独立透明 PNG / ZIP) ---------- */
+async function splitExportParts(zipped) {
+    const crops = splitBuildPartCache();
+    if (!crops.length) { showToast('❌ 无已闭合部件可导出', true); return; }
+    if (zipped) {
+        if (typeof JSZip === 'undefined') { showToast('❌ JSZip 未加载', true); return; }
+        const zip = new JSZip();
+        crops.forEach(({ canvas, part }) => {
+            zip.file('part_' + part.name + '.png', canvas.toDataURL('image/png').split(',')[1], { base64: true });
+        });
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'sprite_parts.zip'; a.click();
+        showToast('✅ 已导出 ' + crops.length + ' 个部件 ZIP');
+    } else {
+        crops.forEach(({ canvas, part }, i) => {
+            setTimeout(() => {
+                const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = 'part_' + part.name + '.png'; a.click();
+            }, i * 250);
+        });
+        showToast('✅ 正在逐个下载 ' + crops.length + ' 个部件 PNG...');
+    }
+}
+
+/* ---------- 部件列表渲染 ---------- */
+function splitStartRename(item, p, list) {
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.value = p.name;
+    inp.style.cssText = 'flex:1;min-width:0;font-size:11px;padding:1px 4px;background:var(--bg-dark);border:1px solid var(--accent);color:var(--text-main);border-radius:3px;';
+    const nm = item.querySelector('.pn');
+    if (nm) item.replaceChild(inp, nm);
+    inp.focus(); inp.select();
+    const commit = () => {
+        const v = inp.value.trim();
+        if (v) { p.name = v.slice(0, 20); splitRenderPartsList(); splitRenderOverlay(); }
+        else splitRenderPartsList();
+    };
+    inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.stopPropagation(); commit(); } if (ev.key === 'Escape') splitRenderPartsList(); });
+    inp.addEventListener('blur', commit);
+}
+function splitRenderPartsList() {
+    const list = $('splitPartsList');
+    if (!list) return;
+    list.innerHTML = '';
+    const autoRename = cvState.split.pendingRename;
+    cvState.split.pendingRename = -1;
+    cvState.split.parts.forEach((p, i) => {
+        const item = document.createElement('div');
+        item.className = 'split-part-item' + (i === cvState.split.cur ? ' active' : '');
+        const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = p.color;
+        const nm = document.createElement('span'); nm.className = 'pn'; nm.textContent = p.name; nm.title = '点击重命名';
+        nm.addEventListener('click', (e) => {
+            e.stopPropagation();
+            splitStartRename(item, p, list);
+        });
+        const cnt = document.createElement('span'); cnt.className = 'pts'; cnt.textContent = p.points.length + '点';
+        const del = document.createElement('button'); del.textContent = '✕'; del.title = '删除该部件';
+        // mousedown 阻止默认行为：防止改名输入框 blur 提前重建列表导致本次点击丢失
+        del.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); });
+        del.addEventListener('click', (e) => { e.stopPropagation(); splitDeletePart(i); });
+        item.appendChild(sw); item.appendChild(nm); item.appendChild(cnt); item.appendChild(del);
+        item.addEventListener('click', () => {
+            cvState.split.cur = i; cvState.split.selPt = -1;
+            splitRenderOverlay(); splitRenderPartsList();
+        });
+        list.appendChild(item);
+        if (autoRename === i) splitStartRename(item, p, list);   // 新建/框选后自动弹出改名
+    });
+    splitUpdatePoseInfo();
+}
+
+/* ---------- 按钮绑定 ---------- */
+// 键盘操作：Delete/Backspace 删除选中顶点；Esc 取消切割移动
+window.addEventListener('keydown', e => {
+    if (!cvState.split.active || $('canvasView').style.display !== 'flex') return;
+    const t = (e.target.tagName || '').toUpperCase();
+    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        const cur = splitCurPart();
+        if (cur && cvState.split.selPt >= 0 && cvState.split.selPt < cur.points.length) {
+            cur.points.splice(cvState.split.selPt, 1);
+            cvState.split.selPt = -1;
+            splitRenderOverlay(); splitRenderPartsList();
+            showToast('🗑 已删除选中顶点');
+        } else if (cvState.split.cur >= 0 && cvState.split.parts[cvState.split.cur]) {
+            // 选中了部件但未选顶点 → 删除整个部件 (符合单个删除的操作习惯)
+            splitDeletePart(cvState.split.cur);
+        }
+    } else if (e.key === 'Escape' && cvState.split.cutDrag && cvState.split.drag && cvState.split.drag.type === 'movePart') {
+        const cut = cvState.split.cutDrag;
+        const part = cvState.split.parts[cut.idx];
+        if (part) { part.points = cut.origPoints; part.anchor = cut.origAnchor; }
+        cvState.split.cutDrag = null;
+        cvState.split.drag = null;
+        cvUndo();   // 恢复被切割的帧像素
+        splitRenderOverlay(); splitRenderPartsList();
+        showToast('↩ 已取消本次切割移动');
+    }
+});
+$('btnSplitExit').addEventListener('click', splitExit);
+$('btnSplitAi').addEventListener('click', splitAiDetect);
+$('btnSplitNew').addEventListener('click', () => splitNewPart());
+$('btnSplitClose').addEventListener('click', splitClosePart);
+$('btnSplitAnchorC').addEventListener('click', splitAnchorCenter);
+$('btnSplitPoseSave').addEventListener('click', splitSavePose);
+$('btnSplitPoseReset').addEventListener('click', splitResetPose);
+$('btnSplitExportPng').addEventListener('click', () => splitExportParts(false));
+$('btnSplitExportZip').addEventListener('click', () => splitExportParts(true));
+$('btnSplitClear').addEventListener('click', () => {
+    cvState.split.parts = []; cvState.split.cur = -1; cvState.split.drag = null; cvState.split.selPt = -1;
+    splitRenderOverlay(); splitRenderPartsList();
+    showToast('🧹 已清空拆分');
+});
+
+// =====================================================================
+// 画布增强 (Aseprite 风格) — 设计文档 pixel-art-studio-design.md
+// =====================================================================
+
+// ---------- 调色板系统：预设 / 导入 5 格式 / 导出 ----------
+const CV_PRESETS = {
+    db16: ['#140c1c','#442434','#30346d','#4e4a4e','#854c30','#346524','#d04648','#757161','#597dce','#d27d2c','#8595a1','#6daa2c','#d2aa99','#6dc2ca','#dad45e','#deeed6'],
+    pico8: ['#000000','#1d2b53','#7e2553','#008751','#ab5236','#5f574f','#c2c3c7','#fff1e8','#ff004d','#ffa300','#ffec27','#00e436','#29adff','#83769c','#ff77a8','#ffccaa'],
+    sweetie16: ['#1a1c2c','#5d275d','#b13e53','#ef7d57','#ffcd75','#a7f070','#38b764','#257179','#29366f','#3b5dc9','#41a6f6','#73eff7','#f4f4f4','#94b0c2','#566c86','#333c57'],
+    nes: ['#000000','#fcfcfc','#f8f8f8','#bcbcbc','#7c7c7c','#a4e4fc','#3cbcfc','#0078f8','#0000fc','#b8b8f8','#6888fc','#0058f8','#0000bc','#d8b8f8','#9878f8','#6844fc'],
+    gb: ['#0f380f','#306230','#8bac0f','#9bbc0f']
+};
+$('cvPalPreset').addEventListener('change', e => {
+    const p = CV_PRESETS[e.target.value];
+    if (!p) return;
+    cvState.palette = p.slice();
+    cvRenderPalette();
+    showToast('✅ 已应用预设 ' + e.target.selectedOptions[0].text + ' (' + p.length + ' 色)');
+});
+// 导入：按扩展名解析 .gpl / .pal / .hex / .txt / .png
+let cvPalImportSeq = 0;   // 防快速连续导入的竞态（只保留最后一次的结果）
+$('cvPalImport').addEventListener('click', () => $('cvPalFile').click());
+$('cvPalFile').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    e.target.value = '';   // 允许重复选择同一文件
+    const seq = ++cvPalImportSeq;
+    const ext = (f.name.split('.').pop() || '').toLowerCase();
+    const done = cols => {
+        if (seq !== cvPalImportSeq) return;   // 已有更新的导入，丢弃本次过期结果
+        if (!cols.length) { showToast('❌ 未从文件中解析到颜色', true); return; }
+        cvState.palette = cols.slice(0, 256);
+        cvRenderPalette();
+        showToast('✅ 已导入 ' + cols.length + ' 色 (' + f.name + ')');
+    };
+    if (ext === 'png') {
+        const rd = new FileReader();
+        rd.onload = () => {
+            const im = new Image();
+            im.onload = () => {
+                const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+                const cx = c.getContext('2d'); cx.drawImage(im, 0, 0);
+                const d = cx.getImageData(0, 0, c.width, c.height).data;
+                const seen = new Set(), cols = [];
+                for (let i = 0; i < d.length; i += 4) {
+                    if (d[i + 3] < 128) continue;
+                    const k = '#' + [d[i], d[i+1], d[i+2]].map(v => v.toString(16).padStart(2, '0')).join('');
+                    if (!seen.has(k)) { seen.add(k); cols.push(k); if (cols.length >= 256) break; }
+                }
+                done(cols);
+            };
+            im.src = rd.result;
+        };
+        rd.readAsDataURL(f);
+        return;
+    }
+    const rd = new FileReader();
+    rd.onload = () => {
+        const text = String(rd.result || '');
+        const cols = [];
+        text.split(/\r?\n/).forEach(line => {
+            const m = line.match(/^\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})(?:\s|$)/);   // gpl / pal: R G B
+            if (m) { cols.push('#' + [m[1], m[2], m[3]].map(v => (+v).toString(16).padStart(2, '0')).join('')); return; }
+            const mh = line.match(/#?([0-9a-fA-F]{6})\b/);                                 // hex / txt: #RRGGBB
+            if (mh) cols.push('#' + mh[1].toLowerCase());
+        });
+        done(cols);
+    };
+    rd.readAsText(f);
+});
+// 导出 .gpl (GIMP Palette)
+$('cvPalExport').addEventListener('click', () => {
+    if (!cvState.palette.length) { showToast('❌ 调色板为空', true); return; }
+    const head = 'GIMP Palette\nName: Pixel Studio Palette\nColumns: 8\n#\n';
+    const body = cvState.palette.map(c => {
+        const n = parseInt(c.slice(1), 16);
+        return ((n >> 16) & 255) + ' ' + ((n >> 8) & 255) + ' ' + (n & 255) + '\t' + c;
+    }).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([head + body], { type: 'text/plain' }));
+    a.download = 'pixel-palette.gpl'; a.click();
+    showToast('✅ 已导出 .gpl 调色板 (' + cvState.palette.length + ' 色)');
+});
+// 追加当前色到调色板
+$('cvPalAdd').addEventListener('click', () => {
+    const lc = cvState.color.toLowerCase();
+    if (cvState.palette.some(c => c.toLowerCase() === lc)) { showToast('⚠ 该颜色已在调色板中'); return; }
+    cvState.palette.push(cvState.color);
+    if (cvState.palette.length > 256) cvState.palette.shift();
+    cvRenderPalette();
+    showToast('✅ 已追加 ' + cvState.color + ' 到调色板');
+});
+
+// ---------- Remap 统一色板：加权距离 + Floyd-Steinberg 抖动 ----------
+function cvNearestPaletteIdx(pal, r, g, b) {
+    let bi = 0, bd = Infinity;
+    for (let i = 0; i < pal.length; i++) {
+        const c = parseInt(pal[i].slice(1), 16);
+        const dr = ((c >> 16) & 255) - r, dg = ((c >> 8) & 255) - g, db = (c & 255) - b;
+        const d = 2 * dr * dr + 4 * dg * dg + 3 * db * db;   // 加权 RGB 距离 (绿敏感)
+        if (d < bd) { bd = d; bi = i; }
+    }
+    return bi;
+}
+function cvRemapImage(img, pal, dither) {
+    const n = CV_SIZE * CV_SIZE;
+    const fr = new Float32Array(n), fg = new Float32Array(n), fb = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+        fr[i] = img.data[i * 4]; fg[i] = img.data[i * 4 + 1]; fb[i] = img.data[i * 4 + 2];
+    }
+    for (let y = 0; y < CV_SIZE; y++) for (let x = 0; x < CV_SIZE; x++) {
+        const i = y * CV_SIZE + x;
+        if (img.data[i * 4 + 3] < 128) continue;             // 透明保持
+        const r = Math.max(0, Math.min(255, Math.round(fr[i])));
+        const g = Math.max(0, Math.min(255, Math.round(fg[i])));
+        const b = Math.max(0, Math.min(255, Math.round(fb[i])));
+        const ci = cvNearestPaletteIdx(pal, r, g, b);
+        const c = parseInt(pal[ci].slice(1), 16);
+        const cr = (c >> 16) & 255, cg = (c >> 8) & 255, cb = c & 255;
+        img.data[i * 4] = cr; img.data[i * 4 + 1] = cg; img.data[i * 4 + 2] = cb;
+        if (dither) {
+            const er = fr[i] - cr, eg = fg[i] - cg, eb = fb[i] - cb;
+            const push = (dx, dy, w) => {
+                if (x + dx >= CV_SIZE || y + dy >= CV_SIZE) return;
+                const j = i + dy * CV_SIZE + dx;
+                fr[j] += er * w; fg[j] += eg * w; fb[j] += eb * w;
+            };
+            push(1, 0, 7 / 16); push(-1, 1, 3 / 16); push(0, 1, 5 / 16); push(1, 1, 1 / 16);
+        }
+    }
+}
+function cvPushAllFramesUndo() {   // 全部帧入撤销栈 (用于全帧操作)
+    cvState.frames.forEach((f, i) => {
+        const snap = cvCtx.createImageData(CV_SIZE, CV_SIZE);
+        snap.data.set(f.data);
+        (cvState.undoStacks[i] = cvState.undoStacks[i] || []).push(snap);
+        if (cvState.undoStacks[i].length > CV_UNDO_CAP) cvState.undoStacks[i].shift();
+        (cvState.redoStacks[i] = cvState.redoStacks[i] || []).length = 0;
+    });
+}
+$('cvRemapFrame').addEventListener('click', () => {
+    if (!cvState.palette.length) { showToast('❌ 调色板为空，请先导入或选预设', true); return; }
+    cvPushUndo();
+    cvRemapImage(cvState.frames[cvState.frame], cvState.palette, $('cvRemapDither').checked);
+    cvRenderAll(); cvRenderFramesList();
+    showToast('🎯 当前帧已映射到调色板' + ($('cvRemapDither').checked ? ' (含抖动)' : ''));
+});
+$('cvRemapAll').addEventListener('click', () => {
+    if (!cvState.palette.length) { showToast('❌ 调色板为空', true); return; }
+    cvPushAllFramesUndo();
+    const d = $('cvRemapDither').checked;
+    cvState.frames.forEach(f => cvRemapImage(f, cvState.palette, d));
+    cvRenderAll(); cvRenderFramesList();
+    showToast('🎯 已映射全部 ' + cvState.frames.length + ' 帧' + (d ? ' (含抖动)' : ''));
+});
+
+// ---------- 画布变换：旋转 / 翻转 / 边框裁剪 ----------
+function cvTransformCurrent(fn, label) {
+    const img = cvState.frames[cvState.frame];
+    if (!img) return;
+    cvPushUndo();
+    fn(img);
+    cvState.selection = null;   // 变换后选区失效
+    cvRenderAll(); cvRenderFramesList();
+    showToast('✅ ' + label);
+}
+function cvRotateImg(img, ccw) {
+    const out = cvCtx.createImageData(CV_SIZE, CV_SIZE);
+    for (let y = 0; y < CV_SIZE; y++) for (let x = 0; x < CV_SIZE; x++) {
+        const si = (y * CV_SIZE + x) * 4;
+        const nx = ccw ? y : CV_SIZE - 1 - y, ny = ccw ? CV_SIZE - 1 - x : x;
+        const di = (ny * CV_SIZE + nx) * 4;
+        out.data[di] = img.data[si]; out.data[di + 1] = img.data[si + 1]; out.data[di + 2] = img.data[si + 2]; out.data[di + 3] = img.data[si + 3];
+    }
+    img.data.set(out.data);
+}
+function cvFlipImg(img, horiz) {
+    const out = cvCtx.createImageData(CV_SIZE, CV_SIZE);
+    for (let y = 0; y < CV_SIZE; y++) for (let x = 0; x < CV_SIZE; x++) {
+        const si = (y * CV_SIZE + x) * 4;
+        const nx = horiz ? CV_SIZE - 1 - x : x, ny = horiz ? y : CV_SIZE - 1 - y;
+        const di = (ny * CV_SIZE + nx) * 4;
+        out.data[di] = img.data[si]; out.data[di + 1] = img.data[si + 1]; out.data[di + 2] = img.data[si + 2]; out.data[di + 3] = img.data[si + 3];
+    }
+    img.data.set(out.data);
+}
+function cvTrimBorders() {
+    const img = cvState.frames[cvState.frame];
+    if (!img) return;
+    cvPushUndo();
+    const [bx, by, bw, bh] = cvBbox(img);
+    if (!bw || !bh) { cvRenderAll(); showToast('⚠ 当前帧为空，无可裁剪'); return; }
+    const out = cvBlankFrame();
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+        const si = ((by + y) * CV_SIZE + bx + x) * 4, di = (y * CV_SIZE + x) * 4;
+        out.data[di] = img.data[si]; out.data[di + 1] = img.data[si + 1]; out.data[di + 2] = img.data[si + 2]; out.data[di + 3] = img.data[si + 3];
+    }
+    img.data.set(out.data);
+    cvState.selection = null;
+    cvRenderAll(); cvRenderFramesList();
+    showToast('✅ 已裁剪四周空白 (' + bw + '×' + bh + ' 内容贴左上)');
+}
+$('cvRotL').addEventListener('click', () => cvTransformCurrent(i => cvRotateImg(i, true), '左旋 90°'));
+$('cvRotR').addEventListener('click', () => cvTransformCurrent(i => cvRotateImg(i, false), '右旋 90°'));
+$('cvRot180').addEventListener('click', () => cvTransformCurrent(i => { cvRotateImg(i, false); cvRotateImg(i, false); }, '旋转 180°'));
+$('cvFlipH').addEventListener('click', () => cvTransformCurrent(i => cvFlipImg(i, true), '水平翻转'));
+$('cvFlipV').addEventListener('click', () => cvTransformCurrent(i => cvFlipImg(i, false), '垂直翻转'));
+$('cvTrim').addEventListener('click', cvTrimBorders);
+
+// ---------- 特效：反相 / 灰度 / 轮廓描边 / 替换颜色 / 亮度对比度 ----------
+$('cvFxInvert').addEventListener('click', () => {
+    cvPushUndo();
+    const img = cvState.frames[cvState.frame];
+    for (let i = 0; i < img.data.length; i += 4) {
+        if (img.data[i + 3] < 8) continue;
+        img.data[i] = 255 - img.data[i]; img.data[i + 1] = 255 - img.data[i + 1]; img.data[i + 2] = 255 - img.data[i + 2];
+    }
+    cvRenderAll(); showToast('✅ 已反相');
+});
+$('cvFxGray').addEventListener('click', () => {
+    cvPushUndo();
+    const img = cvState.frames[cvState.frame];
+    for (let i = 0; i < img.data.length; i += 4) {
+        if (img.data[i + 3] < 8) continue;
+        const g = Math.round(0.299 * img.data[i] + 0.587 * img.data[i + 1] + 0.114 * img.data[i + 2]);
+        img.data[i] = img.data[i + 1] = img.data[i + 2] = g;
+    }
+    cvRenderAll(); showToast('✅ 已转灰度');
+});
+// 轮廓描边：不透明像素的透明邻居涂当前色
+$('cvFxOutline').addEventListener('click', () => {
+    cvPushUndo();
+    const img = cvState.frames[cvState.frame];
+    const src = cvCtx.createImageData(CV_SIZE, CV_SIZE); src.data.set(img.data);
+    const rgba = cvHexToRgba(cvState.color, 255);
+    const empty = (x, y) => x < 0 || y < 0 || x >= CV_SIZE || y >= CV_SIZE || src.data[(y * CV_SIZE + x) * 4 + 3] < 128;
+    for (let y = 0; y < CV_SIZE; y++) for (let x = 0; x < CV_SIZE; x++) {
+        if (src.data[(y * CV_SIZE + x) * 4 + 3] < 128) continue;
+        if (empty(x - 1, y) || empty(x + 1, y) || empty(x, y - 1) || empty(x, y + 1)) {
+            const i = (y * CV_SIZE + x) * 4;
+            img.data[i] = rgba[0]; img.data[i + 1] = rgba[1]; img.data[i + 2] = rgba[2]; img.data[i + 3] = 255;
+        }
+    }
+    cvRenderAll(); showToast('✅ 已生成轮廓描边 (描边色 = 当前色)');
+});
+// 替换颜色 (加权距离容差 80)
+$('cvFxReplace').addEventListener('click', () => {
+    cvPushUndo();
+    const img = cvState.frames[cvState.frame];
+    const sr = cvHexToRgba($('cvReplaceSrc').value, 255), dr = cvHexToRgba($('cvReplaceDst').value, 255);
+    let n = 0;
+    for (let i = 0; i < img.data.length; i += 4) {
+        if (img.data[i + 3] < 8) continue;
+        const drr = img.data[i] - sr[0], dg = img.data[i + 1] - sr[1], db = img.data[i + 2] - sr[2];
+        if (2 * drr * drr + 4 * dg * dg + 3 * db * db <= 6400) {
+            img.data[i] = dr[0]; img.data[i + 1] = dr[1]; img.data[i + 2] = dr[2];
+            n++;
+        }
+    }
+    cvRenderAll(); showToast('✅ 已替换 ' + n + ' 个像素');
+});
+// 亮度 / 对比度
+$('cvFxBC').addEventListener('click', () => {
+    cvPushUndo();
+    const img = cvState.frames[cvState.frame];
+    const b = +$('cvBrightness').value, c = +$('cvContrast').value;
+    const f = c === 0 ? 1 : (259 * (c + 255)) / (255 * (259 - c));
+    for (let i = 0; i < img.data.length; i += 4) {
+        if (img.data[i + 3] < 8) continue;
+        for (let j = 0; j < 3; j++) {
+            const v = (img.data[i + j] - 128) * f + 128 + b;
+            img.data[i + j] = Math.max(0, Math.min(255, Math.round(v)));
+        }
+    }
+    cvRenderAll(); showToast('✅ 已应用亮度/对比度');
+});
+
+// ---------- 选区操作：填充 / 清除 / 复制 / 粘贴为新帧 ----------
+function cvSelEach(fn) {
+    const s = cvState.selection, img = cvState.frames[cvState.frame];
+    if (!s || !img) return false;
+    for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) {
+        if (!s.mask[y * s.w + x]) continue;
+        fn(img, s.x + x, s.y + y);
+    }
+    return true;
+}
+$('cvSelFill').addEventListener('click', () => {
+    if (!cvState.selection) { showToast('❌ 请先创建选区 (M 矩形 / 🪝 套索 / W 魔术棒)', true); return; }
+    cvPushUndo();
+    cvSelEach((img, x, y) => cvSetPixel(img, x, y, cvHexToRgba(cvState.color, 255)));
+    cvCommitRender();
+    showToast('🎨 已填充选区');
+});
+$('cvSelClear').addEventListener('click', () => {
+    if (!cvState.selection) { showToast('❌ 请先创建选区', true); return; }
+    cvPushUndo();
+    cvSelEach((img, x, y) => { img.data[(y * CV_SIZE + x) * 4 + 3] = 0; });
+    cvCommitRender();
+    showToast('🧹 已清除选区内容');
+});
+$('cvSelCopy').addEventListener('click', () => {
+    const s = cvState.selection;
+    if (!s) { showToast('❌ 请先创建选区', true); return; }
+    const img = cvState.frames[cvState.frame];
+    const c = cvCtx.createImageData(s.w, s.h);
+    let any = false;
+    for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) {
+        if (!s.mask[y * s.w + x]) continue;
+        const si = ((s.y + y) * CV_SIZE + s.x + x) * 4, di = (y * s.w + x) * 4;
+        c.data[di] = img.data[si]; c.data[di + 1] = img.data[si + 1]; c.data[di + 2] = img.data[si + 2]; c.data[di + 3] = img.data[si + 3];
+        any = true;
+    }
+    if (!any) { showToast('⚠ 选区为空，无可复制内容'); return; }
+    cvState.selClip = c;
+    showToast('📋 已复制选区 (可用「📌 粘贴为新帧」跨帧使用)');
+});
+$('cvSelPaste').addEventListener('click', () => {
+    if (!cvState.selClip) { showToast('❌ 剪贴板为空，请先复制选区', true); return; }
+    cvNewFrame();
+    const img = cvState.frames[cvState.frame];
+    const w = cvState.selClip.width, h = cvState.selClip.height;
+    const ox = Math.floor((CV_SIZE - w) / 2), oy = Math.floor((CV_SIZE - h) / 2);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const tx = ox + x, ty = oy + y;
+        if (tx < 0 || tx >= CV_SIZE || ty < 0 || ty >= CV_SIZE) continue;
+        const si = (y * w + x) * 4, di = (ty * CV_SIZE + tx) * 4;
+        if (cvState.selClip.data[si + 3] < 128) continue;
+        img.data[di] = cvState.selClip.data[si]; img.data[di + 1] = cvState.selClip.data[si + 1];
+        img.data[di + 2] = cvState.selClip.data[si + 2]; img.data[di + 3] = cvState.selClip.data[si + 3];
+    }
+    cvCommitRender();
+    showToast('📌 已粘贴为新帧 (居中)');
+});
+
+// ---------- 洋葱皮前 N 帧 / ping-pong 绑定 ----------
+$('cvOnionPrev').addEventListener('change', e => { cvState.onionPrev = +e.target.value; cvRenderAll(); });
+$('cvPingPong').addEventListener('change', e => { cvState.pingPong = e.target.checked; });
+
+// ---------- 快捷键扩展 (画布模式；拆分模式按键由拆分模块处理) ----------
+document.addEventListener('keydown', e => {
+    if ($('canvasView').style.display !== 'flex') return;
+    const t = (e.target.tagName || '').toUpperCase();
+    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+    if (cvState.split.active) return;
+    const k = e.key.toLowerCase();
+    if (e.ctrlKey || e.metaKey) {
+        if (k === 'd') { e.preventDefault(); cvState.selection = null; cvRenderSelection(); showToast('🔲 已取消选区'); }
+        return;
+    }
+    if (e.key === ' ') { e.preventDefault(); cvState.spacePan = true; return; }
+    if (k === 'p') cvSetTool('pencil');
+    else if (k === 'e') cvSetTool('eraser');
+    else if (k === 'g') cvSetTool('fill');
+    else if (k === 'i') cvSetTool('picker');
+    else if (k === 'l') cvSetTool('line');
+    else if (k === 'r') cvSetTool('rect');
+    else if (k === 'o') cvSetTool('ellipse');
+    else if (k === 'm') cvSetTool('select');
+    else if (k === 'w') cvSetTool('wand');
+    else if (k === 'v') cvSetTool('move');
+    else if (k === '[') cvSetBrush(Math.max(1, cvState.brushSize - 1));
+    else if (k === ']') cvSetBrush(Math.min(3, cvState.brushSize + 1));
+    else if (k >= '1' && k <= '9') { const i = +k - 1; if (cvState.palette[i]) cvSetColor(cvState.palette[i]); }
+});
+document.addEventListener('keyup', e => { if (e.key === ' ') cvState.spacePan = false; });
+
+// ---------- GIF 导出 (GIF89a + LZW 压缩) ----------
+function cvLzwEncode(px, minCodeSize) {
+    const clear = 1 << minCodeSize, eoi = clear + 1;
+    let codeSize = minCodeSize + 1, next = eoi + 1;
+    const dict = new Map();
+    const out = [];
+    let bitBuf = 0, bitCnt = 0;
+    const emit = code => {
+        bitBuf |= code << bitCnt; bitCnt += codeSize;
+        while (bitCnt >= 8) { out.push(bitBuf & 255); bitBuf >>>= 8; bitCnt -= 8; }
+    };
+    emit(clear);
+    let w = '';
+    for (let i = 0; i < px.length; i++) {
+        const k = px[i];
+        const wk = w === '' ? String(k) : w + '|' + k;
+        if (dict.has(wk)) { w = wk; continue; }
+        emit(w === '' ? k : dict.get(w));
+        if (next < 4096) {
+            dict.set(wk, next++);
+            if (next === (1 << codeSize) && codeSize < 12) codeSize++;
+        }
+        w = String(k);
+    }
+    emit(w === '' ? px[px.length - 1] : dict.get(w));
+    emit(eoi);
+    if (bitCnt) out.push(bitBuf & 255);
+    return out;
+}
+function cvBuildGif(imgs, delayCs) {
+    // 1) 全局色表：索引 0 = 透明占位；不透明色去重，最多 255 个
+    const map = new Map(), colors = [];
+    imgs.forEach(im => {
+        const d = im.data;
+        for (let i = 0; i < d.length; i += 4) {
+            if (d[i + 3] < 128 || colors.length >= 255) continue;
+            const k = d[i] + ',' + d[i + 1] + ',' + d[i + 2];
+            if (!map.has(k)) { map.set(k, colors.length + 1); colors.push([d[i], d[i + 1], d[i + 2]]); }
+        }
+    });
+    const pal = [[0, 0, 0]].concat(colors);   // 索引 0 = 透明
+    const nearest = (r, g, b) => {
+        if (colors.length === 0) return 0;
+        let best = 1, bd = Infinity;
+        for (let i = 1; i < pal.length; i++) {
+            const dr = pal[i][0] - r, dg = pal[i][1] - g, db = pal[i][2] - b;
+            const d = 2 * dr * dr + 4 * dg * dg + 3 * db * db;
+            if (d < bd) { bd = d; best = i; }
+        }
+        return best;
+    };
+    // 2) 组装 GIF89a
+    const minCodeSize = Math.max(2, Math.ceil(Math.log2(pal.length)));
+    const bytes = [0x47, 0x49, 0x46, 0x38, 0x39, 0x61];   // GIF89a
+    const w = imgs[0].width, h = imgs[0].height;
+    bytes.push(w & 255, w >> 8, h & 255, h >> 8);
+    bytes.push(0x80 | ((minCodeSize - 1) << 4) | (minCodeSize - 1), 0, 0);   // 全局色表
+    pal.forEach(c => bytes.push(c[0], c[1], c[2]));
+    imgs.forEach((im, fi) => {
+        // 图形控制扩展：透明索引 0，处置=不恢复
+        bytes.push(0x21, 0xF9, 0x04, 0x05, delayCs[fi] & 255, delayCs[fi] >> 8, 0, 0x00);
+        // 图像描述符
+        bytes.push(0x2C, 0, 0, 0, 0, w & 255, w >> 8, h & 255, h >> 8, 0x00);
+        // 像素 → 色表索引
+        const idx = new Uint8Array(w * h);
+        const d = im.data;
+        for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+            idx[p] = d[i + 3] < 128 ? 0 : nearest(d[i], d[i + 1], d[i + 2]);
+        }
+        // LZW 数据块
+        bytes.push(minCodeSize);
+        const enc = cvLzwEncode(idx, minCodeSize);
+        for (let i = 0; i < enc.length; i += 255) {
+            const chunk = enc.slice(i, i + 255);
+            bytes.push(chunk.length);
+            for (let j = 0; j < chunk.length; j++) bytes.push(chunk[j]);
+        }
+        bytes.push(0);
+    });
+    bytes.push(0x3B);   // 结束
+    return new Blob([new Uint8Array(bytes)], { type: 'image/gif' });
+}
+$('cvExportGif').addEventListener('click', () => {
+    if (!cvState.frames.length) { showToast('❌ 无帧可导出', true); return; }
+    if (cvState.frames.length === 1) showToast('⚠ 仅 1 帧，GIF 将静止显示', false);
+    const delay = Math.max(1, Math.round(1000 / cvState.fps / 10));   // 百分秒
+    const blob = cvBuildGif(cvState.frames, cvState.frames.map(() => delay));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pixel-canvas.gif'; a.click();
+    showToast('✅ 已导出 GIF (GIF89a + LZW，循环播放)');
+});
 </script>
 </body>
 </html>
