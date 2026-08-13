@@ -815,8 +815,10 @@
                 <input type="text" id="setTextBase" placeholder="https://api.openai.com/v1">
                 <label>生图 Base URL (走 /images/generations；留空则跟随文本 Base)</label>
                 <input type="text" id="setImageBase" placeholder="留空 = 与文本 Base 相同">
-                <label>API Key</label>
-                <input type="password" id="setApiKey" placeholder="sk-...">
+                <label>文本 API Key (AI 拆分 / 下一帧导航 / 识图)</label>
+                <input type="password" id="setTextKey" placeholder="sk-...">
+                <label>生图 API Key (☁️ 云端生图专用，与文本 Key 独立)</label>
+                <input type="password" id="setImageKey" placeholder="sk-...">
                 <label>文本模型 (视觉多模态：AI 拆分 / 下一帧导航 / 识图写提示词)</label>
                 <input type="text" id="setTextModel" placeholder="qwen-vl-max">
                 <label>生图模型 (☁️ 云端生图)</label>
@@ -827,7 +829,7 @@
                 </div>
                 <div class="set-status" id="setStatus"></div>
                 <button type="button" id="btnSetSave">💾 保存配置</button>
-                <div class="set-hint">API Key 仅保存在浏览器本地 (localStorage)。<br>文本模型走 /chat/completions，生图模型走 /images/generations；两者 Base URL 可不同，生图 Base 留空时自动跟随文本 Base。</div>
+                <div class="set-hint">两个 Key 独立保存、互不公用：文本 Key 用于 AI 拆分 / 下一帧导航 / 识图，生图 Key 用于云端生图；均仅保存在浏览器本地 (localStorage)，点「💾 保存配置」按钮才写入。<br>文本模型走 /chat/completions，生图模型走 /images/generations；两者 Base URL 可不同，生图 Base 留空时自动跟随文本 Base。</div>
             </div>
             <div id="setPanelHelp" style="display:none;">
                 <div class="set-help-block"><div class="set-help-title">🧭 界面与布局</div><ul>
@@ -1861,7 +1863,8 @@ function getAiCfg() {
     return {
         textBase,
         imageBase: imageBase || textBase,     // 生图 Base 留空则自动跟随文本 Base
-        key: ($('setApiKey').value || '').trim(),
+        textKey: ($('setTextKey').value || '').trim(),
+        imageKey: ($('setImageKey').value || '').trim(),
         textModel: ($('setTextModel').value || '').trim(),
         imageModel: ($('setImageModel').value || '').trim()
     };
@@ -1874,7 +1877,7 @@ function aiSetStatus(msg, ok) {
 
 function aiSaveCfg() {
     const c = getAiCfg();
-    if (!c.textBase || !c.key) { aiSetStatus('❌ 请至少填写文本 Base URL 和 API Key', false); return; }
+    if (!c.textBase || !c.textKey) { aiSetStatus('❌ 请至少填写文本 Base URL 和文本 API Key', false); return; }
     try {
         localStorage.setItem(AI_CFG_KEY, JSON.stringify(c));
         aiSetStatus('已保存 ✓ (文本模型: ' + (c.textModel || '未填') + ' / 生图模型: ' + (c.imageModel || '未填') + ')', true);
@@ -1900,11 +1903,13 @@ function aiLoadCfg() {
         if (cfg) {
             if (cfg.textBase) $('setTextBase').value = cfg.textBase;
             if (cfg.imageBase) $('setImageBase').value = cfg.imageBase;
-            if (cfg.key) $('setApiKey').value = cfg.key;
+            if (cfg.textKey) $('setTextKey').value = cfg.textKey;
+            else if (cfg.key) $('setTextKey').value = cfg.key;          // 旧共用 key 迁移到文本 Key
+            if (cfg.imageKey) $('setImageKey').value = cfg.imageKey;    // 生图 Key 独立，需重新填写
             if (cfg.textModel) $('setTextModel').value = cfg.textModel;
             if (cfg.imageModel) $('setImageModel').value = cfg.imageModel;
         }
-        if (cfg && (cfg.textBase || cfg.key)) aiSetStatus('已加载已保存配置 ✓', true);
+        if (cfg && (cfg.textBase || cfg.textKey || cfg.key)) aiSetStatus('已加载已保存配置 ✓', true);
         else aiSetStatus('未配置 (可选填，仅 AI 功能需要)', false);
     } catch (e) { }
 }
@@ -1974,13 +1979,13 @@ $('setTabHelp').addEventListener('click', () => setShowTab('help'));
 // 测试文本模型 (/chat/completions)
 $('btnSetTestText').addEventListener('click', async () => {
     const c = getAiCfg();
-    if (!c.textBase || !c.key || !c.textModel) { aiSetStatus('❌ 请填写文本 Base / Key / 文本模型', false); return; }
+    if (!c.textBase || !c.textKey || !c.textModel) { aiSetStatus('❌ 请填写文本 Base / 文本 Key / 文本模型', false); return; }
     const btn = $('btnSetTestText');
     btn.disabled = true; btn.textContent = '⏳ 测试中...';
     try {
         const resp = await fetch(`${c.textBase}/chat/completions`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + c.key },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + c.textKey },
             body: JSON.stringify({ model: c.textModel, messages: [{ role: 'user', content: 'Reply OK' }], max_tokens: 5 })
         });
         if (resp.ok) { aiSetStatus('✅ 文本模型连接成功 (' + c.textModel + ')', true); showToast('✅ 文本模型连接成功'); }
@@ -1992,13 +1997,13 @@ $('btnSetTestText').addEventListener('click', async () => {
 // 测试生图模型 (/images/generations)
 $('btnSetTestImage').addEventListener('click', async () => {
     const c = getAiCfg();
-    if (!c.imageBase || !c.key || !c.imageModel) { aiSetStatus('❌ 请填写生图 Base / Key / 生图模型', false); return; }
+    if (!c.imageBase || !c.imageKey || !c.imageModel) { aiSetStatus('❌ 请填写生图 Base / 生图 Key / 生图模型', false); return; }
     const btn = $('btnSetTestImage');
     btn.disabled = true; btn.textContent = '⏳ 测试中...';
     try {
         const resp = await fetch(`${c.imageBase}/images/generations`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + c.key },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + c.imageKey },
             body: JSON.stringify({ model: c.imageModel, prompt: 'a simple red square on white background', size: '512x512', n: 1 })
         });
         if (!resp.ok) {
@@ -3576,8 +3581,8 @@ function cvShowNavGuide(nav) {
 }
 $('cvAiNav').addEventListener('click', async () => {
     const cfg = getAiCfg();
-    const base = cfg.textBase, key = cfg.key, model = cfg.textModel;
-    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写文本 Base / Key / 文本模型', true); return; }
+    const base = cfg.textBase, key = cfg.textKey, model = cfg.textModel;
+    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写文本 Base / 文本 Key / 文本模型', true); return; }
     if (!cvState.frames.length) { showToast('❌ 无当前帧', true); return; }
     const cur = cvState.frames[cvState.frame];
     const isFirst = cvIsEmpty(cur) && cvState.frame === 0;
@@ -3797,8 +3802,8 @@ negative: deformed, extra limbs, inconsistent character, different outfit, blurr
 $('btnCloudVision').addEventListener('click', async () => {
     if (!state.cleanedImage) { showToast('❌ 请先上传并处理参考图', true); return; }
     const cfg = getAiCfg();
-    const { textBase: base, key } = cfg; const model = cfg.textModel;
-    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写文本 Base / Key / 文本模型', true); return; }
+    const { textBase: base, textKey: key } = cfg; const model = cfg.textModel;
+    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写文本 Base / 文本 Key / 文本模型', true); return; }
     let action = $('cloudActionSelect').value, actionDesc = action;
     if (action === 'custom') actionDesc = $('cloudCustomAction').value.trim() || 'custom';
     const ctx = { action: actionDesc, total: +$('cloudFrameCount').value || 4, extra: $('cloudExtraPrompt').value.trim(), palette: state.cleanedImage ? extractPalette(state.cleanedImage) : [] };
@@ -3940,8 +3945,8 @@ async function cloudGenerateAll(regenIndices) {
     // 直接生成模式无需参考图；参考图模式必须有 cleanedImage
     if (!state.cloudDirectMode && !state.cleanedImage) { showToast('❌ 请先上传并处理参考图，或切到「直接生成模式」', true); return; }
     const cfg = getAiCfg();
-    const base = cfg.imageBase, key = cfg.key, model = cfg.imageModel;
-    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写生图 Base / Key / 生图模型', true); return; }
+    const base = cfg.imageBase, key = cfg.imageKey, model = cfg.imageModel;
+    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写生图 Base / 生图 Key / 生图模型', true); return; }
     const positive = $('cloudPromptPos').value.trim();
     if (!positive) { showToast('❌ 请先填写或生成 Positive Prompt', true); return; }
     let action = $('cloudActionSelect').value, customDesc = '';
@@ -4162,8 +4167,8 @@ function splitParseJson(raw) {
 }
 async function splitAiDetect() {
     const cfg = getAiCfg();
-    const base = cfg.textBase, key = cfg.key, model = cfg.textModel;
-    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写文本 Base / Key / 文本模型', true); return; }
+    const base = cfg.textBase, key = cfg.textKey, model = cfg.textModel;
+    if (!base || !key || !model) { showToast('❌ 请点击右上角 ⚙ 设置，填写文本 Base / 文本 Key / 文本模型', true); return; }
     const img = cvState.frames[cvState.frame];
     if (!img || cvIsEmpty(img)) { showToast('❌ 当前帧为空，请先导入工坊参考图或画上角色', true); return; }
     const c = document.createElement('canvas'); c.width = CV_SIZE; c.height = CV_SIZE;

@@ -25,7 +25,7 @@
 ## 联系方式
 
 - 邮箱：2938877375@qq.com
-- GitHub：暂未填写
+- GitHub：https://github.com/YHSZ-ONEC
 - Bilibili：暂未填写
 - 其他平台：暂未填写
 
