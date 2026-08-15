@@ -36,8 +36,37 @@
       </aside>
     </section>
 
+    <nav class="breadcrumb" id="breadcrumb" aria-label="面包屑">
+      <a href="../index.html">首页</a>
+      <span class="crumb-sep">/</span>
+      <a href="./">博客</a>
+    </nav>
+
+    <section class="toolbar" aria-label="博客工具">
+      <button id="blogSearchTrigger" class="button ghost" type="button">
+        <span class="search-glyph" aria-hidden="true"></span>
+        搜索文章
+      </button>
+      <p id="blogCount" class="result-count"></p>
+    </section>
+
+    <section id="startHere" class="start-grid" aria-label="从这里开始"></section>
+
     <section class="two-col">
-      <aside id="postList" class="post-list" aria-label="文章列表"></aside>
+      <aside id="postSidebar" class="post-sidebar" aria-label="博客侧边栏">
+        <div class="sidebar-block">
+          <h2 class="sidebar-title">分类</h2>
+          <div id="categoryList" class="category-list"></div>
+        </div>
+        <div class="sidebar-block">
+          <h2 class="sidebar-title">标签</h2>
+          <div id="tagCloud" class="tag-cloud"></div>
+        </div>
+        <div class="sidebar-block">
+          <h2 class="sidebar-title">全部文章</h2>
+          <div id="postList" class="post-list" aria-label="文章列表"></div>
+        </div>
+      </aside>
       <article id="postView" class="markdown-card"></article>
     </section>
   </main>
