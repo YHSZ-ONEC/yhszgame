@@ -21,8 +21,12 @@
   let archNotified = {};        // 已提醒成型的流派 id(每局一次)
   let shopOpen = false;
   let shopView = null;
-let rewardView = null;  // [v3] 过关奖励三选一候选
+  let rewardView = null;  // [v3] 过关奖励三选一候选
+  let artifactView = null; // [v4] 关隘遗珍三选一
   let propPick = null;
+  let assistOn = false;    // 司南提示: 默认关闭, 首关教程临时开启
+  let renderHandBest = null;
+  let renderHeldHints = [];
 
   /* ---------- 工具 ---------- */
   const colorOf = (c) => EL_COLOR[c.element] || '#888';
@@ -62,9 +66,11 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
       const now = audioCtx.currentTime;
       let freq = 440, dur = 0.12;
       if (type === 'place') { freq = 520; dur = 0.10; }
+      else if (type === 'pack') { freq = 760; dur = 0.16; o.type = 'triangle'; }
       else if (type === 'win') { freq = 680; dur = 0.24; }
       else if (type === 'lose') { freq = 180; dur = 0.32; }
-      o.type = 'sine'; o.frequency.value = freq;
+      if (!o.type || o.type === 'sine') o.type = 'sine';
+      o.frequency.value = freq;
       const vol = 0.06; // 低音量, 不打扰
       g.gain.setValueAtTime(vol, now);
       g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
@@ -73,18 +79,106 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
     } catch (e) { /* 音频不可用时静默降级 */ }
   }
 
+  function bestHandPlay() {
+    if (!state || mode !== 'place' || heldUid || pending.length || !state.hand || !state.hand.length) return null;
+    let best = null;
+    state.hand.forEach((c) => {
+      const top = E.rankPlacements(state, c.uid, 1)[0];
+      if (!top) return;
+      if (!best || top.gain > best.gain || (top.gain === best.gain && top.triggers.length > best.triggers.length)) best = Object.assign({ uid: c.uid }, top);
+    });
+    return best;
+  }
+
+  function burstPlacementFeedback(report, totalScore, won) {
+    const scoreEl = document.querySelector('.hud-item.score-now .v');
+    if (scoreEl) {
+      scoreEl.classList.remove('score-pulse');
+      void scoreEl.offsetWidth;
+      scoreEl.classList.add('score-pulse');
+    }
+    (report && report.placed ? report.placed : []).forEach((p, i) => {
+      const cell = document.querySelector(`#board .cell[data-r="${p.r}"][data-c="${p.c}"]`);
+      if (!cell) return;
+      cell.classList.add('cell-slam');
+      setTimeout(() => cell.classList.remove('cell-slam'), 520);
+      const pop = document.createElement('div');
+      pop.className = 'score-pop';
+      pop.style.animationDelay = (i * 60) + 'ms';
+      pop.textContent = (p.gain >= 0 ? '+' : '') + p.gain;
+      cell.appendChild(pop);
+      setTimeout(() => pop.remove(), 1200);
+      if (p.triggers && p.triggers.length) {
+        const trig = document.createElement('div');
+        trig.className = 'trigger-pop';
+        trig.innerHTML = p.triggers.slice(0, 3).map((t) => `<span>${t}</span>`).join('');
+        cell.appendChild(trig);
+        setTimeout(() => trig.remove(), 1500);
+      }
+    });
+    if (won) {
+      const flash = document.createElement('div');
+      flash.className = 'win-flash';
+      flash.textContent = `达标 +${totalScore}`;
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 1050);
+    }
+  }
+
+  function showHeatFeedback(heat) {
+    if (!heat) return;
+    if (heat.ups && heat.ups.length) {
+      const top = heat.ups[heat.ups.length - 1];
+      const parts = [];
+      if (top.coins) parts.push(`+${top.coins}金`);
+      if (top.inspiration) parts.push(`+${top.inspiration}灵感`);
+      if (top.placements) parts.push(`+${top.placements}营造`);
+      if (top.mult > 1) parts.push(`本关×${top.mult}`);
+      const flash = document.createElement('div');
+      flash.className = 'heat-flash';
+      flash.innerHTML = `<b>气势·${top.name}</b><span>${parts.join(' · ') || '构筑升温'}</span>`;
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 1300);
+    } else if (heat.gain >= 7) {
+      toast(`气势 +${heat.gain}`);
+    }
+  }
+
+  function loadMeta() {
+    try { return JSON.parse(localStorage.getItem('yingzaosi_meta_v2') || '{}'); }
+    catch (e) { return {}; }
+  }
+  function saveMeta() {
+    if (!state || !state.charter) return;
+    try {
+      const meta = loadMeta();
+      meta.bestLevel = Math.max(meta.bestLevel || 0, state.level || 0);
+      meta.bestHeatRank = Math.max(meta.bestHeatRank || 0, state.bestHeatRank || 0);
+      meta.charters = meta.charters || {};
+      const c = meta.charters[state.charter.id] || {};
+      c.bestLevel = Math.max(c.bestLevel || 0, state.level || 0);
+      c.bestScore = Math.max(c.bestScore || 0, state.score || 0);
+      c.runs = (c.runs || 0) + 1;
+      meta.charters[state.charter.id] = c;
+      localStorage.setItem('yingzaosi_meta_v2', JSON.stringify(meta));
+    } catch (e) { /* localStorage 不可用则忽略 */ }
+  }
+
   /* ---------- 卡牌 HTML ---------- */
   function cardHTML(c, opts) {
     opts = opts || {};
     const ec = colorOf(c), rc = rarColor(c);
-    const cls = 'card' + (heldUid === c.uid ? ' held' : '') + (discardSel.has(c.uid) ? ' sel' : '') + (opts.clickable ? ' pack-card' : '');
+    const tut = state && state.tutCell && c.kind === '民居' && c.element === '金';
+    const cls = 'card' + (heldUid === c.uid ? ' held' : '') + (discardSel.has(c.uid) ? ' sel' : '') + (opts.clickable ? ' pack-card' : '') + (opts.className ? ' ' + opts.className : '') + (tut ? ' tut-card' : '');
+    const style = `--ec:${ec}${opts.delay != null ? ';--delay:' + opts.delay + 'ms' : ''}`;
     const arch = (c.archetype && c.archetype.length) ? c.archetype.map((id) => {
       const a = D.ARCHETYPES.find((x) => x.id === id);
       return `<span class="arch-tag" style="background:${a.color}">${a.name.slice(0, 2)}</span>`;
     }).join('') : '';
-    return `<div class="${cls}" data-uid="${c.uid}" style="--ec:${ec}">
+    return `<div class="${cls}" data-uid="${c.uid}" style="${style}">
       <div class="el" style="background:${ec}">${c.element}</div>
       <div class="rar" style="color:${rc}">${c.rarity}</div>
+      ${c.upgrades ? `<div class="upg">+${c.upgrades}</div>` : ''}
       <div class="img" style="background:${ec}1f">${emojiOf(c)}</div>
       <div class="nm">${c.name}</div>
       <div class="pt">${pointsStr(c)}</div>
@@ -107,6 +201,10 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
    * =================================================================== */
   function render() {
     if (!state) return;
+    const tutorAssist = !!(state.level === 1 && state.tutCell);
+    const showAssist = assistOn || tutorAssist;
+    renderHeldHints = (showAssist && mode === 'place' && heldUid) ? E.rankPlacements(state, heldUid, 3) : [];
+    renderHandBest = (showAssist && !renderHeldHints.length) ? bestHandPlay() : null;
     renderCataBar(); renderHud(); renderArche(); renderEdict(); renderBoard(); renderSide(); renderHand(); renderControls(); renderHelptip(); renderLog();
   }
 
@@ -122,15 +220,19 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
   function renderHud() {
     const cfg = state.cfg;
     const reached = state.score >= cfg.quota;
+    const pct = Math.max(0, Math.min(100, Math.round((state.score / cfg.quota) * 100)));
+    const need = Math.max(0, cfg.quota - state.score);
     const emberTxt = state.ember ? `<span style="font-size:10px;opacity:.8"> 余烬${state.ember}</span>` : '';
     $('#hud').innerHTML = `
       <div class="hud-item"><span class="k">关卡</span><span class="v">${cfg.level}<span class="seal" style="margin-left:4px;font-size:10px">${cfg.isBoss ? '关隘' : '第' + cfg.size + '城'}</span></span></div>
       <div class="hud-item"><span class="k">配额</span><span class="v">${cfg.quota}</span></div>
-      <div class="hud-item ${reached ? 'boom' : ''}"><span class="k">当前分</span><span class="v">${state.score}</span></div>
+      <div class="hud-item score-now ${reached ? 'boom' : ''}"><span class="k">当前分</span><span class="v">${state.score}</span></div>
       <div class="hud-item"><span class="k">金币</span><span class="v">${state.coins}</span></div>
       <div class="hud-item"><span class="k">营造</span><span class="v">${state.placementsLeft}/${cfg.placements}</span></div>
       <div class="hud-item"><span class="k">灵感</span><span class="v">${state.inspiration}/${D.INSP_CAP}${emberTxt}</span></div>
-      <div class="hud-item"><span class="k">印记</span><span class="v">${state.sealCount}/${D.SEAL_NEED}</span></div>`;
+      <div class="hud-item heat ${state.heatRank ? 'boom' : ''}"><span class="k">气势</span><span class="v">${state.heat || 0}</span></div>
+      <div class="hud-item"><span class="k">印记</span><span class="v">${state.sealCount}/${D.SEAL_NEED}</span></div>
+      <div class="hud-progress ${reached ? 'done' : ''}"><div><span>达标进度</span><b>${reached ? '已达标' : '还差 ' + need}</b></div><i><em style="width:${pct}%"></em></i></div>`;
     const dc = $('#deck-count'); if (dc) dc.textContent = state.owned.length;
   }
 
@@ -167,6 +269,14 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
   function renderArche() {
     const el = $('#arche'); if (!el) return;
     const list = E.getArchetypeStatus(state);
+    let prefix = '';
+    if (state.charter) {
+      prefix += `<span class="arch-pill charter-pill" style="border-color:${state.charter.color}"><span class="dot" style="background:${state.charter.color}"></span>${state.charter.name}<span class="ok">${state.charter.title}</span></span>`;
+    }
+    if (state.artifacts && state.artifacts.length) {
+      prefix += state.artifacts.slice(0, 4).map((a) => `<span class="arch-pill artifact-pill" style="border-color:${a.color || 'var(--gold)'}"><span class="dot" style="background:${a.color || 'var(--gold)'}"></span>${a.name}</span>`).join('');
+      if (state.artifacts.length > 4) prefix += `<span class="arch-pill artifact-pill">遗珍 +${state.artifacts.length - 4}</span>`;
+    }
     // [v2 P1] 成型 toast: 每局每个流派只提醒一次, 附流派印说明
     list.forEach((a) => {
       if (a.status === 'done' && !archNotified[a.id]) {
@@ -175,10 +285,10 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
       }
     });
     if (!list.length) {
-      el.innerHTML = '<span class="arch-none">尚未形成流派 · 在商店收集核心营造物（观星台 / 含嘉仓 / 都江堰…）开启</span>';
+      el.innerHTML = prefix + '<span class="arch-none">继续通过选卡、定向匣、精修和删牌把路线做窄。</span>';
       return;
     }
-    el.innerHTML = list.map((a) =>
+    el.innerHTML = prefix + list.map((a) =>
       `<span class="arch-pill ${a.status}" style="border-color:${a.color}">
         <span class="dot" style="background:${a.color}"></span>${a.name}
         ${a.status === 'done' ? `<span class="ok">✓成型${a.stamp ? ` +${a.stamp.n}${a.stamp.pillar}` : ''}</span>` : `<span class="need">还差${a.need}张</span>`}
@@ -190,6 +300,7 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
     const b = $('#board');
     b.style.gridTemplateColumns = `repeat(${state.boardW}, 46px)`;
     const showWard = state.boardW >= 5;
+    const hints = renderHeldHints;
     let html = '';
     for (let r = 0; r < state.boardH; r++) {
       for (let c = 0; c < state.boardW; c++) {
@@ -208,10 +319,13 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
           html += `<div class="cell pending target${terrCls}${wardCls}" data-r="${r}" data-c="${c}">${card ? miniHTML(card) : ''}${terrMark}</div>`;
         } else {
           const isTut = state.tutCell && state.tutCell.r === r && state.tutCell.c === c;
+          const hIdx = hints.findIndex((h) => h.r === r && h.c === c);
+          const hintCls = hIdx >= 0 ? ` rec rec-${hIdx + 1}` : '';
           const cls = (mode === 'place' && heldUid) ? 'cell empty target' : 'cell empty';
           const tutCls = isTut ? ' tut' : '';
           const tutMark = isTut ? '<span class="tut-mark">👆</span>' : '';
-          html += `<div class="${cls}${terrCls}${wardCls}${tutCls}" data-r="${r}" data-c="${c}">${terrMark}${tutMark}</div>`;
+          const recMark = hIdx >= 0 ? `<span class="rec-mark">${hIdx === 0 ? '荐' : '佳'}</span>` : '';
+          html += `<div class="${cls}${terrCls}${wardCls}${tutCls}${hintCls}" data-r="${r}" data-c="${c}">${terrMark}${tutMark}${recMark}</div>`;
         }
       }
     }
@@ -225,13 +339,20 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
       <div class="col"><h3>经济</h3><div class="pts" style="color:var(--gold)">${Math.round(ev.pillars['经济'])}</div><div class="sub">市集/水利/道路</div></div>
       <div class="col"><h3>治安</h3><div class="pts" style="color:var(--seal)">${Math.round(ev.pillars['治安'])}</div><div class="sub">衙门/防御</div></div>`;
     // 预览
-    const uids = pending.map((p) => p.uid).concat(heldUid ? [heldUid] : []);
     const pv = $('#preview');
-    if (uids.length) {
-      const proj = E.computePreview(state, uids);
-      pv.innerHTML = `<span>落子后预计总分</span><div class="pv-score">${proj.total}</div><div style="margin-top:2px">当前 ${state.score} / 配额 ${state.cfg.quota}</div>`;
+    if (pending.length) {
+      const report = E.describePlacements(state, pending);
+      const proj = state.score + report.totalGain;
+      const chips = report.placed.flatMap((p) => p.triggers || []).slice(0, 5).map((t) => `<span>${t}</span>`).join('');
+      pv.innerHTML = `<span>待确认营造</span><div class="pv-score">${proj}</div><div style="margin-top:2px">预计 ${report.totalGain >= 0 ? '+' : ''}${report.totalGain} · 当前 ${state.score} / 配额 ${state.cfg.quota}</div>${chips ? `<div class="pv-chips">${chips}</div>` : ''}`;
+    } else if (heldUid) {
+      const card = instByUid(heldUid);
+      const best = renderHeldHints[0];
+      const chips = best && best.triggers.length ? best.triggers.slice(0, 4).map((t) => `<span>${t}</span>`).join('') : '';
+      pv.innerHTML = `<span>已拿起：${card ? card.name : '建筑'}</span>${best ? `<div class="pv-score">司南 +${best.gain}</div><div style="margin-top:2px">${best.r + 1} 行 ${best.c + 1} 列是高收益落点</div>${chips ? `<div class="pv-chips">${chips}</div>` : ''}` : '<div style="margin-top:4px">自主布局中：悬停空格看会触发哪些机制，或打开「司南」查看建议。</div>'}`;
     } else {
-      pv.innerHTML = `<span>当前总分 ${state.score} / 配额 ${state.cfg.quota}${state.score >= state.cfg.quota ? ' ✓达标' : ''}</span>`;
+      const best = renderHandBest;
+      pv.innerHTML = `<span>当前总分 ${state.score} / 配额 ${state.cfg.quota}${state.score >= state.cfg.quota ? ' ✓达标' : ''}</span>${best ? `<div class="pv-assist">司南：高亮手牌有较好落点 +${best.gain}</div>` : '<div class="pv-assist muted">路线靠自己构筑：选卡、删牌、精修会决定后期爆点。</div>'}`;
     }
     // 营造物 / 主动技
     const specials = state.board.flat().filter((c) => c && c.type === 'special');
@@ -247,7 +368,8 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
   }
 
   function renderHand() {
-    $('#hand').innerHTML = state.hand.map((c) => cardHTML(c)).join('');
+    const best = renderHandBest;
+    $('#hand').innerHTML = state.hand.map((c) => cardHTML(c, { className: best && best.uid === c.uid ? 'hint-card' : '' })).join('');
   }
 
   function renderControls() {
@@ -257,6 +379,7 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
       html += `<button class="btn seal" id="btn-confirm" ${pending.length ? '' : 'disabled'}>确认营造（${pending.length}）</button>`;
       if (pending.length) html += `<button class="btn ghost" id="btn-clear">取消</button>`;
       html += `<button class="btn ghost" id="btn-discard-mode">弃牌</button>`;
+      html += `<button class="btn ghost ${assistOn ? 'on' : ''}" id="btn-assist">司南${assistOn ? '开' : '关'}</button>`;
       // [v2 P1] 拆建/迁建入口: 花金币修正盘面, 是后期金币真 sink
       if (state.level >= D.DEMOLISH_UNLOCK) {
         const dCost = D.DEMOLISH_BASE + state.demolishCount * D.DEMOLISH_STEP;
@@ -283,6 +406,7 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
     if ($('#btn-confirm')) $('#btn-confirm').onclick = doConfirm;
     if ($('#btn-clear')) $('#btn-clear').onclick = () => { pending = []; heldUid = null; render(); };
     if ($('#btn-discard-mode')) $('#btn-discard-mode').onclick = () => { mode = 'discard'; discardSel.clear(); render(); };
+    if ($('#btn-assist')) $('#btn-assist').onclick = () => { assistOn = !assistOn; render(); };
     if ($('#btn-demolish')) $('#btn-demolish').onclick = () => { mode = 'demolish'; render(); };
     if ($('#btn-move')) $('#btn-move').onclick = () => { mode = 'move'; moveSel = null; render(); };
     if ($('#btn-mode-cancel')) $('#btn-mode-cancel').onclick = () => { mode = 'place'; moveSel = null; render(); };
@@ -356,6 +480,7 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
   function doConfirm() {
     if (!pending.length) return;
     if (state.placementsLeft <= 0) { toast('营造次数已用完'); return; }
+    const report = E.describePlacements(state, pending);
     const res = E.applyPlace(state, pending);
     if (!res.ok) { toast(res.msg); return; }
     pending = []; heldUid = null;
@@ -364,9 +489,11 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
     else if (res.win === 'lose') sfx('lose');
     else sfx('place');
     toast('+' + res.score);
-    if (res.win === true) return onWin();
-    if (res.win === 'lose') return onLose();
     render();
+    setTimeout(() => burstPlacementFeedback(report, res.score, res.win === true), 30);
+    setTimeout(() => showHeatFeedback(res.heat), 120);
+    if (res.win === true) { setTimeout(onWin, 900); return; }
+    if (res.win === 'lose') { setTimeout(onLose, 650); return; }
   }
   function doEnd() {
     if (state.score >= state.cfg.quota) { sfx('win'); return onWin(); }
@@ -488,13 +615,23 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
 
   /* ---------- 胜负 ---------- */
   function onWin() {
+    saveMeta();
     if (state.level >= state.cfg.maxLevel) return showVictory();
     E.openShop(state); shopOpen = true; shopView = null;
-    // [v3] 过关奖励: 先三选一免费拿卡(每关都有新反馈), 再进商店
-    rewardView = { candidates: E.rollRewardCandidates(state) };
+    // [v4] 关隘先掉永久遗珍, 再进行每关选卡, 最后进商店
+    if (state.cfg.isBoss) {
+      artifactView = { candidates: E.rollArtifactChoices(state) };
+      return renderArtifactReward();
+    }
+    openCardReward();
+  }
+  function openCardReward() {
+    const extra = state.lastOverkill ? state.lastOverkill.extraChoices : 0;
+    rewardView = { candidates: E.rollRewardCandidates(state, 3 + extra) };
     renderReward();
   }
   function onLose() {
+    saveMeta();
     const ev = E.evalBoard(state);
     const diff = state.cfg.quota - state.score;
     // [v2 P1] 失败诊断: 找最弱栏, 给出建筑类型建议, 让失败"差一点"而非"全盘皆输"
@@ -512,6 +649,7 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
     openModal(html, false);
   }
   function showVictory() {
+    saveMeta();
     let html = `<h2>营造大成 🏯</h2><p>二十四关全数达成，万象营毕。</p>
       <p class="ds">最终牌组 ${state.owned.length} 张，余金 ${state.coins}。</p>
       <div class="row"><button class="btn seal" data-act="restart">再开一局</button></div>`;
@@ -519,16 +657,29 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
   }
 
   /* ---------- 商店 ---------- */
+    function renderArtifactReward() {
+      if (!artifactView) return;
+      let html = `<h2>关隘遗珍 · 永久被动</h2>
+        <p class="ds" style="margin-bottom:8px">三选一。遗珍会永久改变评分公式，是本局后期构筑的核心。</p><div class="artifact-cands">`;
+      artifactView.candidates.forEach((a, i) => {
+        html += `<div class="artifact-card" data-act="artifact-pick" data-i="${i}" style="--ac:${a.color || 'var(--gold)'}">
+          <div class="artifact-rar">${a.rarity}</div><h3>${a.name}</h3><p>${a.desc}</p></div>`;
+      });
+      html += `</div><div class="row"><button class="btn ghost" data-act="artifact-skip">跳过遗珍</button></div>`;
+      openModal(html, false);
+    }
     /* [v3] 过关奖励三选一: 免费拿 1 张入牌组(杀戮尖塔式节奏) */
     function renderReward() {
       if (!rewardView) return;
+      const ok = state.lastOverkill && state.lastOverkill.tier;
+      const over = ok ? `<div class="overkill-note"><b>${state.lastOverkill.name}</b><span>${state.lastOverkill.ratio}% 达标 · +${state.lastOverkill.bonusCoins}金${state.lastOverkill.extraChoices ? ` · 奖励候选 +${state.lastOverkill.extraChoices}` : ''}</span></div>` : '';
       let html = `<h2>🎁 工部犒赏 · 过关奖励</h2>
-        <p class="ds" style="margin-bottom:8px">三选一，免费收入牌组（也可跳过直接进商店）。</p><div class="pack-cands" id="pack-cands">`;
+        ${over}<p class="ds" style="margin-bottom:8px">选 1 张收入牌组，或跳过拿金币保持牌组纯度。</p><div class="pack-cands" id="pack-cands">`;
       rewardView.candidates.forEach((c, i) => {
-        html += `<div data-act="reward-pick" data-i="${i}" data-uid="${c.uid}" oncontextmenu="event.preventDefault();event.stopPropagation();return false">${cardHTML(c, { clickable: true })}</div>`;
+        html += `<div data-act="reward-pick" data-i="${i}" data-uid="${c.uid}" oncontextmenu="event.preventDefault();event.stopPropagation();return false">${cardHTML(c, { clickable: true, className: 'reveal-card', delay: i * 90 })}</div>`;
       });
-      html += `</div><div class="row"><button class="btn ghost" data-act="reward-skip">跳过，进商店</button></div>`;
-      openModal(html, true);
+      html += `</div><div class="row"><button class="btn ghost" data-act="reward-skip">跳过选卡（+${D.SKIP_REWARD}金）</button></div>`;
+      openModal(html, false);
     }
   function renderShop() {
     const cfg = state.cfg;
@@ -556,16 +707,31 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
     html += `<button class="btn" data-act="pack" data-type="normal" ${state.coins >= D.PACK_COST.normal ? '' : 'disabled'}>普通匣 ${D.PACK_COST.normal}金</button>`;
     html += `<button class="btn" data-act="pack" data-type="mixed" ${state.coins >= D.PACK_COST.mixed ? '' : 'disabled'}>混元匣 ${D.PACK_COST.mixed}金</button>`;
     html += `<button class="btn" data-act="pack" data-type="special" ${state.coins >= D.PACK_COST.special ? '' : 'disabled'}>奇巧匣 ${D.PACK_COST.special}金</button>`;
+    html += `<button class="btn seal" data-act="pack" data-type="focus" ${state.coins >= D.PACK_COST.focus ? '' : 'disabled'}>定向匣 ${D.PACK_COST.focus}金</button>`;
     html += `</div>`;
 
     if (shopView) {
-      html += `<h3 style="margin:10px 0 4px">三选一（${shopView.type}匣）<span style="float:right;font-weight:400;font-size:12px"><span data-act="shop-deck-peek" style="color:var(--accent);cursor:pointer">📋 查看牌组(${state.owned.length})</span></h3><div class="pack-cands" id="pack-cands">`;
-      shopView.candidates.forEach((c, i) => {
-        // 终极防线: 外层 div 带 data-uid + 内联阻止默认右键菜单
-        html += `<div data-act="pickpack" data-i="${i}" data-uid="${c.uid}" oncontextmenu="event.preventDefault();event.stopPropagation();return false">${cardHTML(c, { clickable: true })}</div>`;
-      });
-      html += `</div><div class="row"><button class="btn ghost" data-act="packcancel">跳过</button></div>`;
+      html += `<h3 style="margin:10px 0 4px">三选一（${shopView.type}匣${shopView.cost ? ' · 已花 ' + shopView.cost + '金' : ''}）<span style="float:right;font-weight:400;font-size:12px"><span data-act="shop-deck-peek" style="color:var(--accent);cursor:pointer">📋 查看牌组(${state.owned.length})</span></h3>`;
+      if (shopView.opening) {
+        html += `<div class="pack-stage"><div class="pack-box"><span></span><b>开匣中</b></div><div class="pack-rays"></div></div>`;
+      } else {
+        html += `<div class="pack-cands" id="pack-cands">`;
+        shopView.candidates.forEach((c, i) => {
+          // 终极防线: 外层 div 带 data-uid + 内联阻止默认右键菜单
+          html += `<div data-act="pickpack" data-i="${i}" data-uid="${c.uid}" oncontextmenu="event.preventDefault();event.stopPropagation();return false">${cardHTML(c, { clickable: true, className: 'reveal-card', delay: i * 90 })}</div>`;
+        });
+        html += `</div><div class="row"><button class="btn ghost" data-act="packcancel">跳过（不入牌组）</button></div>`;
+      }
     }
+
+    // 精修: 把金币投入核心牌, 让小牌组路线越滚越强
+    const upCost = E.upgradeCost(state);
+    html += `<details style="margin-top:10px"><summary style="cursor:pointer">精修（本店一次，${upCost} 金，强化核心牌）</summary><div class="pack-cands" style="margin-top:8px">`;
+    state.owned.forEach((c) => {
+      const disabled = state.shop.upgraded || state.coins < upCost;
+      html += `<div class="upgrade-wrap ${disabled ? 'disabled' : ''}" data-act="upgrade" data-uid="${c.uid}">${cardHTML(c)}<div class="sellflag upflag">修</div></div>`;
+    });
+    html += `</div></details>`;
 
     // 删牌付费(真 sink)
     const rmCost = D.REMOVE_BASE + state.removedCount * D.REMOVE_STEP;
@@ -585,13 +751,23 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
       case 'reroll': { const r = E.rerollShop(state); if (!r.ok) toast(r.msg); else renderShop(); break; }
       case 'pack': {
         const type = data.type;
-        if (state.coins < D.PACK_COST[type]) { toast('金币不足'); return; }
-        shopView = { type, candidates: E.rollPackCandidates(state, type) };
-        renderShop(); break;
+        const opened = E.openPack(state, type);
+        if (!opened.ok) { toast(opened.msg); return; }
+        shopView = { type, candidates: opened.candidates, cost: opened.cost, opening: true };
+        sfx('pack');
+        toast(`开匣 -${opened.cost}金`);
+        renderShop();
+        setTimeout(() => {
+          if (!shopView || shopView.type !== type || !shopView.opening) return;
+          shopView.opening = false;
+          sfx('pack');
+          renderShop();
+        }, 680);
+        break;
       }
       case 'pickpack': {
         const cand = shopView.candidates[+data.i];
-        const r = E.buyPack(state, shopView.type, cand);
+        const r = E.acceptPackCard(state, cand);
         if (!r.ok) { toast(r.msg); return; }
         shopView = null; toast('收入牌组：' + cand.name); renderShop(); break;
       }
@@ -600,6 +776,11 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
         const r = E.removeCard(state, data.uid);
         if (!r.ok) { toast(r.msg); return; }
         toast('删牌 -' + r.cost + '金'); renderShop(); break;
+      }
+      case 'upgrade': {
+        const r = E.upgradeCard(state, data.uid);
+        if (!r.ok) { toast(r.msg); return; }
+        toast(`精修 ${r.card.name} +${r.inc}`); renderShop(); break;
       }
       case 'next': shopOpen = false; closeModal(); enterLevel(); break;
     }
@@ -766,6 +947,11 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
       const el = ev.target.closest('[data-act]'); if (!el) return;
       const act = el.dataset.act, data = el.dataset;
       if (act === 'close') { propPick = null; closeModal(); if (shopOpen) renderShop(); return; }
+      if (act === 'charter') {
+        const r = E.chooseCharter(state, data.id);
+        if (!r.ok) { toast(r.msg); return; }
+        closeModal(); enterLevel(); return;
+      }
       if (act === 'shop-deck-peek') { showDeck(); return; }
       if (act === 'restart') { closeModal(); newGame(); return; }
       // [v2 P1] 圣旨重开: retryLevel 内部已 startLevel, UI 只复位状态并重渲染
@@ -777,6 +963,18 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
       }
       if (act === 'useprop') { usePropFlow(data.uid); return; }
       if (act === 'joker') { const r = E.activateJoker(state, data.uid); if (!r.ok) toast(r.msg); else { render(); } return; }
+      if (artifactView) {
+        if (act === 'artifact-pick') {
+          const art = artifactView.candidates[+data.i];
+          const r = E.acceptArtifact(state, art);
+          if (!r.ok) { toast(r.msg); return; }
+          artifactView = null;
+          toast('获得遗珍：' + art.name);
+          sfx('win');
+          openCardReward(); return;
+        }
+        if (act === 'artifact-skip') { artifactView = null; openCardReward(); return; }
+      }
       if (rewardView) {
         if (act === 'reward-pick') {
           const cand = rewardView.candidates[+data.i];
@@ -786,7 +984,12 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
           sfx('win');
           renderShop(); return;
         }
-        if (act === 'reward-skip') { rewardView = null; renderShop(); return; }
+        if (act === 'reward-skip') {
+          const r = E.skipReward(state);
+          rewardView = null;
+          toast(`跳过选卡 +${r.coins}金`);
+          renderShop(); return;
+        }
       }
       if (shopOpen) { shopAct(act, data); return; }
     });
@@ -841,9 +1044,9 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
     state = E.createGame(seed || (Date.now() & 0xffffffff));
     heldUid = null; pending = []; discardSel.clear(); mode = 'place';
     moveSel = null; archNotified = {};
-    shopOpen = false; shopView = null; propPick = null; rewardView = null;
+    shopOpen = false; shopView = null; propPick = null; rewardView = null; artifactView = null; assistOn = false;
     closeModal();
-    enterLevel();
+    showCharterSelect();
   }
   function enterLevel() {
     E.startLevel(state);
@@ -852,12 +1055,30 @@ if (rewardView && rewardView.candidates) { const c = rewardView.candidates.find(
     if (state.level === 1 && !state.tutorialShown) showTutorial();
   }
 
+  function showCharterSelect() {
+    const meta = loadMeta();
+    const rows = D.CHARTERS.map((c) => {
+      const rec = meta.charters && meta.charters[c.id];
+      return `<div class="charter-card" data-act="charter" data-id="${c.id}" style="--cc:${c.color}">
+      <div class="charter-head"><span>${c.name}</span><b>${c.title}</b></div>
+      <p>${c.desc}</p>
+      <div class="charter-meta">起手 ${c.starterNames.length + c.starterSpecialNames.length} 张 · 核心 ${c.starterSpecialNames.join(' / ')}</div>
+      ${rec ? `<div class="charter-record">最佳 L${rec.bestLevel || 0} · 最高分 ${rec.bestScore || 0}</div>` : ''}
+    </div>`;
+    }).join('');
+    const html = `<div class="help-doc charter-select"><h2>选择营造令</h2>
+      <p class="lead">这次不再全卡池起手。每个司署给一套小牌组、一个核心营造物和一件永久遗珍；之后奖励、定向匣和精修都会围绕你的路线滚雪球。${meta.bestLevel ? ` 历史最佳：第 ${meta.bestLevel} 关。` : ''}</p>
+      <div class="charter-grid">${rows}</div>
+    </div>`;
+    openModal(html, false);
+  }
+
   /* ---------- 首关引导弹窗(§11): 保证第一次落子必见回响 ---------- */
   function showTutorial() {
     state.tutorialShown = true;
     const html = `<div class="help-doc">
       <h2>第一关 · 营造引导</h2>
-      <p class="lead">把那张高亮的 <strong>民居</strong> 从手牌点起，拖到 <span style="font-size:15px">🌾</span> <b>沃壤格</b>（下方那座衙门旁边）。落子后你会同时看到 <strong>地形 ×1.3</strong> 与 <strong>相邻功能加成（治安+6）</strong> 两条回响——这就是本游戏的核心：「落子见回响」。</p>
+      <p class="lead">把那张高亮的 <strong>民居</strong> 从手牌点起，拖到 <span style="font-size:15px">🌾</span> <b>沃壤格</b>（下方那座衙门旁边）。落子后你会同时看到 <strong>地形 ×1.3</strong> 与 <strong>相邻功能加成（治安+8）</strong> 两条回响——这就是本游戏的核心：「落子见回响」。</p>
       <p>操作：点手牌拾起 → 点空格落子 → 点「确认营造」。<b>悬停</b>空格可看会触发哪些机制，<b>右键</b>任意卡放大看技能。</p>
       <p class="ds">本关配额很低，先感受落子的即时反馈，不必追求高分。顶部「📜 诏令」是每关额外小目标，达标多拿金币。</p>
       <div class="row"><button class="btn seal" data-act="close">开始营造</button></div>

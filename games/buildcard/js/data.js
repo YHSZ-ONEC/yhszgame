@@ -214,6 +214,67 @@
     { id: 'p_ying_zao', name: '营造尺', cost: 6, effect: 'yingzao', prob: 0.05, desc: '使用后，本关首次放置得分 ×1.25。' },
   ];
 
+  /* ---------- 开局营造令(v4): 从"全卡池起手"改为"小牌组定流派" ---------- */
+  // 每局先选一个营造司署: 给一套 12 张左右的初始牌组 + 1 张核心营造物 + 被动倾向。
+  // 目的: 奖励选择、删牌、抽包才有意义; 后期能形成真正 deck-building 的滚雪球。
+  const CHARTERS = [
+    {
+      id: 'wuxing', name: '司天监', title: '五行环生', color: '#7d3c98', artifact: 'star_chart',
+      desc: '围绕五色相生链做空间谜题，相生更值钱，后期靠观星台和长链爆分。',
+      starterNames: ['北京四合院', '瓦市', '衙门', '警巡院', '徽派民居', '私园', '市舶司', '榷场', '驿道', '烽燧', '客家土楼', '坎儿井'],
+      starterSpecialNames: ['观星台'],
+      likes: { elements: ['金', '木', '水', '火', '土'], kinds: ['礼制', '园林'], effects: ['guanxing', 'yuanqiu'] },
+    },
+    {
+      id: 'dense', name: '坊市司', title: '邻接密铺', color: '#b9770e', artifact: 'street_license',
+      desc: '围绕六个招牌相邻组合吃加成，适合喜欢把城盘越铺越满的路线。',
+      starterNames: ['客家土楼', '北京四合院', '山西大院', '钱局', '票号', '草市', '驰道', '驿道', '衙门', '逻城', '私园', '公共园林'],
+      starterSpecialNames: ['含嘉仓'],
+      likes: { kinds: ['民居', '市集', '道路', '衙门', '园林'], effects: ['hanjiacang', 'zhaozhou', 'luoyang_qiao'] },
+    },
+    {
+      id: 'hydro', name: '水运司', title: '水利商脉', color: '#2471a3', artifact: 'canal_tally',
+      desc: '围绕水利和市集做经济引擎，资源链路收益更高，越到后期越容易爆经济栏。',
+      starterNames: ['市舶司', '钱局', '票号', '草市', '坎儿井', '它山堰', '白起渠', '驿道', '栈道', '徽派民居', '公共园林', '巡检司'],
+      starterSpecialNames: ['都江堰'],
+      likes: { kinds: ['水利', '市集', '道路'], elements: ['水', '金'], effects: ['dujiangyan', 'dayunhe', 'zhaozhou'] },
+    },
+    {
+      id: 'wall', name: '边防司', title: '长城铁壁', color: '#922b21', artifact: 'war_drum',
+      desc: '围绕衙门、防御与金土元素堆治安，关隘抗压强，后期靠长城封顶。',
+      starterNames: ['衙门', '警巡院', '巡检司', '关隘', '烽燧', '逻城', '山西大院', '藏族碉房', '客家土楼', '榷场', '驰道', '陕北窑洞'],
+      starterSpecialNames: ['山海关'],
+      likes: { kinds: ['衙门', '防御', '礼制'], elements: ['金', '土', '火'], effects: ['wanli', 'shanhai', 'xian_wall', 'qutang'] },
+    },
+    {
+      id: 'inspire', name: '机巧司', title: '灵感爆发', color: '#1e8449', artifact: 'luban_manual',
+      desc: '围绕主动技和灵感循环打爆发，少量关键回合能把一关直接推过线。',
+      starterNames: ['北京四合院', '湘西吊脚楼', '瓦市', '市舶司', '烽燧', '巡检司', '私园', '寺观园林', '坎儿井', '栈道', '钱局', '客家土楼'],
+      starterSpecialNames: ['鲁班锁'],
+      likes: { kinds: ['工具', '礼制', '园林', '防御'], effects: ['luban', 'guanxing', 'qutang', 'qinghui'] },
+    },
+    {
+      id: 'living', name: '民生司', title: '民生颐和', color: '#117a65', artifact: 'city_register',
+      desc: '围绕民居和园林做稳定成长，成型早、容错高，后期民生栏倍率很爽。',
+      starterNames: ['客家土楼', '北京四合院', '湘西吊脚楼', '陕北窑洞', '山西大院', '徽派民居', '广府镬耳屋', '藏族碉房', '私园', '寺观园林', '公共园林', '皇家苑囿'],
+      starterSpecialNames: ['颐和园'],
+      likes: { kinds: ['民居', '园林'], pillars: ['民生'], effects: ['yihe', 'chengde', 'ge_yuan', 'liu_yuan'] },
+    },
+  ];
+
+  /* ---------- 永久遗珍(v4): 肉鸽式被动奖励, 主要由关隘掉落 ---------- */
+  const ARTIFACTS = [
+    { id: 'star_chart', name: '浑天星图', rarity: '紫', color: '#7d3c98', charter: 'wuxing', desc: '相生每对额外 +2；五行构筑更容易滚雪球。' },
+    { id: 'street_license', name: '坊市牙牌', rarity: '黄', color: '#b9770e', charter: 'dense', desc: '每次触发功能相邻组合，该组合所有加成额外 +2。' },
+    { id: 'canal_tally', name: '漕运木筹', rarity: '紫', color: '#2471a3', charter: 'hydro', desc: '水利 + 市集资源链路额外 +8 经济。' },
+    { id: 'war_drum', name: '边鼓', rarity: '黄', color: '#922b21', charter: 'wall', desc: '每座衙门/防御额外 +3 治安。' },
+    { id: 'luban_manual', name: '鲁班残卷', rarity: '紫', color: '#1e8449', charter: 'inspire', desc: '每次施展主动技后返还 1 灵感。' },
+    { id: 'city_register', name: '户籍鱼鳞册', rarity: '黄', color: '#117a65', charter: 'living', desc: '每座民居额外 +3 民生。' },
+    { id: 'terrain_atlas', name: '山川图经', rarity: '黄', color: '#8b5a2b', charter: 'any', desc: '地形契合从 ×1.3 提升为 ×1.45。' },
+    { id: 'jade_ruler', name: '白玉营造尺', rarity: '红', color: '#c0392b', charter: 'any', desc: '三栏都有分时，总分额外 ×1.08。' },
+    { id: 'edict_seal', name: '御批朱印', rarity: '黄', color: '#b03a2e', charter: 'any', desc: '每次完成诏令，额外 +2 金。' },
+  ];
+
   /* ---------- 关卡曲线: 24 关, 城盘 3→9 增长(城市持久积累), 配额递增 ---------- */
   // 城盘边长 = min(3 + floor((level-1)/2), 9)
   // 配额曲线 [v1.8 重构]: 基准从"贪心下限×0.80"改为"地形感知 bot 产能"——
@@ -244,7 +305,7 @@
     ELEMENTS, SHENG, KE, RESOLVE_KINDS, TERRAIN, EDICTS, EDICT_BY_LEVEL,
     CATASTROPHES, catastropheForLevel,
     normalCards, specialCards,
-    PROPS,
+    PROPS, CHARTERS, ARTIFACTS,
     getLevelConfig, boardSize,
     // 计分常量 [v1.8]
     SCORE: {
@@ -355,13 +416,15 @@
     JOKER_SLOTS: 6,
     INSP_PER_PLACE: 1,    // 每放置 1 张得 1 灵感
     INSP_CAP: 6,
-    PACK_COST: { normal: 2, mixed: 5, special: 10 },
+    PACK_COST: { normal: 2, mixed: 5, special: 10, focus: 6 },
     PACK_PROB: {
       mixed: { normal: 0.55, yellow: 0.3, purple: 0.13, red: 0.02 },
       special: { yellow: 0.5, purple: 0.38, red: 0.12 },
     },
     REMOVE_BASE: 4,       // 删牌/拆建筑基础花费
     REMOVE_STEP: 2,       // 每次删牌后花费 +2
+    SKIP_REWARD: 2,       // 过关奖励跳过选卡, 改拿金币: 避免无脑牌组膨胀
+    HEAT_THRESHOLDS: [5, 14, 28, 48, 75], // 气势段位: 每次高质量落子推进, 过线给即时奖励
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = GAME_DATA;

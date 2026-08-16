@@ -12,7 +12,7 @@ window.YHSZ_POSTS = [
   {
     slug: "piexl-demo",
     title: "开发日志 002：pixel序列帧工具",
-    date: "2026-08-05|2026-08-13",
+    date: "2026-08-05|2026-08-15",
     summary: "构建一个能用于实际游戏开发的工具。",
     path: "./posts/pixel.md",
     category: "开发日志",
@@ -21,7 +21,7 @@ window.YHSZ_POSTS = [
   {
     slug: "coding",
     title: "开发日志 003：疯狂coding",
-    date: "2026-08-08|2026-08-08",
+    date: "2026-08-08|2026-08-16",
     summary: "加入两个新游戏。",
     path: "./posts/coding.md",
     category: "开发日志",

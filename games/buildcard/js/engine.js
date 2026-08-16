@@ -77,9 +77,15 @@
       placementsLeft: 0,
       inspiration: 0,
       props: [],
+      artifacts: [],        // 永久遗珍(肉鸽被动)
+      charter: null,        // 开局营造令/司署, 决定初始牌组与奖励倾向
       shop: null,
       pending: { levelScoreMult: 1, ignoreKe: false, wildAdj: false },
       removedCount: 0,
+      upgradeCount: 0,
+      heat: 0,              // 气势: 高质量落子推进, 达段位给即时奖励
+      heatRank: 0,
+      bestHeatRank: 0,
       // [v2 P1] 拆建/迁建/余烬/印记/本关放置记录
       demolishCount: 0,     // 全局已拆建数(成本递增 3+2n)
       movesLeft: 0,         // 本关剩余迁建次数
@@ -95,8 +101,67 @@
       tutCell: null,        // 教学高亮格 {r,c}(放这里触发地形+相邻双回响)
       log: [],
     };
-    D.normalCards.forEach((b) => state.owned.push(makeInstance(b)));
     return state;
+  }
+
+  function artifactById(id) { return (D.ARTIFACTS || []).find((a) => a.id === id); }
+  function hasArtifact(state, id) { return !!(state.artifacts || []).some((a) => a.id === id); }
+  function charterById(id) { return (D.CHARTERS || []).find((c) => c.id === id) || (D.CHARTERS || [])[0]; }
+  function findNormalByName(name) { return D.normalCards.find((c) => c.name === name); }
+  function findSpecialByName(name) { return D.specialCards.find((c) => c.name === name); }
+
+  function chooseCharter(state, id) {
+    if (state.level > 0) return { ok: false, msg: '本局已开始' };
+    const ch = charterById(id);
+    if (!ch) return { ok: false, msg: '无此营造令' };
+    state.charter = { id: ch.id, name: ch.name, title: ch.title, color: ch.color, desc: ch.desc };
+    state.artifacts = [];
+    if (ch.artifact) {
+      const a = artifactById(ch.artifact);
+      if (a) state.artifacts.push(Object.assign({}, a, { source: '营造令' }));
+    }
+    state.owned = [];
+    (ch.starterNames || []).forEach((name) => {
+      const base = findNormalByName(name);
+      if (base) state.owned.push(makeInstance(base));
+    });
+    (ch.starterSpecialNames || []).forEach((name) => {
+      const base = findSpecialByName(name);
+      if (base) state.owned.push(makeInstance(base));
+    });
+    if (state.owned.length < 8) D.normalCards.slice(0, 12).forEach((b) => state.owned.push(makeInstance(b)));
+    log(state, `营造令: ${ch.name}·${ch.title}`);
+    return { ok: true, charter: state.charter };
+  }
+
+  function ensureStarterDeck(state) {
+    if (state.owned.length) return;
+    chooseCharter(state, (D.CHARTERS && D.CHARTERS[0] && D.CHARTERS[0].id) || null);
+  }
+
+  function heatName(rank) {
+    return ['无', '起势', '连营', '鼎盛', '名动', '狂潮'][rank] || '狂潮';
+  }
+  function awardHeat(state, gain) {
+    const oldRank = state.heatRank || 0;
+    state.heat = Math.min(100, (state.heat || 0) + Math.max(0, gain));
+    const thresholds = D.HEAT_THRESHOLDS || [];
+    let rank = oldRank;
+    while (rank < thresholds.length && state.heat >= thresholds[rank]) rank++;
+    state.heatRank = rank;
+    state.bestHeatRank = Math.max(state.bestHeatRank || 0, rank);
+    const ups = [];
+    for (let r = oldRank + 1; r <= rank; r++) {
+      const reward = { rank: r, name: heatName(r), coins: 0, inspiration: 0, placements: 0, mult: 1 };
+      if (r === 1) { reward.inspiration = 1; state.inspiration = Math.min(D.INSP_CAP, state.inspiration + 1); }
+      if (r === 2) { reward.coins = 2; state.coins += 2; }
+      if (r === 3) { reward.placements = 1; state.placementsLeft += 1; }
+      if (r === 4) { reward.coins = 3; reward.inspiration = 1; state.coins += 3; state.inspiration = Math.min(D.INSP_CAP, state.inspiration + 1); }
+      if (r === 5) { reward.mult = 1.2; state.pending.levelScoreMult = Math.max(state.pending.levelScoreMult, 1.2); }
+      ups.push(reward);
+      log(state, `气势·${reward.name}`);
+    }
+    return { gain, heat: state.heat, rank, name: heatName(rank), ups };
   }
 
   /* ---------- 地势生成: 首关建盘, 城盘长大时旧地形保留、新格按概率生成 ---------- */
@@ -122,6 +187,7 @@
 
   /* ---------- 关卡: 城盘持久 + 随关卡长大, 抽手牌 ---------- */
   function startLevel(state) {
+    ensureStarterDeck(state);
     state.level += 1;
     const cfg = D.getLevelConfig(state.level);
     state.cfg = cfg;
@@ -168,7 +234,7 @@
   }
 
   /* ---------- 首关引导关: 让第一次落子必触发正反馈(地势+相邻双回响) ---------- */
-  // 预置一座衙门(土)作相邻参照 —— 与民居有相邻功能加成(治安+6)且土属性不会被民居克;
+  // 预置一座衙门(土)作相邻参照 —— 与民居有相邻功能加成(治安+8)且土属性不会被民居克;
   // 把其下方格地形设为沃壤(契合民居)并高亮为教学格; 保证手牌含一张土/金民居(不会反克衙门)。
   // 引导玩家把该民居放到高亮🌾格 → 同时见"地形×1.3"与"相邻功能加成"两条回响(P1)。
   function setupTutorial(state, n) {
@@ -181,12 +247,19 @@
   }
   function ensureTutorialHand(state) {
     const safe = (c) => c.kind === '民居' && (c.element === '土' || c.element === '金'); // 土/金民居不会被衙门(土)克
-    if (state.hand.some(safe)) return;                          // 手牌已有安全民居
+    const ideal = (c) => c.kind === '民居' && c.element === '金'; // 金民居还能吃 土生金, 保证首落过线
+    if (state.hand.some(ideal)) return;                          // 手牌已有最佳教学民居
     const onBoard = new Set();
     for (const row of state.board) for (const c of row) if (c) onBoard.add(c.uid);
-    const idx = state.owned.findIndex((c) => safe(c) && !onBoard.has(c.uid)); // [v3] 盘上已放置的不可换
-    if (idx < 0) return;
-    const mins = state.owned.splice(idx, 1)[0];
+    let idx = state.owned.findIndex((c) => ideal(c) && !onBoard.has(c.uid)); // [v3] 盘上已放置的不可换
+    if (idx < 0) {
+      const fallback = D.normalCards.find((c) => c.name === '山西大院') || D.normalCards.find(ideal) || D.normalCards.find(safe);
+      if (!fallback) return;
+      state.owned.push(makeInstance(fallback));
+      idx = state.owned.length - 1;
+    }
+    const mins = state.owned[idx];
+    state.discard = state.discard.filter((c) => c.uid !== mins.uid); // 防止同一实例同时在手牌和抽牌堆
     const removed = state.hand.shift();                         // 让出一个手牌位
     if (removed) state.discard.push(removed);
     state.hand.push(mins);
@@ -267,6 +340,9 @@
       elemCount[x.inst.element] = (elemCount[x.inst.element] || 0) + 1;
     });
     const gardenCount = kindCount['园林'] || 0;
+    const charterId = state.charter && state.charter.id;
+    const chainPair = S.CHAIN_PAIR + (hasArtifact(state, 'star_chart') ? 2 : 0) + (charterId === 'wuxing' ? 1 : 0);
+    const adjBonus = (hasArtifact(state, 'street_license') ? 2 : 0) + (charterId === 'dense' ? 1 : 0);
 
     // [v2 P1] 相生链: 正交相邻且顺生(木→火→土…)构成有向边, 求最长顺生链(链上同元素只计一次,
     // 五格闭环天然享受 ×1.5)。链上节点基础值 ×1.25(≥3 链) / ×1.5(≥5 链)——五行从加法升级为乘法主轴。
@@ -311,11 +387,11 @@
       let v = x.inst.value;
       if (x.inst.pillar === '经济' && x.inst.element === '水' && present.has('dujiangyan')) v *= 1.5;
       if (x.inst.pillar === '民生' && present.has('yihe')) v *= 1.3;
-      if (x.inst.pillar === '水' && present.has('dayunhe')) v *= 1.4;
+      if (x.inst.element === '水' && present.has('dayunhe')) v *= 1.4;
       // 地势契合: 落在匹配地形上, 该建筑基础值 ×TERRAIN.mult
       const terr = state.terrain[x.r] && state.terrain[x.r][x.c];
       if (terr && D.TERRAIN[terr] && D.TERRAIN[terr].mult > 1 && D.TERRAIN[terr].kinds.includes(x.inst.kind)) {
-        v *= D.TERRAIN[terr].mult;
+        v *= D.TERRAIN[terr].mult + (hasArtifact(state, 'terrain_atlas') ? 0.15 : 0);
         triggers.push('地形·' + D.TERRAIN[terr].name);
       }
       if (yuanqiuOn && fitCells.includes(x)) v *= S.YUANQIU_MULT;
@@ -332,11 +408,11 @@
       // 功能邻接(键已规范化, 顺序无关)
       const key = [a.kind, b.kind].sort().join('|');
       const adj = ADJ[key];
-      if (adj) { for (const k in adj) pillars[k] += adj[k] * w; triggers.push(`${a.kind}↔${b.kind}`); }
+      if (adj) { for (const k in adj) pillars[k] += (adj[k] + adjBonus) * w; triggers.push(`${a.kind}↔${b.kind}`); }
       // 五行相生链
-      if (D.SHENG[a.element] === b.element) { pillars[b.pillar] += S.CHAIN_PAIR * w; triggers.push(`${a.element}生${b.element}`); }
-      else if (D.SHENG[b.element] === a.element) { pillars[a.pillar] += S.CHAIN_PAIR * w; triggers.push(`${b.element}生${a.element}`); }
-      if (a.element === '水' && present.has('dayunhe')) waterWoodChain += S.CHAIN_PAIR * w;
+      if (D.SHENG[a.element] === b.element) { pillars[b.pillar] += chainPair * w; triggers.push(`${a.element}生${b.element}`); }
+      else if (D.SHENG[b.element] === a.element) { pillars[a.pillar] += chainPair * w; triggers.push(`${b.element}生${a.element}`); }
+      if (a.element === '水' && present.has('dayunhe')) waterWoodChain += chainPair * w;
       // 五行相克惩罚
       if (!state.pending.ignoreKe) {
         let victim = null, keStr = null;
@@ -365,7 +441,8 @@
     const hasMarket = (kindCount['市集'] || 0) > 0;
     if (hasWater && hasMarket) {
       const adj = pairs.some((p) => (p.a.inst.kind === '水利' && p.b.inst.kind === '市集') || (p.a.inst.kind === '市集' && p.b.inst.kind === '水利'));
-      pillars['经济'] += adj ? S.RES_LINK_ADJ : S.RES_LINK;
+      const linkBonus = (hasArtifact(state, 'canal_tally') ? 8 : 0) + (charterId === 'hydro' ? 4 : 0);
+      pillars['经济'] += (adj ? S.RES_LINK_ADJ : S.RES_LINK) + linkBonus;
       triggers.push(adj ? '水利↔市集(相邻)' : '水利↔市集(同盘)');
     }
 
@@ -387,6 +464,13 @@
       }
       pillars['治安'] += 10 * defPairs;
     }
+
+    // 4.1) 永久遗珍 / 营造令被动: 关隘奖励带来的长期构筑 payoff
+    if (hasArtifact(state, 'city_register')) { pillars['民生'] += 3 * (kindCount['民居'] || 0); triggers.push('遗珍·户籍'); }
+    if (charterId === 'living') pillars['民生'] += 2 * ((kindCount['民居'] || 0) + gardenCount);
+    if (hasArtifact(state, 'war_drum')) { pillars['治安'] += 3 * ((kindCount['衙门'] || 0) + (kindCount['防御'] || 0)); triggers.push('遗珍·边鼓'); }
+    if (charterId === 'wall') pillars['治安'] += 2 * ((kindCount['衙门'] || 0) + (kindCount['防御'] || 0));
+    if (charterId === 'inspire' && state.inspiration >= 4) { pillars['民生'] += 12; triggers.push('机巧·蓄势'); }
 
     // 4.5) 坊: 棋盘 ≥5×5 时, 非重叠 3×3 坊(自左上平铺)全满且主栏占比≥7 → 主栏 +20
     // 纯增益(不影响可解性), 奖励"密集主题建造"这一空间策略。
@@ -432,6 +516,7 @@
       && pillars['民生'] > 0 && pillars['经济'] > 0 && pillars['治安'] > 0;
     let totalMult = state.pending.levelScoreMult;
     if (present.has('hanjiacang') && allThree) totalMult *= 1.25;
+    if (hasArtifact(state, 'jade_ruler') && allThree) { totalMult *= 1.08; triggers.push('遗珍·白玉尺×1.08'); }
 
     let total = (pillars['民生'] + pillars['经济'] + pillars['治安']) * totalMult;
 
@@ -469,6 +554,48 @@
     return { total: Math.round(total) };
   }
 
+  /* ---------- 易上手辅助: 推荐落点 / 落子解释(只读模拟, 不改变棋盘) ---------- */
+  function scoreDeltaForCard(state, card, r, c) {
+    const before = evalBoard(state);
+    state.board[r][c] = card;
+    const after = evalBoard(state);
+    state.board[r][c] = null;
+    const prev = new Set(before.triggers);
+    const triggers = after.triggers.filter((t) => !prev.has(t));
+    return { gain: after.total - before.total, triggers };
+  }
+  function rankPlacements(state, uid, limit) {
+    const card = state.hand.find((x) => x.uid === uid);
+    if (!card) return [];
+    const out = [];
+    for (let r = 0; r < state.boardH; r++) {
+      for (let c = 0; c < state.boardW; c++) {
+        if (state.board[r][c]) continue;
+        const d = scoreDeltaForCard(state, card, r, c);
+        out.push({ r, c, gain: Math.round(d.gain), triggers: d.triggers.slice(0, 6) });
+      }
+    }
+    out.sort((a, b) => b.gain - a.gain || b.triggers.length - a.triggers.length || a.r - b.r || a.c - b.c);
+    return out.slice(0, limit || 3);
+  }
+  function describePlacements(state, placements) {
+    const placed = [];
+    let totalGain = 0;
+    for (const p of placements) {
+      const card = state.hand.find((c) => c.uid === p.uid);
+      if (!card || state.board[p.r][p.c]) continue;
+      const before = evalBoard(state);
+      state.board[p.r][p.c] = card;
+      const after = evalBoard(state);
+      const prev = new Set(before.triggers);
+      const gain = after.total - before.total;
+      totalGain += gain;
+      placed.push({ uid: p.uid, r: p.r, c: p.c, name: card.name, gain: Math.round(gain), triggers: after.triggers.filter((t) => !prev.has(t)).slice(0, 6) });
+    }
+    for (const p of placed) state.board[p.r][p.c] = null;
+    return { totalGain: Math.round(totalGain), placed };
+  }
+
   /* ---------- 放置(提交) ---------- */
   function applyPlace(state, placements) {
     // placements: [{uid, r, c}]
@@ -481,6 +608,8 @@
       if (p.r < 0 || p.r >= state.boardH || p.c < 0 || p.c >= state.boardW) return { ok: false, msg: '坐标越界' };
       if (state.board[p.r][p.c]) return { ok: false, msg: '该格已被占用' };
     }
+    const beforeEval = evalBoard(state);
+    const beforeTriggers = new Set(beforeEval.triggers || []);
     let added = 0;
     for (const p of placements) {
       const idx = state.hand.findIndex((c) => c.uid === p.uid);
@@ -499,10 +628,14 @@
     const overflow = Math.max(0, state.inspiration + gained - D.INSP_CAP);
     if (overflow > 0) { state.ember += overflow; log(state, `灵感溢出 +${overflow} 余烬(共${state.ember})`); }
     state.inspiration = Math.min(D.INSP_CAP, state.inspiration + gained);
+    const afterEval = evalBoard(state);
+    const newTriggers = (afterEval.triggers || []).filter((t) => !beforeTriggers.has(t));
+    const heatGain = Math.max(1, placements.length + Math.min(7, new Set(newTriggers).size) + Math.floor(Math.max(0, added) / 45));
+    const heat = awardHeat(state, heatGain);
     drawTo(state, D.HAND_SIZE);
-    log(state, `营造 +${Math.round(added)} (本盘 ${state.score})`);
+    log(state, `营造 +${Math.round(added)} · 气势 +${heatGain} (本盘 ${state.score})`);
     const win = checkWin(state);
-    return { ok: true, score: Math.round(added), win };
+    return { ok: true, score: Math.round(added), win, heat, triggers: newTriggers.slice(0, 8) };
   }
 
   /* ---------- 弃牌(手牌) ---------- */
@@ -535,6 +668,7 @@
       case 'qutang': state.pending.levelScoreMult = Math.max(state.pending.levelScoreMult, 2); break;
       case 'qinghui': state.pending.ignoreKe = true; break;
     }
+    if (hasArtifact(state, 'luban_manual')) state.inspiration = Math.min(D.INSP_CAP, state.inspiration + 1);
     state.score = evalBoard(state).total; // 重算(乘率生效)
     log(state, '施展: ' + card.name);
     return { ok: true };
@@ -663,10 +797,17 @@
         const ev = evalBoard(state);
         const edictOk = checkEdict(state, ev);
         let reward = state.cfg.coinTier + state.placementsLeft;
-        if (edictOk) { reward += state.cfg.edict.reward; state.edictLog.push(state.cfg.edict.name); }
+        if (edictOk) { reward += state.cfg.edict.reward + (hasArtifact(state, 'edict_seal') ? 2 : 0); state.edictLog.push(state.cfg.edict.name); }
+        const ratio = state.cfg.quota > 0 ? state.score / state.cfg.quota : 1;
+        let overkill = { tier: 0, name: '', bonusCoins: 0, extraChoices: 0, ratio: Math.round(ratio * 100) };
+        if (ratio >= 1.5) overkill = { tier: 3, name: '营造大成', bonusCoins: 4, extraChoices: 2, ratio: Math.round(ratio * 100) };
+        else if (ratio >= 1.25) overkill = { tier: 2, name: '匠心盈城', bonusCoins: 2, extraChoices: 1, ratio: Math.round(ratio * 100) };
+        else if (ratio >= 1.1) overkill = { tier: 1, name: '余裕达成', bonusCoins: 1, extraChoices: 1, ratio: Math.round(ratio * 100) };
+        if (overkill.bonusCoins) reward += overkill.bonusCoins;
         state.coins += reward;
         state.lastReward = reward;
-        state.lastEdict = { satisfied: edictOk, name: state.cfg.edict.name, reward: edictOk ? state.cfg.edict.reward : 0 };
+        state.lastEdict = { satisfied: edictOk, name: state.cfg.edict.name, reward: edictOk ? state.cfg.edict.reward + (hasArtifact(state, 'edict_seal') ? 2 : 0) : 0 };
+        state.lastOverkill = overkill;
         if (edictOk) state.sealCount += 1; // [v2 P1] 达成诏令得 1 枚印记
         state.rewarded = true;
       }
@@ -732,7 +873,7 @@
     state.rerollCost = 2;
     const props = [];
     for (let i = 0; i < 3; i++) props.push(rollProp(state.rng));
-    state.shop = { props, locked: [] };
+    state.shop = { props, locked: [], upgraded: false };
     return state.shop;
   }
   function rerollShop(state) {
@@ -760,28 +901,73 @@
     state.shop.locked.push(idx);
     return { ok: true };
   }
-  /* ---------- [v3] 过关奖励三选一: 杀戮尖塔式"每关选卡"节奏 ---------- */
-  function rollRewardCandidates(state) {
-    const ownedIds = new Set(state.owned.map((c) => c.id));
-    if (state.rng() < 0.2) { // 两成概率奖励黄卡营造物(更强的获得感)
-      const sp = D.specialCards.filter((c) => c.rarity === '黄');
-      if (sp.length >= 3) return shuffle(sp, state.rng).slice(0, 3).map((c) => makeInstance(c));
+
+  function charterLikes(state) {
+    const ch = state.charter && charterById(state.charter.id);
+    return (ch && ch.likes) || {};
+  }
+  function affinityScore(state, base) {
+    const likes = charterLikes(state);
+    let w = 1;
+    if (likes.kinds && likes.kinds.includes(base.kind)) w += 4;
+    if (likes.pillars && likes.pillars.includes(base.pillar)) w += 3;
+    if (likes.elements && likes.elements.includes(base.element)) w += 1;
+    if (base.type === 'special' && likes.effects && likes.effects.includes(base.effect)) w += 7;
+    if (base.archetype && state.charter && base.archetype.includes(state.charter.id)) w += 2;
+    const ownedNames = new Set(state.owned.map((c) => c.name));
+    if (!ownedNames.has(base.name)) w += 2;
+    return Math.max(1, w);
+  }
+  function weightedChoices(state, pool, n) {
+    const out = [];
+    const rest = pool.slice();
+    while (out.length < n && rest.length) {
+      const total = rest.reduce((s, c) => s + affinityScore(state, c), 0);
+      let r = state.rng() * total;
+      let pick = 0;
+      for (; pick < rest.length; pick++) {
+        r -= affinityScore(state, rest[pick]);
+        if (r <= 0) break;
+      }
+      out.push(rest.splice(Math.min(pick, rest.length - 1), 1)[0]);
     }
-    const fresh = D.normalCards.filter((c) => !ownedIds.has(c.id)); // 优先没见过的卡
-    const pool = fresh.length >= 3 ? fresh : D.normalCards;
-    return shuffle(pool, state.rng).slice(0, 3).map((c) => makeInstance(c));
+    return out;
+  }
+
+  /* ---------- [v3] 过关奖励三选一: 杀戮尖塔式"每关选卡"节奏 ---------- */
+  function rollRewardCandidates(state, count) {
+    count = count || 3;
+    const specialChance = Math.min(0.18 + state.level * 0.018, 0.52);
+    let pool;
+    if (state.rng() < specialChance) {
+      const r = state.rng();
+      const rarity = state.level >= 15 && r > 0.88 ? '红' : state.level >= 7 && r > 0.58 ? '紫' : '黄';
+      pool = D.specialCards.filter((c) => c.rarity === rarity);
+    } else {
+      pool = D.normalCards;
+    }
+    return weightedChoices(state, pool, count).map((c) => makeInstance(c));
   }
   function acceptReward(state, inst) {
     state.owned.push(inst); // 候选实例即入牌组实例(uid 一致, 右键可查)
     return { ok: true };
   }
+  function skipReward(state) {
+    state.coins += D.SKIP_REWARD;
+    log(state, `跳过选卡 +${D.SKIP_REWARD}金`);
+    return { ok: true, coins: D.SKIP_REWARD };
+  }
 function rollPackCandidates(state, type) {
     const out = [];
     for (let i = 0; i < 3; i++) {
-      if (type === 'normal') out.push(makeInstance(D.normalCards[Math.floor(state.rng() * D.normalCards.length)]));
+      if (type === 'focus') {
+        const pool = state.rng() < 0.68 ? D.normalCards : D.specialCards;
+        out.push(makeInstance(weightedChoices(state, pool, 1)[0]));
+      }
+      else if (type === 'normal') out.push(makeInstance(weightedChoices(state, D.normalCards, 1)[0]));
       else if (type === 'mixed') {
         const r = state.rng(), pr = D.PACK_PROB.mixed;
-        if (r < pr.normal) out.push(makeInstance(D.normalCards[Math.floor(state.rng() * D.normalCards.length)]));
+        if (r < pr.normal) out.push(makeInstance(weightedChoices(state, D.normalCards, 1)[0]));
         else if (r < pr.normal + pr.yellow) out.push(makeInstance(pickSpecial(state, '黄')));
         else if (r < pr.normal + pr.yellow + pr.purple) out.push(makeInstance(pickSpecial(state, '紫')));
         else out.push(makeInstance(pickSpecial(state, '红')));
@@ -794,6 +980,17 @@ function rollPackCandidates(state, type) {
     }
     return out;
   }
+  function openPack(state, type) {
+    const cost = D.PACK_COST[type];
+    if (cost == null) return { ok: false, msg: '无此营造匣' };
+    if (state.coins < cost) return { ok: false, msg: '金币不足' };
+    state.coins -= cost;
+    return { ok: true, cost, candidates: rollPackCandidates(state, type) };
+  }
+  function acceptPackCard(state, inst) {
+    state.owned.push(inst);
+    return { ok: true };
+  }
   function pickSpecial(state, rarity) {
     // [v2 P1] 流派成型奖励: 已成型流派的 core 营造物出现率 ×3(定向构筑, 解决"抽到什么玩什么")
     const done = new Set();
@@ -801,10 +998,52 @@ function rollPackCandidates(state, type) {
     const pool = D.specialCards.filter((c) => c.rarity === rarity);
     const weighted = [];
     pool.forEach((c) => {
-      const w = done.has(c.effect) ? 3 : 1;
+      const w = (done.has(c.effect) ? 3 : 1) + affinityScore(state, c);
       for (let i = 0; i < w; i++) weighted.push(c);
     });
     return weighted[Math.floor(state.rng() * weighted.length)];
+  }
+
+  function rollArtifactChoices(state) {
+    const owned = new Set((state.artifacts || []).map((a) => a.id));
+    const chId = state.charter && state.charter.id;
+    const pool = (D.ARTIFACTS || []).filter((a) => !owned.has(a.id));
+    const weighted = [];
+    pool.forEach((a) => {
+      let w = 1;
+      if (a.charter === chId) w += 6;
+      if (a.charter === 'any') w += 2;
+      if (a.rarity === '红') w += state.level >= 12 ? 1 : 0;
+      for (let i = 0; i < w; i++) weighted.push(a);
+    });
+    return shuffle(weighted.length ? weighted : pool, state.rng).filter((a, i, arr) => arr.findIndex((x) => x.id === a.id) === i).slice(0, 3).map((a) => Object.assign({}, a));
+  }
+  function acceptArtifact(state, artifact) {
+    if (!artifact || !artifact.id) return { ok: false, msg: '无此遗珍' };
+    if ((state.artifacts || []).some((a) => a.id === artifact.id)) return { ok: false, msg: '已拥有该遗珍' };
+    state.artifacts.push(Object.assign({}, artifact));
+    log(state, '获得遗珍: ' + artifact.name);
+    state.score = evalBoard(state).total;
+    return { ok: true };
+  }
+
+  function upgradeCost(state) { return 3 + Math.floor(state.level / 3) + state.upgradeCount; }
+  function upgradeCard(state, uid) {
+    if (!state.shop) return { ok: false, msg: '当前不在匠作铺' };
+    if (state.shop.upgraded) return { ok: false, msg: '本次匠作铺已精修过' };
+    const c = state.owned.find((x) => x.uid === uid);
+    if (!c) return { ok: false, msg: '卡不在牌组' };
+    const cost = upgradeCost(state);
+    if (state.coins < cost) return { ok: false, msg: `金币不足(需 ${cost})` };
+    const inc = Math.max(3, Math.ceil(c.value * (c.type === 'special' ? 0.14 : 0.18)));
+    state.coins -= cost;
+    state.upgradeCount += 1;
+    state.shop.upgraded = true;
+    c.value += inc;
+    c.upgrades = (c.upgrades || 0) + 1;
+    state.score = evalBoard(state).total;
+    log(state, `精修 ${c.name} +${inc}`);
+    return { ok: true, cost, inc, card: c };
   }
   function buyPack(state, type, base) {
     const cost = D.PACK_COST[type];
@@ -847,12 +1086,13 @@ function rollPackCandidates(state, type) {
   function log(state, msg) { state.log.push(msg); if (state.log.length > 60) state.log.shift(); }
 
   const Engine = {
-    createGame, startLevel, drawTo, evalBoard, computePreview, previewTriggers, getArchetypeStatus,
+    createGame, chooseCharter, startLevel, drawTo, evalBoard, computePreview, previewTriggers, rankPlacements, describePlacements, getArchetypeStatus,
     applyPlace, applyDiscard,
     activateJoker, removeCard, checkWin, addProp, useProp,
     demolishBuilding, moveBuilding, retryLevel, archetypeDone,
     openShop, rerollShop, buyProp, lockShopItem,
-    rollPackCandidates, buyPack, rollRewardCandidates, acceptReward,
+    rollPackCandidates, openPack, acceptPackCard, buyPack, rollRewardCandidates, acceptReward, skipReward,
+    rollArtifactChoices, acceptArtifact, upgradeCard, upgradeCost,
     makeInstance, shuffle, mulberry32, checkEdict, D,
   };
 
