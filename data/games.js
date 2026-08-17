@@ -8,6 +8,21 @@ window.YHSZ_SITE = {
 
 window.YHSZ_GAMES = [
   {
+    id: "yisa",
+    title: "泪之深渊 · Tears of the Abyss",
+    description: "类以撒 Roguelike 原型：程序化地牢、八向眼泪、标签协同、状态机敌人、多阶段 Boss 与元进度。",
+    route: "./games/yisa/index.html",
+    folder: "./games/yisa/index.html",
+    status: "游戏",
+    date: "2026-08-17",
+    accent: "#9b5cff",
+    icon: {
+      image: "./assets/icons/yisa.svg",
+      alt: "泪之深渊图标"
+    },
+    tags: ["HTML", "Canvas", "Roguelike", "地牢"]
+  },
+  {
     id: "qw",
     title: "我的世界 HTML 版",
     description: "用来测试qwen3.8 max，不算真正的作品，一个纯前端 3D 方块建造小游戏，支持移动、跳跃、飞行、破坏和放置方块。",
