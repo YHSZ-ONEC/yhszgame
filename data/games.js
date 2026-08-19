@@ -10,7 +10,7 @@ window.YHSZ_GAMES = [
   {
     id: "yisa",
     title: "泪之深渊 · Tears of the Abyss",
-    description: "类以撒 Roguelike 原型：程序化地牢、八向眼泪、标签协同、状态机敌人、多阶段 Boss 与元进度。",
+    description: "类以撒 Roguelike 原型：程序化地牢、八向眼泪、标签协同、状态机敌人、多阶段 Boss 与元进度。测试GLM5.3的",
     route: "./games/yisa/index.html",
     folder: "./games/yisa/index.html",
     status: "游戏",

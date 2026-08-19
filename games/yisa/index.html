@@ -23,7 +23,7 @@
 const CFG = {
   W: 960, H: 600, HUD: 56,
   TILE: 56, GW: 13, GH: 7, WALL: 60,
-  FLOORS: 6,
+  FLOORS: 8,
   PLAYER: { R: 13, SPD: 225, INVULN: 1.0 },
   TEAR: { SPD: 430, Z: 26, MAXR: 12 },
   DOORW: 74, DOORH: 60,
@@ -53,9 +53,11 @@ const THEMES = [
   { name: '洞窟', floor: '#3d4a41', floor2: '#465549', wall: '#232e27', wallTop: '#2b3a30',
     line: '#2c3a30', door: '#3e5546', accent: '#6f9a7a', blood: '#6d1f1f', rock: '#5c6d5c', amb: '#101c14' },
   { name: '深渊', floor: '#2f3547', floor2: '#374054', wall: '#1b2030', wallTop: '#232a3e',
-    line: '#232c40', door: '#39445f', accent: '#5f739c', blood: '#5f1620', rock: '#4a5468', amb: '#0c0f1c' }
+    line: '#232c40', door: '#39445f', accent: '#5f739c', blood: '#5f1620', rock: '#4a5468', amb: '#0c0f1c' },
+  { name: '母体', floor: '#4a2f2f', floor2: '#543737', wall: '#2e1b1b', wallTop: '#3a2323',
+    line: '#3c2424', door: '#5f2e2e', accent: '#9c5f6a', blood: '#7a1620', rock: '#684040', amb: '#1c0c0c' }
 ];
-const FLOOR_NAMES = ['地窖 I','地窖 II','洞窟 I','洞窟 II','深渊 I','深渊 II'];
+const FLOOR_NAMES = ['地窖 I','地窖 II','洞窟 I','洞窟 II','深渊 I','深渊 II','母体 I','母体 II'];
 
 /* ---------------- 工具 ---------------- */
 const TAU = Math.PI * 2;
@@ -404,6 +406,28 @@ function buildSprites() {
     }
     flame(28, 50, 14, 34, '#d84f1e'); flame(28, 50, 10, 26 - flick * 4, '#f2913a'); flame(28, 50, 6, 16, '#ffd97a');
   }));
+  SPR.tnt = mkSpr(56, 56, g => {
+    // 木桶
+    g.fillStyle = '#8a5a2b'; g.strokeStyle = '#3a2410'; g.lineWidth = 3;
+    g.beginPath();
+    g.moveTo(14, 18); g.quadraticCurveTo(28, 12, 42, 18); g.lineTo(44, 44);
+    g.quadraticCurveTo(28, 52, 12, 44); g.closePath(); g.fill(); g.stroke();
+    // 铁箍
+    g.strokeStyle = '#555c66'; g.lineWidth = 4;
+    g.beginPath(); g.moveTo(13, 26); g.quadraticCurveTo(28, 31, 43, 26); g.stroke();
+    g.beginPath(); g.moveTo(13, 38); g.quadraticCurveTo(28, 43, 43, 38); g.stroke();
+    // TNT 炸药露出
+    g.fillStyle = '#c9302c'; g.strokeStyle = '#5c1410'; g.lineWidth = 2;
+    for (const [dx, dy] of [[-7, 4], [1, 2], [9, 4]]) {
+      rr(g, 22 + dx, 12 + dy, 12, 9, 2); g.fill(); g.stroke();
+    }
+    // 引线
+    g.strokeStyle = '#d9c9a0'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(28, 12); g.quadraticCurveTo(36, 4, 42, 8); g.stroke();
+    g.fillStyle = '#ffd97a'; g.beginPath(); g.arc(43, 8, 2.5, 0, TAU); g.fill();
+    // 高光
+    g.fillStyle = 'rgba(255,255,255,0.15)'; g.fillRect(16, 22, 4, 18);
+  });
   SPR.pedestal = mkSpr(64, 64, g => {
     g.fillStyle = '#8d8578'; g.strokeStyle = '#26211b'; g.lineWidth = 3;
     g.beginPath(); g.ellipse(32, 50, 20, 9, 0, 0, TAU); g.fill(); g.stroke();
@@ -768,7 +792,113 @@ const ICON_DRAW = {
   gravity(g) { blob(g, 24, 24, 11, '#5a6ac9');
     g.strokeStyle = '#ffd94d'; g.lineWidth = 2.5;
     g.beginPath(); g.ellipse(24, 24, 17, 6, 0.4, 0, TAU); g.stroke();
-    g.fillStyle = '#c9d4f0'; g.beginPath(); g.arc(20, 20, 3, 0, TAU); g.fill(); }
+    g.fillStyle = '#c9d4f0'; g.beginPath(); g.arc(20, 20, 3, 0, TAU); g.fill(); },
+  /* ===== 新增道具图标 ===== */
+  tooth(g) { g.fillStyle = '#f0ead8'; g.strokeStyle = '#8a7a5a'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(16, 14); g.quadraticCurveTo(24, 8, 32, 14); g.quadraticCurveTo(36, 26, 30, 38);
+    g.quadraticCurveTo(28, 42, 26, 36); g.quadraticCurveTo(24, 30, 22, 36); g.quadraticCurveTo(20, 42, 18, 38);
+    g.quadraticCurveTo(12, 26, 16, 14); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = '#c9a86a'; g.beginPath(); g.arc(24, 16, 3, 0, TAU); g.fill(); },
+  crown(g) { g.fillStyle = '#ffd94d'; g.strokeStyle = '#8a6d10'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(10, 36); g.lineTo(8, 16); g.lineTo(16, 24); g.lineTo(24, 10); g.lineTo(32, 24); g.lineTo(40, 16); g.lineTo(38, 36); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = '#c92040'; g.beginPath(); g.arc(24, 30, 3, 0, TAU); g.fill(); },
+  clover(g) { g.strokeStyle = '#3a7a2a'; g.lineWidth = 3; g.beginPath(); g.moveTo(24, 42); g.quadraticCurveTo(22, 32, 24, 26); g.stroke();
+    for (const [x, y] of [[16, 20], [32, 20], [24, 12]]) {
+      blob(g, x, y, 8, '#5ab04a');
+      g.fillStyle = '#7ad46a'; g.beginPath(); g.arc(x - 2, y - 2, 2.5, 0, TAU); g.fill(); } },
+  shadow(g) { g.fillStyle = 'rgba(30,24,48,0.9)'; g.strokeStyle = '#5a4a8a'; g.lineWidth = 2.5;
+    g.beginPath(); g.arc(24, 22, 12, Math.PI, 0); g.lineTo(36, 34);
+    for (let i = 0; i < 3; i++) g.quadraticCurveTo(32 - i * 8, 40, 28 - i * 8, 34);
+    g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = '#ffd94d'; g.beginPath(); g.arc(20, 20, 2.5, 0, TAU); g.arc(28, 20, 2.5, 0, TAU); g.fill(); },
+  razor(g) { g.fillStyle = '#c9d4e0'; g.strokeStyle = '#5a6a7a'; g.lineWidth = 2.5;
+    rr(g, 14, 16, 20, 22, 4); g.fill(); g.stroke();
+    g.strokeStyle = '#8a9aa8'; g.lineWidth = 2;
+    for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(18, 21 + i * 6); g.lineTo(30, 21 + i * 6); g.stroke(); }
+    g.strokeStyle = '#c92040'; g.lineWidth = 2; g.beginPath(); g.moveTo(34, 12); g.lineTo(38, 8); g.stroke(); },
+  leech(g) { blob(g, 20, 30, 9, '#7a3a5a');
+    blob(g, 30, 20, 8, '#8a4a6a');
+    g.fillStyle = '#5a1a3a'; g.beginPath(); g.arc(33, 17, 3, 0, TAU); g.fill();
+    g.strokeStyle = '#c94a8a'; g.lineWidth = 2; g.beginPath(); g.moveTo(24, 25); g.quadraticCurveTo(28, 24, 26, 21); g.stroke(); },
+  rot(g) { blob(g, 24, 26, 13, '#6a7a3a');
+    g.fillStyle = '#4a5a2a'; for (const [x, y] of [[18, 22], [30, 24], [23, 33]]) { g.beginPath(); g.arc(x, y, 3.5, 0, TAU); g.fill(); }
+    g.fillStyle = '#a8c948'; g.beginPath(); g.arc(27, 19, 2, 0, TAU); g.fill();
+    g.strokeStyle = '#8a7a3a'; g.lineWidth = 2; g.beginPath(); g.moveTo(24, 13); g.quadraticCurveTo(28, 6, 34, 8); g.stroke(); },
+  thorns(g) { g.fillStyle = '#5a4a6a'; g.strokeStyle = '#2a1a3a'; g.lineWidth = 2.5;
+    g.beginPath(); g.arc(24, 24, 13, 0, TAU); g.fill(); g.stroke();
+    g.strokeStyle = '#c94a8a'; g.lineWidth = 2.5;
+    for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; g.beginPath(); g.moveTo(24 + Math.cos(a) * 13, 24 + Math.sin(a) * 13); g.lineTo(24 + Math.cos(a) * 19, 24 + Math.sin(a) * 19); g.stroke(); } },
+  cyclops(g) { blob(g, 24, 24, 14, '#e8e2d2');
+    g.fillStyle = '#e8f4ff'; g.beginPath(); g.arc(24, 24, 9, 0, TAU); g.fill();
+    g.fillStyle = '#3a7ac9'; g.beginPath(); g.arc(24, 24, 5.5, 0, TAU); g.fill();
+    g.fillStyle = '#101018'; g.beginPath(); g.arc(24, 24, 2.5, 0, TAU); g.fill();
+    g.strokeStyle = '#c9a83a'; g.lineWidth = 2; g.beginPath(); g.arc(24, 24, 14, 0, TAU); g.stroke(); },
+  pencil(g) { g.save(); g.translate(24, 24); g.rotate(-0.6);
+    g.fillStyle = '#e8b33a'; g.fillRect(-4, -16, 8, 24);
+    g.fillStyle = '#f2d488'; g.beginPath(); g.moveTo(-4, -16); g.lineTo(0, -24); g.lineTo(4, -16); g.closePath(); g.fill();
+    g.fillStyle = '#5a3a1e'; g.beginPath(); g.moveTo(-2, -21); g.lineTo(0, -24); g.lineTo(2, -21); g.closePath(); g.fill();
+    g.fillStyle = '#c98a4a'; g.fillRect(-4, 8, 8, 6); g.restore(); },
+  anvil(g) { g.fillStyle = '#5a5a66'; g.strokeStyle = '#2a2a32'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(8, 20); g.lineTo(14, 26); g.lineTo(34, 26); g.lineTo(40, 20); g.lineTo(40, 14); g.lineTo(8, 14); g.closePath(); g.fill(); g.stroke();
+    g.fillRect(18, 26, 12, 6); g.fillRect(12, 32, 24, 6);
+    g.fillStyle = '#8a8a98'; g.fillRect(8, 14, 32, 3); },
+  holy(g) { g.fillStyle = '#fff8d0'; g.strokeStyle = '#c9a83a'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(24, 6); g.lineTo(29, 18); g.lineTo(42, 18); g.lineTo(32, 26);
+    g.lineTo(36, 38); g.lineTo(24, 31); g.lineTo(12, 38); g.lineTo(16, 26); g.lineTo(6, 18); g.lineTo(19, 18); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = '#e8b33a'; g.beginPath(); g.arc(24, 22, 3, 0, TAU); g.fill(); },
+  twinheart(g) { g.drawImage(SPR.heart, 0, 0);
+    g.save(); g.translate(14, 6); g.scale(0.7, 0.7); g.drawImage(SPR.heart, 0, 0); g.restore(); },
+  moonglow(g) { g.fillStyle = '#dfe8ff'; g.strokeStyle = '#8a9ac9'; g.lineWidth = 2.5;
+    g.beginPath(); g.arc(24, 22, 12, 0, TAU); g.fill(); g.stroke();
+    g.fillStyle = '#c9d4f0'; g.beginPath(); g.arc(20, 18, 2.5, 0, TAU); g.arc(28, 25, 2, 0, TAU); g.arc(23, 28, 1.5, 0, TAU); g.fill();
+    g.strokeStyle = '#b8c8ff'; g.lineWidth = 2;
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU; g.beginPath(); g.moveTo(24 + Math.cos(a) * 15, 22 + Math.sin(a) * 15); g.lineTo(24 + Math.cos(a) * 19, 22 + Math.sin(a) * 19); g.stroke(); } },
+  fireworm(g) { g.strokeStyle = '#c95a2a'; g.lineWidth = 5; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(10, 36); g.quadraticCurveTo(20, 24, 26, 30); g.quadraticCurveTo(34, 36, 38, 20); g.stroke();
+    g.strokeStyle = '#e8943a'; g.lineWidth = 2.5; g.stroke();
+    blob(g, 38, 18, 5, '#c9402a');
+    g.fillStyle = '#ffd94d'; g.beginPath(); g.arc(39, 17, 1.5, 0, TAU); g.fill(); },
+  bible(g) { g.fillStyle = '#f0ead8'; g.strokeStyle = '#8a7a5a'; g.lineWidth = 2.5;
+    rr(g, 10, 14, 28, 22, 3); g.fill(); g.stroke();
+    g.strokeStyle = '#c9a83a'; g.lineWidth = 2; g.beginPath(); g.moveTo(24, 17); g.lineTo(24, 33); g.stroke();
+    g.fillStyle = '#5c2a8a'; g.font = 'bold 13px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('✝', 17, 25); g.fillText('✝', 31, 25); },
+  skeletonkey(g) { g.fillStyle = '#e8e2d0'; g.strokeStyle = '#7a7466'; g.lineWidth = 2.5;
+    g.beginPath(); g.arc(18, 20, 7, 0, TAU); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(22, 25); g.lineTo(36, 39); g.stroke();
+    g.beginPath(); g.moveTo(32, 39); g.lineTo(32, 43); g.moveTo(36, 39); g.lineTo(36, 43); g.stroke();
+    g.fillStyle = '#101018'; g.beginPath(); g.arc(18, 20, 2.5, 0, TAU); g.fill(); },
+  blink(g) { g.fillStyle = 'rgba(90,74,138,0.85)'; g.strokeStyle = '#c9b8ff'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(24, 8); g.lineTo(38, 24); g.lineTo(24, 40); g.lineTo(10, 24); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = '#ffd94d'; g.beginPath(); g.arc(24, 24, 4, 0, TAU); g.fill(); },
+  guillotine(g) { g.fillStyle = '#8a6d4a'; g.strokeStyle = '#160f0c'; g.lineWidth = 2.5;
+    g.fillRect(10, 10, 5, 30); g.fillRect(33, 10, 5, 30); g.fillRect(8, 38, 32, 5);
+    g.fillStyle = '#c9d4e0'; g.beginPath(); g.moveTo(14, 12); g.lineTo(34, 12); g.lineTo(30, 26); g.lineTo(18, 26); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = '#c92040'; g.fillRect(20, 26, 8, 3); },
+  /* ===== 第二批新增道具图标 ===== */
+  boots(g) { // 防火石棉靴
+    g.fillStyle = '#c9b8a0'; g.strokeStyle = '#5a4a34'; g.lineWidth = 2.5;
+    for (const dx of [-9, 3]) {
+      rr(g, 10 + dx, 14, 14, 18, 3); g.fill(); g.stroke();
+      g.fillStyle = '#8a7a60'; rr(g, 8 + dx, 30, 18, 8, 3); g.fill(); g.stroke();
+      g.fillStyle = '#c9b8a0';
+    }
+    g.fillStyle = '#f2913a'; g.beginPath();
+    g.moveTo(6, 12); g.quadraticCurveTo(24, 4, 42, 12); g.lineTo(40, 15); g.quadraticCurveTo(24, 8, 8, 15); g.closePath(); g.fill(); },
+  glove(g) { // 爆破手套
+    g.fillStyle = '#8a6d4a'; g.strokeStyle = '#160f0c'; g.lineWidth = 2.5;
+    rr(g, 12, 10, 14, 16, 4); g.fill(); g.stroke();
+    rr(g, 24, 14, 10, 22, 4); g.fill(); g.stroke();
+    g.fillStyle = '#c9302c'; g.strokeStyle = '#5c1410'; g.lineWidth = 2;
+    rr(g, 20, 30, 8, 6, 1.5); g.fill(); g.stroke();
+    g.strokeStyle = '#ffd97a'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(30, 40); g.quadraticCurveTo(36, 42, 40, 38); g.stroke();
+    g.fillStyle = '#ffd97a'; g.beginPath(); g.arc(41, 37, 2, 0, TAU); g.fill(); },
+  splash(g) { // 溅射之泪
+    g.fillStyle = '#7ab0e8'; g.strokeStyle = '#160f0c'; g.lineWidth = 2.5;
+    teardropPath(g, 24, 18, 9); g.fill(); g.stroke();
+    g.strokeStyle = '#9ac9e8'; g.lineWidth = 2.5;
+    for (const [dx, dy, r] of [[-14, 8, 4], [14, 8, 4], [0, 14, 3], [-8, -4, 3], [9, -6, 3]]) {
+      g.beginPath(); g.arc(24 + dx, 24 + dy, r, 0, TAU); g.stroke(); } }
 };
 function buildIcons() {
   SPR.icon._heartBase = mkSpr(48, 48, g => {
@@ -797,6 +927,19 @@ function buildIcons() {
   SPR.icon.question = mkSpr(48, 48, g => {
     g.font = 'bold 34px "Microsoft YaHei"'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillStyle = '#000'; g.fillText('?', 25, 26); g.fillStyle = '#ffd94d'; g.fillText('?', 24, 24);
+  });
+  SPR.icon.swords = mkSpr(48, 48, g => {
+    // 交叉双剑（挑战房门图标）
+    g.lineCap = 'round';
+    for (const [a, col] of [[Math.PI / 4, '#c9c9d4'], [-Math.PI / 4, '#9a9aa8']]) {
+      g.save(); g.translate(24, 24); g.rotate(a);
+      g.strokeStyle = col; g.lineWidth = 5;
+      g.beginPath(); g.moveTo(-13, 13); g.lineTo(11, -11); g.stroke();
+      g.strokeStyle = '#6a5a2a'; g.lineWidth = 4;
+      g.beginPath(); g.moveTo(-13, 8); g.lineTo(-8, 13); g.stroke();
+      g.fillStyle = '#e8d8b0'; g.beginPath(); g.arc(13, -13, 3.5, 0, TAU); g.fill();
+      g.restore();
+    }
   });
 }
 
@@ -846,7 +989,27 @@ const ITEMS = {
   wafer:    { name: '圣饼', icon: 'wafer', tags: ['SHIELD'], desc: '受到伤害时 15% 几率完全格挡', mod: m => { m.block = Math.min(0.5, (m.block || 0) + 0.15); } },
   bandage:  { name: '木乃伊绷带', icon: 'bandage', tags: ['HEALTH'], desc: '获得一颗魂心', soul: 2, mod: m => {} },
   blade:    { name: '利刃之泪', icon: 'nail', tags: ['BLADE'], desc: '伤害+1.2，击退提升', mod: m => { m.dmg += 1.2; m.knock += 1; } },
-  luckfoot: { name: '幸运骨', icon: 'star', tags: ['LUCK'], desc: '幸运+1：暴击与掉落提升', mod: m => { m.luck += 1; } }
+  luckfoot: { name: '幸运骨', icon: 'star', tags: ['LUCK'], desc: '幸运+1：暴击与掉落提升', mod: m => { m.luck += 1; } },
+  /* ===== 新增被动道具 ===== */
+  tooth:    { name: '蛀牙', icon: 'tooth', tags: ['BLADE'], desc: '伤害+1.5，坚硬如骨', mod: m => { m.dmg += 1.5; } },
+  crown:    { name: '流浪王冠', icon: 'crown', tags: ['GROWTH', 'LUCK'], desc: '伤害/射程/幸运小幅提升', mod: m => { m.dmg += 0.5; m.range += 0.15; m.luck += 0.5; } },
+  clover:   { name: '四叶草', icon: 'clover', tags: ['LUCK'], desc: '幸运+1.5：掉落与暴击显著提升', mod: m => { m.luck += 1.5; } },
+  shadow:   { name: '影遁斗篷', icon: 'shadow', tags: ['SHIELD'], desc: '受到伤害时 10% 几率完全格挡', mod: m => { m.block = Math.min(0.6, (m.block || 0) + 0.10); } },
+  razor:    { name: '剃刀碎片', icon: 'razor', tags: ['BLOOD'], desc: '暴击率提升 15%', mod: m => { m.crit += 0.15; } },
+  leech:    { name: '水蛭之泪', icon: 'leech', tags: ['BLOOD', 'LEECH'], desc: '击杀敌人 8% 几率回复半颗心', mod: m => { m.leech = true; } },
+  rot:      { name: '腐烂之息', icon: 'rot', tags: ['POISON'], desc: '敌人死亡时留下毒圈', mod: m => { m.rotOnDeath = true; } },
+  thorns:   { name: '荆棘之甲', icon: 'thorns', tags: ['REVENGE'], desc: '受伤时对周围敌人造成伤害', mod: m => { m.revenge = true; } },
+  cyclops:  { name: '独眼巨人之眼', icon: 'cyclops', tags: ['BIG', 'PIERCE'], desc: '巨大穿透泪：伤害+2，射速略降', mod: m => { m.dmg += 2; m.tearScale *= 1.3; m.fireDelay *= 1.15; m.pierce += 1; } },
+  pencil:   { name: '铅笔屑', icon: 'pencil', tags: ['SMALL', 'TEARS'], desc: '细泪速射：射速提升，伤害+0.6', mod: m => { m.fireDelay *= 0.88; m.dmg += 0.6; m.tearScale *= 0.85; } },
+  anvil:    { name: '铁砧之泪', icon: 'anvil', tags: ['HEAVY'], desc: '沉重巨击：伤害+1、强力击退、弹速略降', mod: m => { m.dmg += 1; m.knock += 2; m.shotSpd -= 0.1; } },
+  holy:     { name: '圣心', icon: 'holy', tags: ['HOMING', 'LUCK'], desc: '追踪眼泪，伤害提升 15%', mod: m => { m.homing = true; m.dmg *= 1.15; m.luck += 0.5; } },
+  twinheart:{ name: '双子之心', icon: 'twinheart', tags: ['HEALTH'], desc: '红心上限+1，并获得一颗魂心', heal: 2, soul: 2, mod: m => { m.maxHp += 2; } },
+  moonglow: { name: '月光露珠', icon: 'moonglow', tags: ['ICE', 'LUCK'], desc: '冰霜眼泪，幸运+1', mod: m => { m.ice = true; m.luck += 1; } },
+  fireworm: { name: '火蜥之舌', icon: 'fireworm', tags: ['FIRE', 'TEARS'], desc: '烈焰眼泪，射速小幅提升', mod: m => { m.fire = true; m.fireDelay *= 0.92; } },
+  /* ===== 第二批新增被动道具 ===== */
+  firewalk: { name: '防火石棉靴', icon: 'boots', tags: ['GUARD'], desc: '免疫火堆伤害，可安心踩过烈焰', mod: m => { m.fireImmune = true; } },
+  demo:     { name: '爆破手套', icon: 'glove', tags: ['BOMB'], desc: '爆炸范围+40%、炸弹伤害+35%，引燃木桶更轻松', mod: m => { m.blastScale = Math.max(m.blastScale || 1, 1.4); m.blastDmg = Math.max(m.blastDmg || 1, 1.35); } },
+  splash:   { name: '溅射之泪', icon: 'splash', tags: ['BIG'], desc: '眼泪落地时溅射范围伤害（50%）', mod: m => { m.splashDmg = true; } }
 };
 /* ---------- 主动道具 ---------- */
 const ACTIVES = {
@@ -857,7 +1020,12 @@ const ACTIVES = {
   bombbag:  { name: '炸弹背包', icon: 'bombbag', charges: 3, desc: '在脚下放置一颗巨型炸弹' },
   fear:     { name: '恐惧尖啸', icon: 'fear', charges: 4, desc: '击退并恐惧全部敌人，附加伤害' },
   cherry:   { name: '樱桃炸弹', icon: 'cherry', charges: 4, desc: '向四周抛撒 3 颗小炸弹' },
-  gravity:  { name: '引力井', icon: 'gravity', charges: 4, desc: '将敌人拉向中心并眩晕' }
+  gravity:  { name: '引力井', icon: 'gravity', charges: 4, desc: '将敌人拉向中心并眩晕' },
+  /* ===== 新增主动道具 ===== */
+  bible:    { name: '圣经', icon: 'bible', charges: 4, desc: '环绕自身发射 12 颗神圣眼泪' },
+  skelkey:  { name: '骷髅钥匙', icon: 'skeletonkey', charges: 6, desc: '解锁当前房间所有钥匙门，并+1钥匙' },
+  blink:    { name: '影子跃迁', icon: 'blink', charges: 4, desc: '瞬移到房间安全位置并获得短暂无敌' },
+  guill:    { name: '断头台', icon: 'guillotine', charges: 5, desc: '处决最近的敌人，造成 80 点伤害' }
 };
 /* ---------- 协同效应（标签组合触发） ---------- */
 const SYNERGIES = [
@@ -874,7 +1042,14 @@ const SYNERGIES = [
   { id: 'treasure', need: ['GREED', 'MAGNET'], name: '寻宝者', desc: '金币掉率与吸取范围翻倍', apply: m => { m.coinLuck += 1; m.magnetR = (m.magnetR || 60) * 2; } },
   { id: 'berserk', need: ['WRATH', 'BLADE'], name: '狂怒之刃', desc: '伤害再+25%，强力击退', apply: m => { m.dmg *= 1.25; m.knock += 2; } },
   { id: 'hexfrost', need: ['HEX', 'SMALL'], name: '咒霜细雨', desc: '石化概率大增，射速+10%', apply: m => { m.petrifyBoost = true; m.fireDelay *= 0.9; } },
-  { id: 'giantstorm', need: ['BIG', 'TEARS'], name: '巨弹风暴', desc: '大弹与高射速兼得：伤害+10%', apply: m => { m.dmg *= 1.1; } }
+  { id: 'giantstorm', need: ['BIG', 'TEARS'], name: '巨弹风暴', desc: '大弹与高射速兼得：伤害+10%', apply: m => { m.dmg *= 1.1; } },
+  /* ===== 新增协同（基于新道具标签） ===== */
+  { id: 'bloodmoon', need: ['BLOOD', 'LEECH'], name: '血月仪式', desc: '水蛭吸血概率翻倍', apply: m => { m.leechBoost = true; } },
+  { id: 'pyrevenge', need: ['REVENGE', 'FIRE'], name: '烈焰荆棘', desc: '荆棘反击附带燃烧', apply: m => { m.revengeFire = true; } },
+  { id: 'royal', need: ['GROWTH', 'LUCK'], name: '王者血脉', desc: '全属性小幅提升', apply: m => { m.dmg += 0.8; m.spd += 0.1; m.range += 0.2; m.luck += 0.5; } },
+  { id: 'spikefrost', need: ['PIERCE', 'ICE'], name: '霜刺', desc: '穿透冰泪：冻结概率大增', apply: m => { m.petrifyBoost = true; m.pierce += 1; } },
+  /* ===== 第二批新增协同 ===== */
+  { id: 'bombtech', need: ['BOMB', 'GUARD'], name: '拆弹专家', desc: '免疫自身与木桶的爆炸伤害', apply: m => { m.bombImmune = true; } }
 ];
 const ITEM_POOL = Object.keys(ITEMS);
 const ACTIVE_POOL = Object.keys(ACTIVES);
@@ -963,10 +1138,11 @@ function justSynergized(s) {
 /* ---------- 楼层生成 ---------- */
 function genFloor(floorIdx) {
   RUN.floorIdx = floorIdx;
-  RUN.theme = Math.min(2, Math.floor(floorIdx / 2));
+  RUN.theme = Math.min(3, Math.floor(floorIdx / 2));
   RUN.seed = (RUN.seedBase + floorIdx * 7919) >>> 0;
   const R = mulberry(RUN.seed);
-  const targetRooms = Math.min(14, 6 + floorIdx * 2 + Math.floor(R() * 2));
+  // 房间数随层数增长并封顶：正常全清约 40 分钟，速通 20-30 分钟
+  const targetRooms = Math.min(13, 7 + Math.floor(floorIdx * 1.2) + Math.floor(R() * 2));
   let rooms = null;
   for (let attempt = 0; attempt < 60; attempt++) {
     const cand = tryLayout(targetRooms, R);
@@ -1029,6 +1205,20 @@ function tryLayout(n, R, force) {
   rooms[deadEnds[0]].type = 'boss';
   rooms[deadEnds[1]].type = 'treasure';
   rooms[deadEnds[2]].type = 'shop';
+  // 挑战房：第 2 层起 80% 出现，优先占第 4 个死胡同，否则占用邻居最少的普通房
+  if (RUN.floorIdx >= 1 && R() < 0.8) {
+    let cKey = deadEnds.length >= 4 ? deadEnds[3] : null;
+    if (!cKey) {
+      let bestN = 99;
+      for (const k of Object.keys(rooms)) {
+        if (rooms[k].type !== 'normal') continue;
+        const [x, y] = k.split(',').map(Number);
+        const nb = nbCount(x, y);
+        if (nb < bestN) { bestN = nb; cKey = k; }
+      }
+    }
+    if (cKey) rooms[cKey].type = 'challenge';
+  }
   // 隐藏房：找空格，邻接 >=2 个非Boss房
   let best = null, bestNb = -1;
   for (let x = -4; x <= 4; x++) for (let y = -3; y <= 3; y++) {
@@ -1076,12 +1266,13 @@ function freeCells(room, avoidCenter) {
 const CHAPTER_POOLS = [
   ['gaper', 'gaper', 'fly', 'pooter', 'hopper'],
   ['gaper', 'hopper', 'clotty', 'charger', 'spider', 'pooter', 'spitter', 'fly'],
-  ['clotty', 'charger', 'spider', 'spitter', 'leech', 'fatty', 'eye', 'gaper', 'hopper']
+  ['clotty', 'charger', 'spider', 'spitter', 'leech', 'fatty', 'eye', 'gaper', 'hopper'],
+  ['charger', 'spitter', 'leech', 'fatty', 'eye', 'eye', 'spider', 'clotty', 'charger', 'leech']
 ];
 function buildRoom(room) {
   if (room.built) return;
   room.built = true;
-  const fl = RUN.floorIdx, ch = Math.min(2, Math.floor(fl / 2));
+  const fl = RUN.floorIdx, ch = Math.min(3, Math.floor(fl / 2));
   // 生成门（依据邻接）
   for (const d of SIDES) {
     const nk = (room.gx + DIRV[d][0]) + ',' + (room.gy + DIRV[d][1]);
@@ -1092,17 +1283,20 @@ function buildRoom(room) {
     else if (nr.type === 'treasure') kind = fl >= 1 ? 'key' : 'normal';
     else if (nr.type === 'shop') kind = 'shop';
     else if (nr.type === 'secret') kind = 'secret';
+    else if (nr.type === 'challenge') kind = 'challenge';
     room.doors[d] = { kind, open: room.cleared, locked: kind === 'key' || kind === 'boss', hidden: kind === 'secret', side: d };
   }
   if (room.type === 'normal') {
-    // 障碍
+    // 障碍：岩石（不可破坏）/ 便便（3刀）/ 火堆（5发可熄灭）/ TNT木桶（2发引爆）
     const cells = freeCells(room, true);
     const shuffled = shuffle(cells);
     let nRock = rndi(2, 5), nPoop = rndi(0, 2), nFire = ch >= 1 ? rndi(0, 2) : rndi(0, 1), nSpike = ch >= 2 ? rndi(0, 2) : 0;
-    for (const o of [{ k: 'rock', n: nRock }, { k: 'poop', n: nPoop }, { k: 'fire', n: nFire }, { k: 'spike', n: nSpike }]) {
+    let nTnt = ch >= 1 ? rndi(0, 2) : (chance(0.25) ? 1 : 0);
+    for (const o of [{ k: 'rock', n: nRock }, { k: 'poop', n: nPoop }, { k: 'fire', n: nFire }, { k: 'spike', n: nSpike }, { k: 'tnt', n: nTnt }]) {
       for (let i = 0; i < o.n; i++) {
         const cell = shuffled.pop(); if (!cell) break;
-        room.obst.push({ c: cell.c, r: cell.r, kind: o.k, hp: o.k === 'poop' ? 3 : Infinity });
+        const hp = o.k === 'poop' ? 3 : o.k === 'fire' ? 5 : o.k === 'tnt' ? 2 : Infinity;
+        room.obst.push({ c: cell.c, r: cell.r, kind: o.k, hp });
       }
     }
     // 敌人
@@ -1120,8 +1314,10 @@ function buildRoom(room) {
   } else if (room.type === 'treasure') {
     room.peds.push({ x: CFG.CENTER.x, y: CFG.CENTER.y - 20, item: choice(ITEM_POOL), price: 0 });
   } else if (room.type === 'shop') {
-    room.peds.push({ x: CFG.CENTER.x - 150, y: CFG.CENTER.y - 20, item: choice(ITEM_POOL), price: 15 });
+    // 道具浮动定价（10-14 金币），深层加开第三个台座
+    room.peds.push({ x: CFG.CENTER.x - 150, y: CFG.CENTER.y - 20, item: choice(ITEM_POOL), price: 10 + rndi(0, 4) });
     room.peds.push({ x: CFG.CENTER.x, y: CFG.CENTER.y - 20, item: ACTIVE_POOL_TO_ITEMS(), price: 15, active: true });
+    if (RUN.floorIdx >= 3) room.peds.push({ x: CFG.CENTER.x + 150, y: CFG.CENTER.y - 20, item: choice(ITEM_POOL), price: 10 + rndi(0, 4) });
     room.pickups.push(mkPickup('heart', CFG.CENTER.x + 90, CFG.CENTER.y + 40, 3));
     room.pickups.push(mkPickup('soulheart', CFG.CENTER.x + 150, CFG.CENTER.y + 40, 6));
     room.pickups.push(mkPickup('bomb', CFG.CENTER.x - 150, CFG.CENTER.y + 40, 5));
@@ -1142,11 +1338,23 @@ function buildRoom(room) {
       else room.pickups.push(mkPickup(Math.random() < 0.5 ? 'bomb' : 'key', s[0], s[1]));
     }
     if (chance(0.35)) room.peds.push({ x: CFG.CENTER.x, y: CFG.CENTER.y - 70, item: choice(ITEM_POOL), price: 0 });
+  } else if (room.type === 'challenge') {
+    // 挑战房：空场 + 少量掩体，两波敌人在进入时刷新
+    room.wave = 0;
+    const ccells = shuffle(freeCells(room, true));
+    for (let i = 0; i < rndi(2, 3); i++) {
+      const cell = ccells.pop(); if (!cell) break;
+      room.obst.push({ c: cell.c, r: cell.r, kind: 'rock', hp: Infinity });
+    }
   }
   // Boss 房在进入时生成 Boss
 }
 function ACTIVE_POOL_TO_ITEMS() { return choice(ACTIVE_POOL); }
 function mkPickup(kind, x, y, price) {
+  // 生成时就约束在房间可玩区域内，避免掉进墙体或房间外
+  const I = CFG.INNER, M = 16;
+  x = clamp(x, I.x + M, I.x + I.w - M);
+  y = clamp(y, I.y + M, I.y + I.h - M);
   return { kind, x, y, price: price || 0, t: rnd(TAU), bob: rnd(2, 3), taken: false, vy: -2 - rnd(2), z: 10 };
 }
 /* ---------- 房间切换 ---------- */
@@ -1174,7 +1382,7 @@ function enterRoom(key, fromSide) {
   // 门状态刷新：已清空的房间门全开
   refreshDoors(room);
   if (room.type === 'secret' && first) { SFX.secret(); banner('隐藏房间！', '', '#c9a8ff'); }
-  MUS.start(RUN.theme, room.type === 'boss' && !room.cleared);
+  MUS.start(RUN.theme, (room.type === 'boss' || room.type === 'challenge') && !room.cleared);
 }
 function refreshDoors(room) {
   for (const d of SIDES) {
@@ -1192,19 +1400,58 @@ function openAllDoors(room) {
   }
   SFX.door();
 }
+/* ---------- 挑战房波次 ---------- */
+function spawnChallengeWave(room, waveIdx) {
+  const fl = RUN.floorIdx;
+  const ch = Math.min(3, Math.floor(fl / 2));
+  const pool = CHAPTER_POOLS[ch];
+  // 避开玩家周围 90px，防止刷在脸上
+  const cells = shuffle(freeCells(room, true)).filter(cell => dist2(P.x, P.y, tileCX(cell.c), tileCY(cell.r)) > 90);
+  let budget = 4 + Math.floor(fl * 0.8) + waveIdx * 2;
+  while (budget > 0 && cells.length) {
+    const cell = cells.pop();
+    const elite = chance(0.10 + fl * 0.015 + waveIdx * 0.06);
+    room.enemies.push(spawnEnemy(choice(pool), tileCX(cell.c), tileCY(cell.r), elite, fl));
+    budget -= elite ? 2 : 1;
+  }
+}
 function checkRoomClear(room) {
   if (room.cleared || !room.built) return;
+  if (room.type === 'challenge') {
+    if (room.enemies.length === 0 && !room.boss) {
+      room.wave = room.wave || 0;
+      if (room.wave < 2) {
+        room.wave++;
+        spawnChallengeWave(room, room.wave - 1);
+        banner(room.wave === 2 ? '挑战 · 最后一波！' : '挑战 · 第 1 波', '清空两波敌人赢取奖励', '#e8934d');
+        SFX.roar(); G.shakeAdd(3);
+        refreshDoors(room);
+      } else {
+        room.cleared = true;
+        openAllDoors(room);
+        room.peds.push({ x: CFG.CENTER.x, y: CFG.CENTER.y - 20, item: choice(ITEM_POOL), price: 0 });
+        room.pickups.push(mkPickup('nickel', CFG.CENTER.x - 70, CFG.CENTER.y + 30));
+        room.pickups.push(mkPickup('nickel', CFG.CENTER.x + 70, CFG.CENTER.y + 30));
+        banner('挑战完成！', '免费道具与金币奖励', '#ffd94d');
+        SFX.item();
+      }
+    }
+    return;
+  }
   if (room.type !== 'normal' && room.type !== 'boss') { room.cleared = true; return; }
   if (room.enemies.length === 0 && !room.boss) {
     room.cleared = true;
     openAllDoors(room);
     if (P.active) P.activeCharges = Math.min(ACTIVES[P.active].charges, P.activeCharges + 1);
-    // 掉落奖励
+    // 掉落奖励（金币概率上调；前两层保底 1 金币帮助起步）
     if (room.type === 'normal') {
       const roll = Math.random();
-      if (roll < 0.30) room.pickups.push(mkPickup(chance(0.85) ? 'coin' : 'nickel', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
-      else if (roll < 0.42) room.pickups.push(mkPickup('halfheart', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
-      else if (roll < 0.50) room.pickups.push(mkPickup(chance(0.5) ? 'bomb' : 'key', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
+      if (roll < 0.40) room.pickups.push(mkPickup(chance(0.85) ? 'coin' : 'nickel', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
+      else if (roll < 0.52) room.pickups.push(mkPickup('halfheart', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
+      else if (roll < 0.60) room.pickups.push(mkPickup(chance(0.5) ? 'bomb' : 'key', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
+    }
+    if (room.type === 'normal' && RUN.floorIdx <= 1) {
+      room.pickups.push(mkPickup('coin', P.x + rnd(-50, 50), P.y + rnd(-50, 50)));
     }
   }
 }
@@ -1276,7 +1523,7 @@ function updateParts(dt) {
   }
 }
 /* ---------- 碰撞 ---------- */
-function solidObst(room) { return room.obst.filter(o => o.kind === 'rock' || o.kind === 'poop' || o.kind === 'fire'); }
+function solidObst(room) { return room.obst.filter(o => o.kind === 'rock' || o.kind === 'poop' || o.kind === 'fire' || o.kind === 'tnt'); }
 function resolveWalls(e, r) {
   const I = CFG.INNER;
   e.x = clamp(e.x, I.x + r, I.x + I.w - r);
@@ -1365,12 +1612,12 @@ function updatePlayer(dt) {
       addSplash(ox, oy);
     }
   }
-  // 主动道具
-  if (keyHit('Space')) useActive();
+  // 主动道具 / 空格购买（定价商品优先）
+  if (keyHit('Space')) { if (!tryShopBuy(room)) useActive(); }
   // 炸弹
   if (keyHit('KeyE') && P.bombs > 0) {
     P.bombs--;
-    RUN.bombs.push({ x: P.x, y: P.y, fuse: CFG.BOMB.FUSE, r: CFG.BOMB.R, dmg: CFG.BOMB.DMG, big: false });
+    RUN.bombs.push({ x: P.x, y: P.y, fuse: CFG.BOMB.FUSE, r: CFG.BOMB.R * (P.S.blastScale || 1), dmg: CFG.BOMB.DMG * (P.S.blastDmg || 1), big: false });
     SFX.bombSet();
   }
   // 计时器
@@ -1385,7 +1632,8 @@ function updatePlayer(dt) {
     }
     if (o.kind === 'fire') {
       const ox = tileCX(o.c), oy = tileCY(o.r);
-      if (dist2(P.x, P.y, ox, oy - 8) < 38 && P.spikeCd <= 0) { hurtPlayer(2, '火焰'); P.spikeCd = 1; }
+      // 防火靴：免疫火堆伤害
+      if (!S.fireImmune && dist2(P.x, P.y, ox, oy - 8) < 38 && P.spikeCd <= 0) { hurtPlayer(2, '火焰'); P.spikeCd = 1; }
     }
   }
   // 毒圈/水洼
@@ -1397,20 +1645,39 @@ function updatePlayer(dt) {
   for (let i = room.pickups.length - 1; i >= 0; i--) {
     const pk = room.pickups[i];
     pk.t += dt;
-    const d = dist2(P.x, P.y, pk.x, pk.y);
-    if (S.magnetR > 0 && pk.z <= 0 && d < S.magnetR && d > 24) {
+    const dm = dist2(P.x, P.y, pk.x, pk.y);
+    if (S.magnetR > 0 && pk.z <= 0 && dm < S.magnetR && dm > 24) {
       const a = Math.atan2(P.y - pk.y, P.x - pk.x);
       pk.x += Math.cos(a) * 150 * dt; pk.y += Math.sin(a) * 150 * dt;
     }
     if (pk.z > 0) { pk.z += pk.vy * dt * 10; pk.vy += 12 * dt; if (pk.z > 0 && pk.vy > 0) { pk.z = Math.max(0, pk.z - 4); if (pk.z === 0) pk.vy = 0; } }
-    if (d < 24 && pk.z <= 0.1) {
+    // 始终约束在房间可玩区域内（不进墙、不出房间）
+    const IW = CFG.INNER, MW = 16;
+    pk.x = clamp(pk.x, IW.x + MW, IW.x + IW.w - MW);
+    pk.y = clamp(pk.y, IW.y + MW, IW.y + IW.h - MW);
+    // 落地后：从障碍物本体中挤出（像滚落石头），卡在障碍上的拾取物放宽拾取半径
+    let takeR = 24;
+    if (pk.z <= 0) {
+      for (const o of solidObst(room)) {
+        const ox = tileCX(o.c), oy = tileCY(o.r);
+        const dx = pk.x - ox, dy = pk.y - oy, dd = Math.hypot(dx, dy);
+        if (dd < 32) {
+          takeR = 38;
+          if (dd < 26 && dd > 0.001) { pk.x = ox + dx / dd * 26; pk.y = oy + dy / dd * 26; }
+        }
+      }
+    }
+    const d = dist2(P.x, P.y, pk.x, pk.y); // 位置修正后重新计算拾取距离
+    if (d < takeR && pk.z <= 0.1) {
+      if (pk.price > 0) continue; // 定价商品：走近不再自动购买，改为空格确认
       if (tryTakePickup(pk)) room.pickups.splice(i, 1);
     }
   }
-  // 道具台座
+  // 道具台座：免费台座走过即拿；定价台座需空格确认
   for (let i = room.peds.length - 1; i >= 0; i--) {
     const ped = room.peds[i];
     if (!ped.item) continue;
+    if (ped.price > 0) continue;
     if (dist2(P.x, P.y, ped.x, ped.y - 10) < 30) tryBuyPedestal(ped, room, i);
   }
   // 房门：解锁 / 切换房间
@@ -1490,6 +1757,31 @@ function tryBuyPedestal(ped, room, idx) {
   }
   room.peds.splice(idx, 1);
 }
+/* ---------- 空格购买：范围内最近的定价商品 ---------- */
+function shopBuyTarget(room) {
+  let best = null, bd = 48;
+  for (const ped of room.peds) {
+    if (!ped.item || ped.price <= 0) continue;
+    const d = dist2(P.x, P.y, ped.x, ped.y - 10);
+    if (d < bd) { bd = d; best = { kind: 'ped', obj: ped }; }
+  }
+  for (const pk of room.pickups) {
+    if (pk.price <= 0) continue;
+    const d = dist2(P.x, P.y, pk.x, pk.y);
+    if (d < bd) { bd = d; best = { kind: 'pk', obj: pk }; }
+  }
+  return best;
+}
+function tryShopBuy(room) {
+  const t = shopBuyTarget(room);
+  if (!t) return false;
+  if (t.kind === 'ped') {
+    tryBuyPedestal(t.obj, room, room.peds.indexOf(t.obj));
+  } else if (tryTakePickup(t.obj)) {
+    room.pickups.splice(room.pickups.indexOf(t.obj), 1);
+  }
+  return true;
+}
 /* ---------- 主动道具使用 ---------- */
 function useActive() {
   if (!P.active) return;
@@ -1554,6 +1846,57 @@ function useActive() {
       }
       break;
     }
+    /* ===== 新增主动道具 ===== */
+    case 'bible': {
+      SFX.laser(); G.whiteFlash = 0.3;
+      const n = 12;
+      for (let k = 0; k < n; k++) {
+        const a = k / n * TAU;
+        RUN.tears.push({
+          x: P.x + Math.cos(a) * 14, y: P.y + Math.sin(a) * 14 - 6,
+          vx: Math.cos(a) * CFG.TEAR.SPD * 1.1, vy: Math.sin(a) * CFG.TEAR.SPD * 1.1,
+          t: 0, life: P.S.range * 0.9, dmg: P.S.dmg * 1.2, r: 7 * P.S.tearScale, scale: P.S.tearScale,
+          pierce: 2, homing: false, spectral: true, fire: false, ice: false, poison: false,
+          bombBlast: false, knock: P.S.knock, hitSet: new Set(), dead: false, small: false, holy: true
+        });
+      }
+      break;
+    }
+    case 'skelkey': {
+      let opened = false;
+      for (const d of SIDES) {
+        const door = room.doors[d];
+        if (door && door.kind === 'key' && door.locked) { door.locked = false; opened = true; }
+      }
+      if (opened) { refreshDoors(room); SFX.unlockJ(); banner('骷髅钥匙：所有门已解锁', '', '#ffd94d'); }
+      else banner('本房间没有锁着的门，+1 钥匙', '', '#a8d0ff');
+      P.keys++;
+      break;
+    }
+    case 'blink': {
+      SFX.tp(); addSmoke(P.x, P.y, 8, '#5a4a8a');
+      const I = CFG.INNER;
+      for (let tries = 0; tries < 24; tries++) {
+        const nx = rnd(I.x + 60, I.x + I.w - 60), ny = rnd(I.y + 60, I.y + I.h - 60);
+        const cell = cellOf(nx, ny);
+        const onObst = room.obst.some(o => o.c === cell.c && o.r === cell.r && o.kind !== 'spike');
+        const nearFoe = room.enemies.some(e => dist2(e.x, e.y, nx, ny) < 90) || (room.boss && dist2(room.boss.x, room.boss.y, nx, ny) < 120);
+        if (!onObst && !nearFoe) { P.x = nx; P.y = ny; break; }
+      }
+      P.invuln = Math.max(P.invuln, 1.0);
+      addPart({ x: P.x, y: P.y, life: 0.5, size: 80, col: '#c9b8ff', type: 'ring' });
+      break;
+    }
+    case 'guill': {
+      let tgt = null, bd = 1e9;
+      for (const e of targets) { const d = dist2(P.x, P.y, e.x, e.y); if (d < bd) { bd = d; tgt = e; } }
+      if (tgt) {
+        SFX.boom(); G.shakeAdd(6);
+        addPart({ x: tgt.x, y: tgt.y - 60, life: 0.4, size: 90, col: '#e0c8c8', type: 'ring' });
+        damageEnemy(tgt, 80, { knock: 2 });
+      } else SFX.err();
+      break;
+    }
   }
 }
 /* ---------- 玩家眼泪 ---------- */
@@ -1584,8 +1927,32 @@ function updateTears(dt) {
     if (!dead && !t.spectral) {
       for (const o of solidObst(room)) {
         const ox = tileCX(o.c), oy = tileCY(o.r);
-        if (o.kind === 'fire') { if (dist2(t.x, t.y, ox, oy - 8) < 20 + t.r) { dead = true; break; } }
-        else if (dist2(t.x, t.y, ox, oy) < 18 + t.r) {
+        if (o.kind === 'fire') {
+          if (dist2(t.x, t.y, ox, oy - 8) < 20 + t.r) {
+            // 火堆可被打灭：冰泪 2 倍伤害
+            o.hp -= t.ice ? 2 : 1;
+            addPart({ x: ox, y: oy - 16, vy: -40, life: 0.35, size: 4, col: '#f2913a', grav: 60, type: 'dot' });
+            if (o.hp <= 0) {
+              room.obst.splice(room.obst.indexOf(o), 1);
+              addSmoke(ox, oy - 10, 4, '#f2913a'); SFX.splash();
+              if (chance(0.22 + S.luck * 0.08)) room.pickups.push(mkPickup(chance(0.12) ? 'nickel' : 'coin', ox, oy));
+            }
+            dead = true; break;
+          }
+        } else if (o.kind === 'tnt') {
+          if (dist2(t.x, t.y, ox, oy) < 20 + t.r) {
+            // 烈焰泪直接引爆木桶
+            o.hp = t.fire ? 0 : o.hp - 1;
+            if (o.hp <= 0) {
+              room.obst.splice(room.obst.indexOf(o), 1);
+              // 延迟一小段引爆，允许连锁
+              RUN.bombs.push({ x: ox, y: oy, fuse: 0.3, r: 74, dmg: 52, big: false });
+            } else {
+              addPart({ x: ox, y: oy - 20, vy: -30, life: 0.3, size: 4, col: '#d9c9a0', grav: 100, type: 'dot' });
+            }
+            dead = true; break;
+          }
+        } else if (dist2(t.x, t.y, ox, oy) < 18 + t.r) {
           if (o.kind === 'poop') {
             o.hp--; addPart({ x: ox, y: oy, vy: -30, life: 0.4, size: 5, col: '#6b4d2b', grav: 200, type: 'dot' });
             if (o.hp <= 0) {
@@ -1627,6 +1994,20 @@ function updateTears(dt) {
     }
     if (t.t >= t.life) dead = true;
     if (dead) {
+      // 溅射之泪：落地时对周围敌人造成 50% 范围伤害
+      if (S.splashDmg && !t.small && t.t > 0.05) {
+        const sr = 46 * (S.tearScale || 1);
+        for (const e of room.enemies) {
+          if (t.hitSet.has(e) || e.deadT !== undefined) continue;
+          if (dist2(t.x, t.y, e.x, e.y - (e.z || 0)) < sr + e.r) {
+            damageEnemy(e, t.dmg * 0.5, { dirX: e.x - t.x, dirY: e.y - t.y, knock: 1, fire: t.fire, ice: t.ice, poison: t.poison });
+          }
+        }
+        if (room.boss && room.boss.hp > 0 && !t.hitSet.has(room.boss) && dist2(t.x, t.y, room.boss.x, room.boss.y) < sr + room.boss.r) {
+          damageEnemy(room.boss, t.dmg * 0.5, { dirX: room.boss.x - t.x, dirY: room.boss.y - t.y });
+        }
+        addPart({ x: t.x, y: t.y, life: 0.22, size: sr, col: 'rgba(154,201,232,0.4)', type: 'ring' });
+      }
       addSplash(t.x, t.y, t.fire ? '#f2913a' : '#9ac9e8');
       if (!t.quiet) SFX.splash();
       RUN.tears.splice(i, 1);
@@ -1674,16 +2055,19 @@ function killEnemy(e) {
   if (e.type === 'spitter') {
     RUN.creeps.push({ x: e.x, y: e.y, r: 34, life: 4, kind: 'acid' });
   }
-  // 掉落
+  // 掉落（金币掉率上调，让前期商店有购买力）
   const drop = e.elite ? 1 : 0;
   const roll = Math.random(), luck = S.luck + S.coinLuck * 0.2;
-  if (drop || roll < 0.32 + luck * 0.12) {
-    room.pickups.push(mkPickup(chance(0.08) ? 'nickel' : 'coin', e.x, e.y));
-  } else if (roll < 0.38 + luck * 0.12) {
+  if (drop || roll < 0.45 + luck * 0.12) {
+    room.pickups.push(mkPickup(chance(0.12) ? 'nickel' : 'coin', e.x, e.y));
+  } else if (roll < 0.52 + luck * 0.12) {
     room.pickups.push(mkPickup(chance(0.5) ? 'bomb' : 'key', e.x, e.y));
-  } else if (roll < 0.43) {
+  } else if (roll < 0.58) {
     room.pickups.push(mkPickup(chance(0.5) ? 'halfheart' : 'soulheart', e.x, e.y));
   }
+  // 新道具钩子：吸血（击杀回血）与腐尸（死亡留毒圈）
+  if (S.leech && chance(S.leechBoost ? 0.16 : 0.08)) { P.hp = Math.min(P.maxHp, P.hp + 1); addFloat(e.x, e.y - 18, '+半心', '#8f8'); }
+  if (S.rotOnDeath) RUN.creeps.push({ x: e.x, y: e.y, r: 30, life: 3, kind: 'acid' });
   checkRoomClear(room);
 }
 /* ---------- 玩家受伤 / 死亡 ---------- */
@@ -1696,6 +2080,17 @@ function hurtPlayer(halves, src) {
   if (P.armor && chance(P.armor)) halves = Math.max(1, Math.ceil(halves / 2));
   G.redFlash = 1; G.shakeAdd(5); SFX.hurt();
   P.invuln = CFG.PLAYER.INVULN;
+  // 荆棘之甲：受伤时对周围敌人造成反击伤害
+  if (P.S.revenge) {
+    const room = curRoom();
+    const foes = room.enemies.slice(); if (room.boss) foes.push(room.boss);
+    for (const e of foes) {
+      if (dist2(P.x, P.y, e.x, e.y) < 130) {
+        damageEnemy(e, 6 + P.S.dmg * 0.6, { knock: 2, dirX: e.x - P.x, dirY: e.y - P.y, fire: !!P.S.revengeFire });
+      }
+    }
+    addPart({ x: P.x, y: P.y, life: 0.35, size: 120, col: P.S.revengeFire ? '#f2913a' : '#c94a8a', type: 'ring' });
+  }
   while (halves > 0) {
     if (P.soul > 0) { P.soul--; halves -= 2; continue; }
     if (P.hp > 0) { P.hp--; halves--; continue; }
@@ -1787,16 +2182,22 @@ function explode(x, y, r, dmg, hurtPlayerToo) {
     const d = dist2(x, y, e.x, e.y);
     if (d < r + e.r) damageEnemy(e, dmg * (1 - d / (r + e.r) * 0.5), { knock: 2, dirX: e.x - x, dirY: e.y - y });
   }
-  if (hurtPlayerToo && dist2(x, y, P.x, P.y) < r * 0.8) hurtPlayer(2, '爆炸');
+  if (hurtPlayerToo && !P.S.bombImmune && dist2(x, y, P.x, P.y) < r * 0.8) hurtPlayer(2, '爆炸');
   // 破坏障碍
   for (let i = room.obst.length - 1; i >= 0; i--) {
     const o = room.obst[i];
-    if (o.kind === 'rock' || o.kind === 'poop' || o.kind === 'fire') {
+    if (o.kind === 'rock' || o.kind === 'poop' || o.kind === 'fire' || o.kind === 'tnt') {
       const ox = tileCX(o.c), oy = tileCY(o.r);
       if (dist2(x, y, ox, oy) < r + 16) {
         if (o.kind === 'poop' && chance(0.4)) room.pickups.push(mkPickup('coin', ox, oy));
+        if (o.kind === 'fire' && chance(0.22)) room.pickups.push(mkPickup(chance(0.12) ? 'nickel' : 'coin', ox, oy));
         room.obst.splice(i, 1);
-        addSmoke(ox, oy, 3, o.kind === 'fire' ? '#f2913a' : '#888');
+        if (o.kind === 'tnt') {
+          // 连锁爆炸：短引信延时
+          RUN.bombs.push({ x: ox, y: oy, fuse: 0.25, r: 74, dmg: 52, big: false });
+        } else {
+          addSmoke(ox, oy, 3, o.kind === 'fire' ? '#f2913a' : '#888');
+        }
       }
     }
   }
@@ -2050,16 +2451,35 @@ const ENEMY_AI = {
 /* =====================================================================
    Boss 定义（每层一个，多阶段弹幕）
    ===================================================================== */
-const BOSSES = [
-  { id: 'duke', name: '蝇王', title: '地窖之主', hp: 240, r: 40 },
-  { id: 'gemini', name: '双子魔胎', title: '连体之咒', hp: 300, r: 36 },
-  { id: 'chub', name: '石蠕', title: '钻地吞噬者', hp: 360, r: 38 },
-  { id: 'monstro', name: '巨眼魔', title: '深渊之瞳', hp: 420, r: 42 },
-  { id: 'widow', name: '腐爵夫人', title: '毒网编织者', hp: 480, r: 38 },
-  { id: 'mom', name: '泪之母', title: '最终之泣', hp: 620, r: 46 }
+const BOSSES = {
+  duke:    { id: 'duke',    name: '蝇王',     title: '地窖之主',   hp: 240, r: 40 },
+  gemini:  { id: 'gemini',  name: '双子魔胎', title: '连体之咒',   hp: 300, r: 36 },
+  chub:    { id: 'chub',    name: '石蠕',     title: '钻地吞噬者', hp: 360, r: 38 },
+  gate:    { id: 'gate',    name: '门之魔',   title: '虚空守望者', hp: 340, r: 38 },
+  monstro: { id: 'monstro', name: '巨眼魔',   title: '深渊之瞳',   hp: 420, r: 42 },
+  widow:   { id: 'widow',   name: '腐爵夫人', title: '毒网编织者', hp: 480, r: 38 },
+  bone:    { id: 'bone',    name: '骨骑士',   title: '亡骨统帅',   hp: 470, r: 40 },
+  puppet:  { id: 'puppet',  name: '泪之傀儡', title: '丝线囚魂',   hp: 540, r: 36 },
+  rotten:  { id: 'rotten',  name: '腐心',     title: '母体之泵',   hp: 600, r: 44 },
+  mom:     { id: 'mom',     name: '泪之母',   title: '最终之泣',   hp: 680, r: 46 }
+};
+/* 每层 Boss 池（最终层固定泪之母），同层随机出现不同 Boss 提升重玩性 */
+const BOSS_POOLS = [
+  ['duke', 'gemini'],
+  ['chub', 'gate'],
+  ['monstro', 'widow'],
+  ['bone', 'puppet'],
+  ['monstro', 'widow', 'rotten'],
+  ['bone', 'puppet', 'rotten'],
+  ['rotten', 'bone', 'puppet'],
+  ['mom']
 ];
+function pickBossDef(fl) {
+  const pool = BOSS_POOLS[Math.min(fl, BOSS_POOLS.length - 1)];
+  return BOSSES[choice(pool)];
+}
 function startBossFight(room) {
-  const def = BOSSES[Math.min(RUN.floorIdx, 5)];
+  const def = pickBossDef(RUN.floorIdx);
   room.boss = {
     isBoss: true, id: def.id, name: def.name, title: def.title,
     x: CFG.CENTER.x, y: CFG.CENTER.y - 40,
@@ -2077,8 +2497,12 @@ function bossPhase(b) {
   if (b.id === 'duke') ph = ratio < 0.5 ? 2 : 1;
   else if (b.id === 'gemini') ph = ratio < 0.33 ? 3 : (ratio < 0.66 ? 2 : 1);
   else if (b.id === 'chub') ph = ratio < 0.3 ? 3 : (ratio < 0.6 ? 2 : 1);
+  else if (b.id === 'gate') ph = ratio < 0.4 ? 3 : (ratio < 0.75 ? 2 : 1);
   else if (b.id === 'monstro') ph = ratio < 0.3 ? 3 : (ratio < 0.6 ? 2 : 1);
   else if (b.id === 'widow') ph = ratio < 0.25 ? 3 : (ratio < 0.55 ? 2 : 1);
+  else if (b.id === 'bone') ph = ratio < 0.33 ? 3 : (ratio < 0.66 ? 2 : 1);
+  else if (b.id === 'puppet') ph = ratio < 0.3 ? 3 : (ratio < 0.62 ? 2 : 1);
+  else if (b.id === 'rotten') ph = ratio < 0.33 ? 3 : (ratio < 0.66 ? 2 : 1);
   else if (b.id === 'mom') ph = ratio < 0.33 ? 3 : (ratio < 0.66 ? 2 : 1);
   if (ph > b.phase) {
     b.phase = ph; b.state = 'phase'; b.t = 1.2; b.invuln = 1.2;
@@ -2365,6 +2789,190 @@ const BOSS_AI = {
       for (let k = 0; k < 5; k++) b.strikes.push({ x: rnd(CFG.INNER.x + 40, CFG.INNER.x + CFG.INNER.w - 40), y: rnd(CFG.INNER.y + 30, CFG.INNER.y + CFG.INNER.h - 30), t: 0.7 + k * 0.12, kind: 'stomp' });
       b.state = 'idle'; b.t = rnd(2.0, 2.8);
     }
+  },
+  /* ===== 新增 Boss AI ===== */
+  // 门之魔：生成传送门，从随机位置发射弹幕
+  gate(b, dt, room) {
+    const I = CFG.INNER;
+    if (b.state === 'idle') {
+      moveToward(b, I.x + I.w / 2 + Math.cos(b.animT * 0.7) * 180, I.y + I.h / 2 + Math.sin(b.animT * 0.9) * 80, 34, dt);
+      if (b.t <= 0) {
+        const r = Math.random();
+        if (r < 0.55) { b.state = 'portals'; b.t = 1.8; }
+        else if (b.phase >= 2) { b.state = 'volley'; b.t = 1.2; }
+        else { b.state = 'portals'; b.t = 1.8; }
+      }
+    } else if (b.state === 'portals') {
+      // 开门瞬间生成 2-3 个传送门，短暂延迟后向玩家喷射
+      if (!b.portals) {
+        b.portals = [];
+        const n = b.phase >= 3 ? 3 : 2;
+        for (let k = 0; k < n; k++) {
+          b.portals.push({ x: rnd(I.x + 70, I.x + I.w - 70), y: rnd(I.y + 70, I.y + I.h - 70), fired: false, d: rnd(0.3, 1.1) });
+        }
+        SFX.tp();
+      }
+      b.portalT = (b.portalT || 0) + dt;
+      for (const p of b.portals) {
+        if (!p.fired && b.portalT >= p.d) {
+          p.fired = true;
+          addSmoke(p.x, p.y, 4, '#7a5aa0');
+          const base = Math.atan2(P.y - p.y, P.x - p.x);
+          const shots = b.phase >= 2 ? 5 : 3;
+          for (let k = 0; k < shots; k++) fireEB(p.x, p.y, base + (k - (shots - 1) / 2) * 0.24, 205, { col: '#9a6bce' });
+        }
+      }
+      if (b.t <= 0) { b.portals = null; b.portalT = 0; b.state = 'idle'; b.t = rnd(1.3, 2.0); }
+    } else if (b.state === 'volley') {
+      b.emitT = (b.emitT || 0) - dt;
+      if (b.emitT <= 0) {
+        b.emitT = 0.14;
+        const a = Math.atan2(P.y - b.y, P.x - b.x) + rnd(-0.35, 0.35);
+        fireEB(b.x, b.y, a, 250, { col: '#c98ace', r: 6 });
+      }
+      if (b.t <= 0) {
+        const n = b.phase >= 3 ? 14 : 10;
+        for (let k = 0; k < n; k++) fireEB(b.x, b.y, k / n * TAU + b.animT, 160, { col: '#9a6bce' });
+        b.state = 'idle'; b.t = rnd(1.4, 2.1);
+      }
+    }
+  },
+  // 骨骑士：蓄力横冲 + 骨刺雨 + 召唤骨蛛
+  bone(b, dt, room) {
+    if (b.state === 'idle') {
+      moveToward(b, P.x, P.y, 44, dt);
+      if (b.t <= 0) {
+        const r = Math.random();
+        if (r < 0.45) { b.state = 'wind'; b.t = 0.5; SFX.hit(); }
+        else if (r < 0.7 && b.phase >= 2) { b.state = 'spikes'; b.t = 0.4; }
+        else if (r < 0.85 && b.phase >= 2 && room.enemies.length < 4) { b.state = 'summon'; b.t = 0.6; }
+        else { b.state = 'wind'; b.t = 0.5; }
+      }
+    } else if (b.state === 'wind') {
+      b.dirA = Math.atan2(P.y - b.y, P.x - b.x);
+      if (b.t <= 0) { b.state = 'charge'; b.t = 1.4; }
+    } else if (b.state === 'charge') {
+      const spd = b.phase === 3 ? 430 : 370;
+      b.x += Math.cos(b.dirA) * spd * dt; b.y += Math.sin(b.dirA) * spd * dt;
+      b.emitT = (b.emitT || 0) - dt;
+      if (b.emitT <= 0) {
+        b.emitT = 0.2;
+        fireEB(b.x, b.y, b.dirA + Math.PI + rnd(-0.6, 0.6), 150, { col: '#ded4c0', r: 5 });
+      }
+      const I = CFG.INNER;
+      const hitWall = b.x < I.x + b.r || b.x > I.x + I.w - b.r || b.y < I.y + b.r || b.y > I.y + I.h - b.r;
+      if (hitWall || b.t <= 0) {
+        G.shakeAdd(6); SFX.stomp(); addSmoke(b.x, b.y, 6, '#8a8070');
+        const n = b.phase === 3 ? 10 : 7;
+        for (let k = 0; k < n; k++) fireEB(b.x, b.y, k / n * TAU + rnd(0.5), 185, { col: '#ded4c0' });
+        b.state = 'idle'; b.t = rnd(1.2, 1.8);
+      }
+    } else if (b.state === 'spikes') {
+      if (b.t <= 0) {
+        const n = b.phase === 3 ? 6 : 4;
+        for (let k = 0; k < n; k++) {
+          const a = rnd(TAU), d = rnd(50, 220);
+          b.strikes.push({ x: P.x + Math.cos(a) * d * 0.5, y: P.y + Math.sin(a) * d * 0.5, t: 0.7 + k * 0.1, kind: 'stomp' });
+        }
+        b.state = 'idle'; b.t = rnd(1.6, 2.2);
+      }
+    } else if (b.state === 'summon') {
+      if (b.t <= 0) {
+        const n = b.phase === 3 ? 3 : 2;
+        for (let k = 0; k < n; k++) {
+          const a = rnd(TAU);
+          room.enemies.push(spawnEnemy('spider', b.x + Math.cos(a) * 55, b.y + Math.sin(a) * 55, false, RUN.floorIdx));
+        }
+        SFX.tp(); addSmoke(b.x, b.y, 5, '#8a8070');
+        b.state = 'idle'; b.t = rnd(1.5, 2.2);
+      }
+    }
+  },
+  // 泪之傀儡：瞬移 + 十字激光 + 环形弹
+  puppet(b, dt, room) {
+    const I = CFG.INNER;
+    if (b.state === 'idle') {
+      moveToward(b, P.x, P.y, 52, dt);
+      if (b.t <= 0) {
+        const r = Math.random();
+        if (r < 0.4) { b.state = 'blink'; b.t = 0.35; }
+        else if (r < 0.75 && b.phase >= 2) { b.state = 'laser'; b.t = 0.5; }
+        else { b.state = 'burst'; b.t = 0.6; }
+      }
+    } else if (b.state === 'blink') {
+      if (b.t <= 0) {
+        addSmoke(b.x, b.y, 6, '#c9b8d8');
+        b.x = rnd(I.x + 80, I.x + I.w - 80); b.y = rnd(I.y + 80, I.y + I.h - 80);
+        addSmoke(b.x, b.y, 6, '#c9b8d8'); SFX.tp();
+        const n = b.phase === 3 ? 8 : 5;
+        const a0 = Math.atan2(P.y - b.y, P.x - b.x);
+        for (let k = 0; k < n; k++) fireEB(b.x, b.y, a0 + k / n * TAU, 195, { col: '#c98ace' });
+        b.state = 'idle'; b.t = rnd(0.9, 1.4);
+      }
+    } else if (b.state === 'laser') {
+      if (b.t <= 0) {
+        const axis = chance(0.5) ? 'h' : 'v';
+        b.beams.push({ axis, pos: axis === 'h' ? P.y : P.x, t: 1.5 });
+        if (b.phase === 3) b.beams.push({ axis: axis === 'h' ? 'v' : 'h', pos: axis === 'h' ? P.x : P.y, t: 1.5 });
+        b.state = 'idle'; b.t = rnd(1.5, 2.2);
+      }
+    } else if (b.state === 'burst') {
+      if (b.t <= 0) {
+        const n = b.phase === 3 ? 16 : 11;
+        for (let k = 0; k < n; k++) fireEB(b.x, b.y, k / n * TAU + b.animT, 175, { col: '#9a6bce' });
+        SFX.hit();
+        b.state = 'idle'; b.t = rnd(1.1, 1.6);
+      }
+    }
+  },
+  // 腐心：中心脉冲 + 血泉 + 蝇群 + 泪雨
+  rotten(b, dt, room) {
+    if (b.state === 'idle') {
+      moveToward(b, CFG.CENTER.x, CFG.CENTER.y - 20, 18, dt);
+      if (b.t <= 0) {
+        const r = Math.random();
+        if (b.phase === 1) {
+          if (r < 0.6) { b.state = 'pulse'; b.t = 0.7; }
+          else { b.state = 'flies'; b.t = 0.6; }
+        } else if (b.phase === 2) {
+          if (r < 0.4) { b.state = 'pulse'; b.t = 0.55; }
+          else if (r < 0.7) { b.state = 'geyser'; b.t = 0.4; }
+          else { b.state = 'flies'; b.t = 0.6; }
+        } else {
+          if (r < 0.3) { b.state = 'pulse'; b.t = 0.45; }
+          else if (r < 0.55) { b.state = 'geyser'; b.t = 0.35; }
+          else if (r < 0.8) { b.state = 'flies'; b.t = 0.5; }
+          else { b.state = 'rain'; b.t = 0.3; }
+        }
+      }
+    } else if (b.state === 'pulse') {
+      if (b.t <= 0) {
+        SFX.roar(); G.shakeAdd(4);
+        const n = b.phase === 3 ? 14 : 9;
+        for (let k = 0; k < n; k++) fireEB(b.x, b.y, k / n * TAU + b.animT, 170, { col: '#c9405a' });
+        addPart({ x: b.x, y: b.y, life: 0.4, size: 110, col: '#c9405a', type: 'ring' });
+        b.state = 'idle'; b.t = rnd(1.2, 1.9);
+      }
+    } else if (b.state === 'geyser') {
+      if (b.t <= 0) {
+        const n = b.phase === 3 ? 5 : 3;
+        for (let k = 0; k < n; k++) b.strikes.push({ x: rnd(CFG.INNER.x + 50, CFG.INNER.x + CFG.INNER.w - 50), y: rnd(CFG.INNER.y + 40, CFG.INNER.y + CFG.INNER.h - 40), t: 0.75 + k * 0.14, kind: 'stomp' });
+        b.state = 'idle'; b.t = rnd(1.4, 2.1);
+      }
+    } else if (b.state === 'flies') {
+      if (b.t <= 0) {
+        const n = b.phase === 3 ? 4 : 2;
+        for (let k = 0; k < n; k++) {
+          const a = rnd(TAU);
+          room.enemies.push(spawnEnemy('fly', b.x + Math.cos(a) * 45, b.y + Math.sin(a) * 45, false, RUN.floorIdx));
+        }
+        SFX.tp(); addSmoke(b.x, b.y, 5, '#7a1f2f');
+        b.state = 'idle'; b.t = rnd(1.4, 2.0);
+      }
+    } else if (b.state === 'rain') {
+      for (let k = 0; k < 7; k++) b.strikes.push({ x: rnd(CFG.INNER.x + 40, CFG.INNER.x + CFG.INNER.w - 40), y: rnd(CFG.INNER.y + 30, CFG.INNER.y + CFG.INNER.h - 30), t: 0.7 + k * 0.1, kind: 'rain' });
+      b.state = 'idle'; b.t = rnd(2.2, 3.0);
+    }
   }
 };
 function onBossDeath(b) {
@@ -2384,6 +2992,10 @@ function onBossDeath(b) {
   // 战利品
   room.pickups.push(mkPickup('soulheart', b.x - 40, b.y + 20));
   room.pickups.push(mkPickup('soulheart', b.x + 40, b.y + 20));
+  // Boss 固定掉落金币与钥匙，支撑商店与宝箱房开销
+  room.pickups.push(mkPickup('nickel', b.x - 40, b.y - 30));
+  room.pickups.push(mkPickup(chance(0.5) ? 'nickel' : 'coin', b.x + 40, b.y - 30));
+  room.pickups.push(mkPickup('key', b.x, b.y - 50));
   if (RUN.floorIdx >= CFG.FLOORS - 1) {
     RUN.won = true;
     setTimeout(winGame, 1200);
@@ -2487,6 +3099,73 @@ function drawBossBody(g, b) {
     g.beginPath(); g.moveTo(-r * 0.4, -r * 0.45); g.lineTo(-r * 0.4, -r * 0.75); g.moveTo(r * 0.4, -r * 0.45); g.lineTo(r * 0.4, -r * 0.75); g.stroke();
     g.fillStyle = '#3a0f0f'; g.beginPath(); g.ellipse(0, r * 0.55, r * 0.45, r * 0.28, 0, 0, TAU); g.fill();
     if (b.phase >= 3) { g.strokeStyle = 'rgba(255,60,60,0.6)'; g.lineWidth = 4; g.beginPath(); g.arc(0, 0, r * 1.25, 0, TAU); g.stroke(); }
+  } else if (b.id === 'gate') {
+    // 门之魔：漂浮的门框与虚空之眼
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.ellipse(0, r * 0.9, r * 0.8, r * 0.28, 0, 0, TAU); g.fill();
+    g.fillStyle = '#2a1a3a'; g.strokeStyle = '#9a6bce'; g.lineWidth = 4;
+    rr(g, -r * 0.62, -r * 1.0, r * 1.24, r * 2.0, 8); g.fill(); g.stroke();
+    g.fillStyle = '#120a1e'; rr(g, -r * 0.44, -r * 0.82, r * 0.88, r * 1.64, 5); g.fill();
+    eye(g, 0, -r * 0.15, r * 0.26, (P.x - b.x) / 250, (P.y - b.y) / 250);
+    g.strokeStyle = '#c9a83a'; g.lineWidth = 3;
+    g.beginPath(); g.arc(-r * 0.5, -r * 0.88, 5, 0, TAU); g.arc(r * 0.5, -r * 0.88, 5, 0, TAU); g.stroke();
+  } else if (b.id === 'bone') {
+    // 骨骑士：持盾骷髅武士
+    g.fillStyle = '#6a6055'; g.strokeStyle = '#160f0c'; g.lineWidth = 3;
+    g.beginPath(); g.ellipse(0, r * 0.75, r * 0.85, r * 0.4, 0, 0, TAU); g.fill(); g.stroke();
+    blob(g, 0, 0, r * 0.82, '#ded4c0');
+    g.fillStyle = '#101018';
+    g.beginPath(); g.ellipse(-r * 0.3, -r * 0.12, r * 0.14, r * 0.2, 0, 0, TAU); g.ellipse(r * 0.3, -r * 0.12, r * 0.14, r * 0.2, 0, 0, TAU); g.fill();
+    g.fillStyle = '#c9405a'; g.beginPath(); g.arc(-r * 0.3, -r * 0.12, r * 0.06, 0, TAU); g.arc(r * 0.3, -r * 0.12, r * 0.06, 0, TAU); g.fill();
+    g.strokeStyle = '#8a8070'; g.lineWidth = 3;
+    for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(-r * 0.5 + k * r * 0.33, r * 0.35); g.lineTo(-r * 0.5 + k * r * 0.33, r * 0.55); g.stroke(); }
+    // 盾与骨斧
+    g.fillStyle = '#8a8070'; g.strokeStyle = '#160f0c'; g.lineWidth = 3;
+    g.beginPath(); g.ellipse(-r * 0.85, 0, r * 0.3, r * 0.5, -0.3, 0, TAU); g.fill(); g.stroke();
+    g.strokeStyle = '#ded4c0'; g.lineWidth = 5; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(r * 0.5, -r * 0.5); g.lineTo(r * 1.05, r * 0.3); g.stroke();
+    g.strokeStyle = '#c9d4e0'; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(r * 0.82, -r * 0.18); g.lineTo(r * 1.28, r * 0.06); g.stroke();
+  } else if (b.id === 'puppet') {
+    // 泪之傀儡：提线木偶
+    g.strokeStyle = 'rgba(220,210,230,0.55)'; g.lineWidth = 1.5;
+    for (const [lx, ly] of [[-r * 0.5, -r * 1.6], [r * 0.5, -r * 1.6]]) {
+      g.beginPath(); g.moveTo(lx, ly); g.quadraticCurveTo(lx * 0.4, -r * 0.8, lx * 0.35, -r * 0.15); g.stroke();
+    }
+    g.strokeStyle = '#8a7a9a'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(-r * 0.9, -r * 1.6); g.lineTo(r * 0.9, -r * 1.6); g.stroke();
+    blob(g, 0, 0, r * 0.9, '#e8dce8');
+    // 缝线嘴角与纽扣眼
+    g.fillStyle = '#5a3a6a';
+    g.beginPath(); g.arc(-r * 0.3, -r * 0.15, r * 0.13, 0, TAU); g.arc(r * 0.3, -r * 0.15, r * 0.13, 0, TAU); g.fill();
+    g.strokeStyle = '#c98ace'; g.lineWidth = 2;
+    for (const ex of [-r * 0.3, r * 0.3]) {
+      g.beginPath(); g.moveTo(ex - r * 0.09, -r * 0.24); g.lineTo(ex + r * 0.09, -r * 0.06); g.moveTo(ex + r * 0.09, -r * 0.24); g.lineTo(ex - r * 0.09, -r * 0.06); g.stroke();
+    }
+    g.strokeStyle = '#8a5a8a'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(-r * 0.35, r * 0.4); g.quadraticCurveTo(0, r * 0.15, r * 0.35, r * 0.4); g.stroke();
+    for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(k * r * 0.16, r * 0.42); g.lineTo(k * r * 0.16, r * 0.52); g.stroke(); }
+    // 长泪滴
+    g.fillStyle = '#7ab0e8'; g.beginPath(); g.ellipse(0, r * 0.75, r * 0.14, r * 0.3, 0, 0, TAU); g.fill();
+  } else if (b.id === 'rotten') {
+    // 腐心：巨大腐烂心脏，静脉曲张
+    const beat = 1 + Math.sin(b.animT * 6) * 0.08;
+    g.save(); g.scale(beat, 2 - beat);
+    blob(g, 0, 0, r, '#8a2432');
+    g.fillStyle = '#a83a48'; g.beginPath(); g.ellipse(-r * 0.3, -r * 0.2, r * 0.35, r * 0.3, -0.4, 0, TAU); g.fill();
+    g.strokeStyle = '#5a1420'; g.lineWidth = 3;
+    for (const [x1, y1, x2, y2] of [[-r * 0.7, -r * 0.5, -r * 1.1, -r * 0.9], [r * 0.7, -r * 0.5, r * 1.1, -r * 0.9], [0, -r * 0.8, 0, -r * 1.2]]) {
+      g.beginPath(); g.moveTo(x1, y1); g.quadraticCurveTo((x1 + x2) / 2 + 8, (y1 + y2) / 2, x2, y2); g.stroke();
+    }
+    // 腐斑
+    g.fillStyle = '#4a5a2a';
+    for (const [x, y, rr3] of [[-r * 0.35, r * 0.2, r * 0.14], [r * 0.3, -r * 0.25, r * 0.1], [r * 0.15, r * 0.5, r * 0.12]]) {
+      g.beginPath(); g.arc(x, y, rr3, 0, TAU); g.fill();
+    }
+    // 蠕动之眼
+    eye(g, -r * 0.22, -r * 0.05, r * 0.1, (P.x - b.x) / 250, (P.y - b.y) / 250);
+    eye(g, r * 0.22, -r * 0.05, r * 0.1, (P.x - b.x) / 250, (P.y - b.y) / 250);
+    g.restore();
+    if (b.phase >= 3) { g.strokeStyle = 'rgba(200,64,90,0.6)'; g.lineWidth = 4; g.beginPath(); g.arc(0, 0, r * 1.2, 0, TAU); g.stroke(); }
   }
   g.restore();
   if (b.flash > 0) {
@@ -2648,6 +3327,7 @@ function drawDoors(g, room, T) {
     if (door.kind === 'boss') { frame = '#5a1c1c'; icon = 'skull'; }
     else if (door.kind === 'key') { frame = '#8a6d2a'; icon = door.locked ? 'keyp' : null; }
     else if (door.kind === 'shop') { frame = '#3a5a8a'; icon = 'coin'; }
+    else if (door.kind === 'challenge') { frame = '#7a4218'; icon = 'swords'; }
     else if (door.kind === 'secret') frame = '#4a3a6a';
     g.fillStyle = frame; g.fillRect(x, y, w, h);
     g.strokeStyle = 'rgba(0,0,0,0.55)'; g.lineWidth = 3; g.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
@@ -2680,7 +3360,19 @@ function drawObst(g, room) {
     if (o.kind === 'rock') g.drawImage(SPR.rock, x - 28, y - 30);
     else if (o.kind === 'poop') g.drawImage(SPR.poop[clamp(o.hp - 1, 0, 2)], x - 28, y - 30);
     else if (o.kind === 'spike') g.drawImage(SPR.spike, x - 28, y - 30);
-    else if (o.kind === 'fire') g.drawImage(SPR.fire[Math.floor(G.t * 9) % 4], x - 28, y - 40);
+    else if (o.kind === 'fire') {
+      // 血量越低火越小（5 → 1），火焰底部贴地
+      const sc = 0.55 + 0.45 * clamp(o.hp, 1, 5) / 5;
+      const fw = 56 * sc, fh = 64 * sc;
+      g.drawImage(SPR.fire[Math.floor(G.t * 9) % 4], x - fw / 2, y + 10 - fh * 0.78, fw, fh);
+    }
+    else if (o.kind === 'tnt') {
+      g.drawImage(SPR.tnt, x - 28, y - 30);
+      // 受损提示：闪烁引信
+      if (o.hp <= 1 && Math.floor(G.t * 6) % 2 === 0) {
+        g.fillStyle = '#ffd97a'; g.beginPath(); g.arc(x + 15, y - 22, 3, 0, TAU); g.fill();
+      }
+    }
   }
 }
 function drawPrice(g, x, y, price) {
@@ -2744,6 +3436,19 @@ function drawWorld(g) {
   drawObst(g, room);
   drawPeds(g, room);
   drawPickups(g, room);
+  // 空格购买提示
+  const buyT = shopBuyTarget(room);
+  if (buyT) {
+    const o = buyT.obj;
+    const hx = o.x, hy = buyT.kind === 'ped' ? o.y - 82 : o.y - 38;
+    g.save();
+    g.globalAlpha = 0.8 + Math.sin(G.t * 5) * 0.2;
+    g.fillStyle = 'rgba(18,13,7,0.9)'; rr(g, hx - 46, hy - 13, 92, 24, 10); g.fill();
+    g.strokeStyle = 'rgba(255,220,120,0.65)'; g.lineWidth = 1.5; rr(g, hx - 46, hy - 13, 92, 24, 10); g.stroke();
+    g.fillStyle = '#ffe9a8'; g.font = 'bold 13px "Microsoft YaHei"'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('空格 购买', hx, hy);
+    g.restore();
+  }
   for (const b of RUN.bombs) {
     const br = b.big ? 16 : 11;
     g.fillStyle = 'rgba(0,0,0,0.35)';
@@ -2909,6 +3614,7 @@ function drawMinimap(g) {
     else if (r.type === 'treasure') col = '#c9a83a';
     else if (r.type === 'shop') col = '#4a7ac9';
     else if (r.type === 'secret') col = '#8a5ac9';
+    else if (r.type === 'challenge') col = '#c96a2a';
     else if (r.type === 'start') col = '#7a8a6a';
     g.fillStyle = col; g.fillRect(x, y, cs, cs);
     if (k === RUN.curKey) {
@@ -3039,22 +3745,25 @@ Screens.help = {
     g.textAlign = 'left';
     const L = [
       ['#ffd94d', '操作'],
-      ['#e8dcc0', '  WASD 移动 · 方向键 八向射击 · E 放置炸弹 · 空格 使用主动道具'],
+      ['#e8dcc0', '  WASD 移动 · 方向键 八向射击 · E 放置炸弹 · 空格 使用主动道具/购买商品'],
       ['#e8dcc0', '  Esc 暂停 · M 静音 · 清空房间后房门开启'],
       ['#ffd94d', '目标'],
-      ['#e8dcc0', '  逐层深入 6 层地牢，每层击败 Boss 后从地洞下潜，最终击败「泪之母」通关。'],
+      ['#e8dcc0', '  逐层深入 8 层地牢（地窖→洞窟→深渊→母体），每层击败 Boss 后从地洞下潜，'],
+      ['#e8dcc0', '  最终在「母体 II」击败泪之母通关。'],
       ['#e8dcc0', '  死亡即失去本局一切——但灵魂会留存，用于墓穴商店的永久强化。'],
       ['#ffd94d', '房间'],
       ['#e8dcc0', '  金色门=宝箱房（免费道具） 蓝色门=商店 红骷髅门=Boss'],
+      ['#e8dcc0', '  橙色双剑门=挑战房：抵御两波敌人，赢取免费道具与金币。'],
+      ['#e8dcc0', '  火堆可被眼泪打灭掉落金币；TNT 木桶受击会爆炸——小心连锁！'],
       ['#e8dcc0', '  用炸弹轰炸墙壁缝隙可能炸开隐藏房；锁孔门需要钥匙。'],
       ['#ffd94d', '协同（Synergy）'],
       ['#e8dcc0', '  道具带有标签（火焰/冰霜/多重/穿透……），凑齐组合自动触发强力协同，'],
       ['#e8dcc0', '  例如 火焰+冰霜=冰火两重天、多重+巨大=巨弹幕。大胆混搭！']
     ];
-    let y = 126;
+    let y = 124;
     for (const [col, txt] of L) {
       g.font = (txt.startsWith('  ') ? '15px' : 'bold 17px') + ' "Microsoft YaHei"';
-      g.fillStyle = col; g.fillText(txt, 158, y); y += 28;
+      g.fillStyle = col; g.fillText(txt, 158, y); y += 26;
     }
     g.textAlign = 'center';
     if (uiBtn(g, CFG.W / 2 - 100, 522, 200, 44, '返回 [Esc]')) { G.state = 'menu'; SFX.click(); }
