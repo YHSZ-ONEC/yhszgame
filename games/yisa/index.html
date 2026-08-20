@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html lang="zh"><head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>泪之深渊 · Tears of the Abyss</title>
 <style>
-  html,body{margin:0;padding:0;background:#07060b;height:100%;overflow:hidden}
+  html,body{margin:0;padding:0;background:#07060b;height:100%;overflow:hidden;
+    touch-action:none;-webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
-  #cv{background:#000;outline:none;cursor:default}
+  #cv{background:#000;outline:none;cursor:default;touch-action:none}
 </style>
 </head>
 <body>
@@ -92,17 +97,40 @@ function fitCanvas() {
 }
 window.addEventListener('resize', fitCanvas); fitCanvas();
 
-/* ---------------- 输入 ---------------- */
+/* ---------------- 输入（含手机/平板蓝牙键盘适配） ---------------- */
 const Keys = { down: {}, pressed: {} };
 const Mouse = { x: 0, y: 0, click: false, down: false };
 const PREVENT = new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Tab']);
+/* 部分移动浏览器蓝牙键盘下 e.code 为空或错误，用 e.key 兜底推导 */
+const KEYMAP_FALLBACK = { ' ': 'Space', 'ArrowUp': 'ArrowUp', 'ArrowDown': 'ArrowDown', 'ArrowLeft': 'ArrowLeft', 'ArrowRight': 'ArrowRight', Enter: 'Enter', Escape: 'Escape', Tab: 'Tab', Shift: 'ShiftLeft', Control: 'ControlLeft', Alt: 'AltLeft' };
+function normCode(e) {
+  if (e.code && e.code !== 'Unidentified') return e.code;
+  const k = e.key;
+  if (!k || k === 'Unidentified') return '';
+  if (k.length === 1) {
+    const up = k.toUpperCase();
+    if (up >= 'A' && up <= 'Z') return 'Key' + up;
+    if (up >= '0' && up <= '9') return 'Digit' + up;
+  }
+  return KEYMAP_FALLBACK[k] || k;
+}
+function clearKeys() { Keys.down = {}; } // 失焦时 keyup 不会送达，直接清空防止卡键
 window.addEventListener('keydown', e => {
-  if (PREVENT.has(e.code)) e.preventDefault();
-  if (!Keys.down[e.code]) Keys.pressed[e.code] = true;
-  Keys.down[e.code] = true;
+  const code = normCode(e);
+  if (!code) return;
+  if (PREVENT.has(code)) e.preventDefault();
+  if (!e.repeat && !Keys.down[code]) Keys.pressed[code] = true;
+  Keys.down[code] = true;
   Audio2.unlock();
-});
-window.addEventListener('keyup', e => { Keys.down[e.code] = false; });
+}, { capture: true, passive: false });
+window.addEventListener('keyup', e => {
+  const code = normCode(e);
+  if (!code) return;
+  Keys.down[code] = false;
+}, { capture: true });
+window.addEventListener('blur', clearKeys);
+window.addEventListener('pagehide', clearKeys);
+document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
 function canvasPos(e) {
   const r = cv.getBoundingClientRect();
   return { x: (e.clientX - r.left) / r.width * CFG.W, y: (e.clientY - r.top) / r.height * CFG.H };
@@ -111,6 +139,20 @@ cv.addEventListener('mousemove', e => { const p = canvasPos(e); Mouse.x = p.x; M
 cv.addEventListener('mousedown', e => { const p = canvasPos(e); Mouse.x = p.x; Mouse.y = p.y; Mouse.down = true; Mouse.click = true; Audio2.unlock(); });
 window.addEventListener('mouseup', () => { Mouse.down = false; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
+/* 触摸：手机/平板点按菜单、防止浏览器滚动缩放抢事件（canvasPos 直接读 clientX/Y，触点对象同样适用） */
+cv.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  if (t) { const p = canvasPos(t); Mouse.x = p.x; Mouse.y = p.y; }
+  Mouse.down = true; Mouse.click = true; Audio2.unlock();
+}, { passive: false });
+cv.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  if (t) { const p = canvasPos(t); Mouse.x = p.x; Mouse.y = p.y; }
+}, { passive: false });
+cv.addEventListener('touchend', e => { e.preventDefault(); Mouse.down = false; }, { passive: false });
+cv.addEventListener('touchcancel', () => { Mouse.down = false; });
 function key(...codes) { return codes.some(c => Keys.down[c]); }
 function keyHit(...codes) { return codes.some(c => Keys.pressed[c]); }
 
@@ -1141,8 +1183,8 @@ function genFloor(floorIdx) {
   RUN.theme = Math.min(3, Math.floor(floorIdx / 2));
   RUN.seed = (RUN.seedBase + floorIdx * 7919) >>> 0;
   const R = mulberry(RUN.seed);
-  // 房间数随层数增长并封顶：正常全清约 40 分钟，速通 20-30 分钟
-  const targetRooms = Math.min(13, 7 + Math.floor(floorIdx * 1.2) + Math.floor(R() * 2));
+  // 房间数随层数增长并封顶：第 1 层 9-11 间（以撒式大楼层，Boss 前有足够成长），封顶 15
+  const targetRooms = Math.min(15, 9 + Math.floor(floorIdx * 1.1) + Math.floor(R() * 3));
   let rooms = null;
   for (let attempt = 0; attempt < 60; attempt++) {
     const cand = tryLayout(targetRooms, R);
@@ -1628,12 +1670,12 @@ function updatePlayer(dt) {
   P.spikeCd = Math.max(0, (P.spikeCd || 0) - dt);
   for (const o of room.obst) {
     if (o.kind === 'spike' && o.c === cell.c && o.r === cell.r && P.spikeCd <= 0) {
-      hurtPlayer(2, '尖刺'); P.spikeCd = 1;
+      hurtPlayer(hitHalves(), '尖刺'); P.spikeCd = 1;
     }
     if (o.kind === 'fire') {
       const ox = tileCX(o.c), oy = tileCY(o.r);
       // 防火靴：免疫火堆伤害
-      if (!S.fireImmune && dist2(P.x, P.y, ox, oy - 8) < 38 && P.spikeCd <= 0) { hurtPlayer(2, '火焰'); P.spikeCd = 1; }
+      if (!S.fireImmune && dist2(P.x, P.y, ox, oy - 8) < 38 && P.spikeCd <= 0) { hurtPlayer(hitHalves(), '火焰'); P.spikeCd = 1; }
     }
   }
   // 毒圈/水洼
@@ -2071,6 +2113,8 @@ function killEnemy(e) {
   checkRoomClear(room);
 }
 /* ---------- 玩家受伤 / 死亡 ---------- */
+/* 以撒式受击伤害：第 1-4 层（前两章）扣半心，第 5-8 层（后两章）扣一整心 */
+function hitHalves() { return RUN.floorIdx <= 3 ? 1 : 2; }
 function hurtPlayer(halves, src) {
   if (P.invuln > 0 || RUN.over) return false;
   if (P.S.block && chance(P.S.block)) {
@@ -2153,7 +2197,7 @@ function updateEBullets(dt) {
       if (dist2(b.x, b.y, ox, oy) < 18 + b.r) { dead = true; break; }
     }
     if (!dead && dist2(b.x, b.y, P.x, P.y - 6) < P.r + b.r) {
-      hurtPlayer(2, '弹幕'); dead = true;
+      hurtPlayer(hitHalves(), '弹幕'); dead = true;
     }
     if (dead) { addSplash(b.x, b.y, '#c94a4a'); RUN.ebullets.splice(i, 1); }
   }
@@ -2303,7 +2347,7 @@ function updateEnemies(dt) {
     // 接触伤害
     e.contactCd = Math.max(0, e.contactCd - dt);
     if (dist2(e.x, e.y, P.x, P.y) < e.r + P.r && e.contactCd <= 0 && e.z < 20) {
-      if (hurtPlayer(2, '接触')) e.contactCd = 0.6;
+      if (hurtPlayer(hitHalves(), '接触')) e.contactCd = 0.6;
     }
   }
 }
@@ -2452,10 +2496,10 @@ const ENEMY_AI = {
    Boss 定义（每层一个，多阶段弹幕）
    ===================================================================== */
 const BOSSES = {
-  duke:    { id: 'duke',    name: '蝇王',     title: '地窖之主',   hp: 240, r: 40 },
-  gemini:  { id: 'gemini',  name: '双子魔胎', title: '连体之咒',   hp: 300, r: 36 },
-  chub:    { id: 'chub',    name: '石蠕',     title: '钻地吞噬者', hp: 360, r: 38 },
-  gate:    { id: 'gate',    name: '门之魔',   title: '虚空守望者', hp: 340, r: 38 },
+  duke:    { id: 'duke',    name: '蝇王',     title: '地窖之主',   hp: 190, r: 40 },
+  gemini:  { id: 'gemini',  name: '双子魔胎', title: '连体之咒',   hp: 245, r: 36 },
+  chub:    { id: 'chub',    name: '石蠕',     title: '钻地吞噬者', hp: 300, r: 38 },
+  gate:    { id: 'gate',    name: '门之魔',   title: '虚空守望者', hp: 295, r: 38 },
   monstro: { id: 'monstro', name: '巨眼魔',   title: '深渊之瞳',   hp: 420, r: 42 },
   widow:   { id: 'widow',   name: '腐爵夫人', title: '毒网编织者', hp: 480, r: 38 },
   bone:    { id: 'bone',    name: '骨骑士',   title: '亡骨统帅',   hp: 470, r: 40 },
@@ -2529,11 +2573,11 @@ function updateBoss(dt) {
         SFX.stomp(); G.shakeAdd(8);
         addPart({ x: s.x, y: s.y, life: 0.35, size: 70, col: '#c9a88a', type: 'ring' });
         for (let k = 0; k < 10; k++) fireEB(s.x, s.y, k / 10 * TAU, 210);
-        if (dist2(P.x, P.y, s.x, s.y) < 75) hurtPlayer(2, '踩踏');
+        if (dist2(P.x, P.y, s.x, s.y) < 75) hurtPlayer(hitHalves(), '踩踏');
       } else {
         addSplash(s.x, s.y, '#9ac9e8');
         for (let k = 0; k < 6; k++) fireEB(s.x, s.y, k / 6 * TAU + rnd(0.4), 170);
-        if (dist2(P.x, P.y, s.x, s.y) < 40) hurtPlayer(2, '泪雨');
+        if (dist2(P.x, P.y, s.x, s.y) < 40) hurtPlayer(hitHalves(), '泪雨');
       }
     }
   }
@@ -2545,8 +2589,8 @@ function updateBoss(dt) {
       bm.fired = true; SFX.laser(); G.shakeAdd(3);
     }
     if (bm.t <= 0.6 && bm.t > 0) {
-      if (bm.axis === 'h' && Math.abs(P.y - bm.pos) < 26) hurtPlayer(2, '激光');
-      if (bm.axis === 'v' && Math.abs(P.x - bm.pos) < 26) hurtPlayer(2, '激光');
+      if (bm.axis === 'h' && Math.abs(P.y - bm.pos) < 26) hurtPlayer(hitHalves(), '激光');
+      if (bm.axis === 'v' && Math.abs(P.x - bm.pos) < 26) hurtPlayer(hitHalves(), '激光');
     }
     if (bm.t <= 0) b.beams.splice(i, 1);
   }
@@ -2558,7 +2602,7 @@ function updateBoss(dt) {
   b.kx *= Math.pow(0.002, dt); b.ky *= Math.pow(0.002, dt);
   resolveWalls(b, b.r);
   // 接触
-  if (dist2(b.x, b.y, P.x, P.y) < b.r + P.r) hurtPlayer(2, 'Boss');
+  if (dist2(b.x, b.y, P.x, P.y) < b.r + P.r) hurtPlayer(hitHalves(), 'Boss');
 }
 const BOSS_AI = {
   duke(b, dt, room) {
@@ -2566,46 +2610,46 @@ const BOSS_AI = {
       moveToward(b, P.x + Math.cos(b.animT) * 160, P.y + Math.sin(b.animT * 1.3) * 90, 42, dt);
       if (b.t <= 0) {
         const flies = room.enemies.filter(e => e.type === 'fly').length;
-        if (flies < (b.phase === 1 ? 4 : 6) && chance(0.55)) { b.state = 'summon'; b.t = 0.7; }
+        if (flies < (b.phase === 1 ? 3 : 5) && chance(0.5)) { b.state = 'summon'; b.t = 0.7; }
         else if (b.phase >= 2) { b.state = 'spiral'; b.t = 2.2; }
         else { b.state = 'ring'; b.t = 0.6; }
       }
     } else if (b.state === 'summon') {
       if (b.t <= 0) {
-        for (let k = 0; k < 3; k++) {
+        for (let k = 0; k < 2; k++) {
           const a = rnd(TAU);
           room.enemies.push(spawnEnemy('fly', b.x + Math.cos(a) * 30, b.y + Math.sin(a) * 30, false, RUN.floorIdx));
         }
         SFX.tp(); addSmoke(b.x, b.y, 5, '#57402a');
-        b.state = 'idle'; b.t = rnd(1.4, 2.2);
+        b.state = 'idle'; b.t = rnd(1.8, 2.6);
       }
     } else if (b.state === 'ring') {
       if (b.t <= 0) {
-        const n = 10;
-        for (let k = 0; k < n; k++) fireEB(b.x, b.y, k / n * TAU + b.animT, 180, { col: '#8a7a4a' });
-        b.state = 'idle'; b.t = rnd(1.6, 2.4);
+        const n = 7;
+        for (let k = 0; k < n; k++) fireEB(b.x, b.y, k / n * TAU + b.animT, 160, { col: '#8a7a4a' });
+        b.state = 'idle'; b.t = rnd(2.0, 2.8);
       }
     } else if (b.state === 'spiral') {
       b.emitT = (b.emitT || 0) - dt;
       if (b.emitT <= 0) {
-        b.emitT = 0.09;
+        b.emitT = 0.16;
         b.sprA = (b.sprA || 0) + 0.5;
-        fireEB(b.x, b.y, b.sprA, 200, { col: '#8a7a4a' });
-        fireEB(b.x, b.y, b.sprA + Math.PI, 200, { col: '#8a7a4a' });
+        fireEB(b.x, b.y, b.sprA, 155, { col: '#8a7a4a' });
+        if (b.phase >= 3) fireEB(b.x, b.y, b.sprA + Math.PI, 155, { col: '#8a7a4a' });
       }
       moveToward(b, CFG.CENTER.x, CFG.CENTER.y - 60, 30, dt);
-      if (b.t <= 0) { b.state = 'idle'; b.t = rnd(1.2, 1.8); }
+      if (b.t <= 0) { b.state = 'idle'; b.t = rnd(1.4, 2.2); }
     }
   },
   gemini(b, dt, room) {
     if (b.phase >= 2 && !b.babyOut) {
       b.babyOut = true;
-      room.enemies.push(spawnEnemy('leech', b.x + 40, b.y, true, RUN.floorIdx));
+      room.enemies.push(spawnEnemy('leech', b.x + 40, b.y, RUN.floorIdx >= 2, RUN.floorIdx));
       SFX.roar();
     }
     if (b.state === 'idle') {
       moveToward(b, P.x, P.y, 46, dt);
-      if (b.t <= 0) { b.state = 'tele'; b.t = 0.5; SFX.hit(); }
+      if (b.t <= 0) { b.state = 'tele'; b.t = 0.65; SFX.hit(); }
     } else if (b.state === 'tele') {
       if (b.t <= 0) {
         b.state = 'dash';
@@ -2613,7 +2657,7 @@ const BOSS_AI = {
         b.t = 2.0; b.dashN = b.phase === 3 ? 3 : (b.phase === 2 ? 2 : 1);
       }
     } else if (b.state === 'dash') {
-      const spd = b.phase === 3 ? 440 : 380;
+      const spd = b.phase === 3 ? 385 : 325;
       b.x += Math.cos(b.dirA) * spd * dt; b.y += Math.sin(b.dirA) * spd * dt;
       const I = CFG.INNER;
       let hitWall = b.x < I.x + b.r || b.x > I.x + I.w - b.r || b.y < I.y + b.r || b.y > I.y + I.h - b.r;
@@ -2621,19 +2665,19 @@ const BOSS_AI = {
       if (hitWall || b.t <= 0) {
         G.shakeAdd(5); SFX.stomp(); addSmoke(b.x, b.y, 5);
         if (b.phase >= 2) {
-          const n = b.phase === 3 ? 12 : 8;
-          for (let k = 0; k < n; k++) fireEB(b.x, b.y, k / n * TAU, 190, { col: '#c96a7a' });
+          const n = b.phase === 3 ? 8 : 5;
+          for (let k = 0; k < n; k++) fireEB(b.x, b.y, k / n * TAU, 165, { col: '#c96a7a' });
         }
         b.dashN--;
-        if (b.dashN > 0) { b.state = 'tele'; b.t = 0.35; }
-        else { b.state = 'idle'; b.t = rnd(1.4, 2.0); }
+        if (b.dashN > 0) { b.state = 'tele'; b.t = 0.5; }
+        else { b.state = 'idle'; b.t = rnd(1.6, 2.2); }
       }
     }
   },
   chub(b, dt, room) {
     if (b.state === 'idle') {
       moveToward(b, P.x, P.y, 40, dt);
-      if (b.t <= 0) { b.state = 'tele'; b.t = 0.55; }
+      if (b.t <= 0) { b.state = 'tele'; b.t = 0.65; }
     } else if (b.state === 'tele') {
       if (b.t <= 0) {
         b.state = 'charge';
@@ -2642,14 +2686,14 @@ const BOSS_AI = {
         b.t = 2.5; b.chN = b.phase === 3 ? 3 : (b.phase === 2 ? 2 : 1);
       }
     } else if (b.state === 'charge') {
-      const spd = b.phase === 3 ? 430 : (b.phase === 2 ? 390 : 350);
+      const spd = b.phase === 3 ? 390 : (b.phase === 2 ? 355 : 320);
       b.x += Math.cos(b.dirA) * spd * dt; b.y += Math.sin(b.dirA) * spd * dt;
       const I = CFG.INNER;
       let hitWall = false;
       if (b.x < I.x + b.r || b.x > I.x + I.w - b.r || b.y < I.y + b.r || b.y > I.y + I.h - b.r) hitWall = true;
       if (hitWall || b.t <= 0) {
         G.shakeAdd(6); SFX.stomp(); addSmoke(b.x, b.y, 6);
-        if (b.phase >= 3) for (let k = 0; k < 14; k++) fireEB(b.x, b.y, k / 14 * TAU, 185, { col: '#8a7a5e' });
+        if (b.phase >= 3) for (let k = 0; k < 10; k++) fireEB(b.x, b.y, k / 10 * TAU, 165, { col: '#8a7a5e' });
         b.chN--;
         if (b.chN > 0) {
           if (chance(0.5) && room.enemies.length < 5) {
@@ -2818,22 +2862,22 @@ const BOSS_AI = {
           p.fired = true;
           addSmoke(p.x, p.y, 4, '#7a5aa0');
           const base = Math.atan2(P.y - p.y, P.x - p.x);
-          const shots = b.phase >= 2 ? 5 : 3;
-          for (let k = 0; k < shots; k++) fireEB(p.x, p.y, base + (k - (shots - 1) / 2) * 0.24, 205, { col: '#9a6bce' });
+          const shots = b.phase >= 2 ? 4 : 3;
+          for (let k = 0; k < shots; k++) fireEB(p.x, p.y, base + (k - (shots - 1) / 2) * 0.24, 175, { col: '#9a6bce' });
         }
       }
-      if (b.t <= 0) { b.portals = null; b.portalT = 0; b.state = 'idle'; b.t = rnd(1.3, 2.0); }
+      if (b.t <= 0) { b.portals = null; b.portalT = 0; b.state = 'idle'; b.t = rnd(1.5, 2.2); }
     } else if (b.state === 'volley') {
       b.emitT = (b.emitT || 0) - dt;
       if (b.emitT <= 0) {
-        b.emitT = 0.14;
+        b.emitT = 0.2;
         const a = Math.atan2(P.y - b.y, P.x - b.x) + rnd(-0.35, 0.35);
-        fireEB(b.x, b.y, a, 250, { col: '#c98ace', r: 6 });
+        fireEB(b.x, b.y, a, 210, { col: '#c98ace', r: 6 });
       }
       if (b.t <= 0) {
-        const n = b.phase >= 3 ? 14 : 10;
+        const n = b.phase >= 3 ? 11 : 8;
         for (let k = 0; k < n; k++) fireEB(b.x, b.y, k / n * TAU + b.animT, 160, { col: '#9a6bce' });
-        b.state = 'idle'; b.t = rnd(1.4, 2.1);
+        b.state = 'idle'; b.t = rnd(1.6, 2.3);
       }
     }
   },
@@ -3751,6 +3795,7 @@ Screens.help = {
       ['#e8dcc0', '  逐层深入 8 层地牢（地窖→洞窟→深渊→母体），每层击败 Boss 后从地洞下潜，'],
       ['#e8dcc0', '  最终在「母体 II」击败泪之母通关。'],
       ['#e8dcc0', '  死亡即失去本局一切——但灵魂会留存，用于墓穴商店的永久强化。'],
+      ['#e8dcc0', '  受击伤害：第 1-4 层扣半颗心，第 5-8 层扣一整颗心（自己的炸弹始终扣整心）。'],
       ['#ffd94d', '房间'],
       ['#e8dcc0', '  金色门=宝箱房（免费道具） 蓝色门=商店 红骷髅门=Boss'],
       ['#e8dcc0', '  橙色双剑门=挑战房：抵御两波敌人，赢取免费道具与金币。'],
@@ -3965,6 +4010,16 @@ Screens.win = {
 buildSprites();
 G.state = 'menu';
 requestAnimationFrame(loop);
+</script>
+<script>
+// Shift+Esc 返回主页（保留游戏原有 ESC 暂停/菜单功能不变）
+window.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  if (e.shiftKey && (e.key === 'Escape' || e.code === 'Escape')) {
+    e.preventDefault();
+    location.href = '../../index.html';
+  }
+}, true);
 </script>
 
 

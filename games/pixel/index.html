@@ -162,6 +162,17 @@
         .cv-swatch.active { border: 2px solid #fff; box-shadow: 0 0 0 2px var(--accent); }
         .cv-color-row { display: flex; gap: 6px; align-items: center; }
         .cv-color-row input[type="color"] { width: 40px; height: 28px; padding: 0; border: none; background: transparent; cursor: pointer; }
+        .cv-shade-head { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-sub); margin-top: 8px; }
+        .cv-shade-head b { color: var(--text-main); font-weight: 600; }
+        .cv-shade-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 5px; }
+        .cv-shade-swatch { width: 100%; aspect-ratio: 1; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
+        .cv-shade-swatch.base { border: 2px solid #fff; box-shadow: 0 0 0 2px var(--accent); }
+        .cv-ramp-params { margin-top: 6px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: rgba(255,255,255,0.02); }
+        .cv-param-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-sub); margin-top: 4px; }
+        .cv-param-row:first-child { margin-top: 0; }
+        .cv-param-row label { margin: 0; font-size: 11px; color: var(--text-sub); min-width: 44px; }
+        .cv-param-row input[type="range"] { flex: 1; margin: 0; }
+        .cv-param-val { min-width: 40px; text-align: right; font-family: Consolas, monospace; color: var(--text-main); }
         .cv-frames-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
         .cv-frame-item { display: flex; align-items: center; gap: 8px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
         .cv-frame-item.active { border-color: var(--accent); box-shadow: 0 0 6px var(--accent); }
@@ -800,6 +811,13 @@
                     <input type="text" id="cvColorHex" value="#5fd3ff" style="flex:1;">
                 </div>
                 <div class="cv-palette-grid" id="cvPaletteGrid"></div>
+                <div class="cv-shade-head"><b>明暗变体</b><span id="cvShadeDesc">点击选色 · 用于阴影/高光</span></div>
+                <div class="cv-shade-row" id="cvShadeRow"></div>
+                <div class="cv-ramp-params">
+                    <div class="cv-param-row"><label for="cvShadeHue">色相偏移</label><input type="range" id="cvShadeHue" min="0" max="25" step="1" value="8"><span class="cv-param-val" id="cvShadeHueVal">8°</span></div>
+                    <div class="cv-param-row"><label for="cvShadeStep">明度差</label><input type="range" id="cvShadeStep" min="4" max="30" step="1" value="12"><span class="cv-param-val" id="cvShadeStepVal">12</span></div>
+                    <div class="cv-param-row"><label for="cvShadeSat">饱和度</label><input type="range" id="cvShadeSat" min="0" max="150" step="5" value="100"><span class="cv-param-val" id="cvShadeSatVal">100%</span></div>
+                </div>
                 <div class="cv-pal-tools">
                     <select id="cvPalPreset">
                         <option value="">— 预设色板 —</option>
@@ -4334,6 +4352,7 @@ function cvRenderPalette() {
         });
         g.appendChild(s);
     });
+    cvRenderShades();
 }
 function cvSetColor(col) {
     cvState.color = col;
@@ -4343,6 +4362,82 @@ function cvSetColor(col) {
 }
 $('cvColorPicker').addEventListener('input', e => cvSetColor(e.target.value));
 $('cvColorHex').addEventListener('change', e => { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) cvSetColor(e.target.value); });
+
+// ---------- 明暗变体（色相偏移） ----------
+function cvHexToHsl(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+    const d = max - min;
+    if (d !== 0) {
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
+            case g: h = (b - r) / d + 2; break;
+            default: h = (r - g) / d + 4;
+        }
+        h *= 60;
+    }
+    return [h, s, l];
+}
+function cvHslToHex(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (h < 60) { r = c; g = x; }
+    else if (h < 120) { r = x; g = c; }
+    else if (h < 180) { g = c; b = x; }
+    else if (h < 240) { g = x; b = c; }
+    else if (h < 300) { r = x; b = c; }
+    else { r = c; b = x; }
+    return '#' + [r, g, b].map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
+}
+function cvClamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+// 根据基色生成 [暗2, 暗1, 基色, 亮1, 亮2] 五个变体：
+// 暗部色相向左偏移，亮部色相向右偏移；明度按步进递减/递增；饱和度由 sat% 统一缩放
+function cvGenShades(hex, opts) {
+    const [bh, bs, bl] = cvHexToHsl(hex);
+    const satScale = cvClamp((opts.sat || 100) / 100, 0, 1.5);
+    const step = (opts.step || 12) / 100;
+    const hue = opts.hue || 0;
+    const shade = (hOff, lOff, mult) => {
+        const l = cvClamp(bl + step * lOff, 0.04, 0.96);
+        // 接近纯黑/纯白时饱和度自然降低，避免出现脏灰
+        const nat = 1 - Math.abs(l - bl) * 1.6;
+        const s = cvClamp(bs * satScale * mult, 0, 1) * cvClamp(nat, 0.35, 1);
+        return cvHslToHex(bh + hOff * hue, s, l);
+    };
+    return [
+        shade(-2, -2, 1.15),  // 暗2：更偏冷、略增饱和
+        shade(-1, -1, 1.08),  // 暗1
+        hex,                  // 基色
+        shade(1, 1, 0.95),    // 亮1
+        shade(2, 2, 0.85)     // 亮2：更偏暖、略降饱和
+    ];
+}
+function cvRenderShades() {
+    const row = $('cvShadeRow'); if (!row) return;
+    const hue = +$('cvShadeHue').value, step = +$('cvShadeStep').value, sat = +$('cvShadeSat').value;
+    const shades = cvGenShades(cvState.color, { hue, step, sat });
+    row.innerHTML = '';
+    shades.forEach((col, i) => {
+        const s = document.createElement('div');
+        s.className = 'cv-shade-swatch' + (i === 2 ? ' base' : '');
+        s.style.background = col; s.title = col + (i === 2 ? '（基色）' : (i < 2 ? '（暗色）' : '（亮色）'));
+        s.addEventListener('click', () => cvSetColor(col));
+        row.appendChild(s);
+    });
+    $('cvShadeHueVal').textContent = hue + '°';
+    $('cvShadeStepVal').textContent = step;
+    $('cvShadeSatVal').textContent = sat + '%';
+}
+['cvShadeHue', 'cvShadeStep', 'cvShadeSat'].forEach(id => {
+    $(id).addEventListener('input', cvRenderShades);
+});
 
 // ---------- 坐标 / 像素工具 ----------
 function cvClientToPixel(e) {
@@ -7452,6 +7547,16 @@ $('cvExportGif').addEventListener('click', () => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pixel-canvas.gif'; a.click();
     showToast('✅ 已导出 GIF (GIF89a + LZW，循环播放)');
 });
+</script>
+<script>
+// Shift+Esc 返回主页（保留画布模式原有 ESC 取消选区等功能不变）
+window.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  if (e.shiftKey && (e.key === 'Escape' || e.code === 'Escape')) {
+    e.preventDefault();
+    location.href = '../../index.html';
+  }
+}, true);
 </script>
 </body>
 </html>

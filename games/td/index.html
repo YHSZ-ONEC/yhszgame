@@ -134,5 +134,15 @@ kbd{font-family:inherit;background:#263244;border:1px solid #3a4a60;border-botto
 </div>
 <div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
 <script src="game.js"></script>
+<script>
+// Shift+Esc 返回主页（保留各游戏原有 ESC 功能不变）
+window.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  if (e.shiftKey && (e.key === 'Escape' || e.code === 'Escape')) {
+    e.preventDefault();
+    location.href = '../../index.html';
+  }
+}, true);
+</script>
 </body>
 </html>
