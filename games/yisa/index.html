@@ -1488,9 +1488,9 @@ function checkRoomClear(room) {
     // 掉落奖励（金币概率上调；前两层保底 1 金币帮助起步）
     if (room.type === 'normal') {
       const roll = Math.random();
-      if (roll < 0.40) room.pickups.push(mkPickup(chance(0.85) ? 'coin' : 'nickel', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
-      else if (roll < 0.52) room.pickups.push(mkPickup('halfheart', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
-      else if (roll < 0.60) room.pickups.push(mkPickup(chance(0.5) ? 'bomb' : 'key', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
+      if (roll < 0.28) room.pickups.push(mkPickup(chance(0.85) ? 'coin' : 'nickel', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
+      else if (roll < 0.38) room.pickups.push(mkPickup('halfheart', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
+      else if (roll < 0.44) room.pickups.push(mkPickup(chance(0.5) ? 'bomb' : 'key', P.x + rnd(-40, 40), P.y + rnd(-40, 40)));
     }
     if (room.type === 'normal' && RUN.floorIdx <= 1) {
       room.pickups.push(mkPickup('coin', P.x + rnd(-50, 50), P.y + rnd(-50, 50)));
@@ -1715,13 +1715,7 @@ function updatePlayer(dt) {
       if (tryTakePickup(pk)) room.pickups.splice(i, 1);
     }
   }
-  // 道具台座：免费台座走过即拿；定价台座需空格确认
-  for (let i = room.peds.length - 1; i >= 0; i--) {
-    const ped = room.peds[i];
-    if (!ped.item) continue;
-    if (ped.price > 0) continue;
-    if (dist2(P.x, P.y, ped.x, ped.y - 10) < 30) tryBuyPedestal(ped, room, i);
-  }
+  // 道具台座：统一改为空格拾取（防止主动道具替换被反复触发）
   // 房门：解锁 / 切换房间
   for (const d of SIDES) {
     const door = room.doors[d];
@@ -1729,10 +1723,11 @@ function updatePlayer(dt) {
     if (!door.open && !(door.kind === 'key' && door.locked)) continue;
     const D = CFG.DOORS[d];
     let near = false;
-    if (d === 'N') near = Math.abs(P.x - D.x) < 36 && P.y <= CFG.INNER.y + 42;
-    if (d === 'S') near = Math.abs(P.x - D.x) < 36 && P.y >= CFG.INNER.y + CFG.INNER.h - 42;
-    if (d === 'W') near = Math.abs(P.y - D.y) < 36 && P.x <= CFG.INNER.x + 42;
-    if (d === 'E') near = Math.abs(P.y - D.y) < 36 && P.x >= CFG.INNER.x + CFG.INNER.w - 42;
+    // 18px：角色（半径13）须几乎走进门洞才切换，仅靠近不再触发
+    if (d === 'N') near = Math.abs(P.x - D.x) < 34 && P.y <= CFG.INNER.y + 18;
+    if (d === 'S') near = Math.abs(P.x - D.x) < 34 && P.y >= CFG.INNER.y + CFG.INNER.h - 18;
+    if (d === 'W') near = Math.abs(P.y - D.y) < 34 && P.x <= CFG.INNER.x + 18;
+    if (d === 'E') near = Math.abs(P.y - D.y) < 34 && P.x >= CFG.INNER.x + CFG.INNER.w - 18;
     if (!near) continue;
     if (door.kind === 'key' && door.locked) {
       if (P.keys > 0) {
@@ -1799,11 +1794,11 @@ function tryBuyPedestal(ped, room, idx) {
   }
   room.peds.splice(idx, 1);
 }
-/* ---------- 空格购买：范围内最近的定价商品 ---------- */
+/* ---------- 空格拾取/购买：范围内最近的台座或定价商品 ---------- */
 function shopBuyTarget(room) {
   let best = null, bd = 48;
   for (const ped of room.peds) {
-    if (!ped.item || ped.price <= 0) continue;
+    if (!ped.item) continue;
     const d = dist2(P.x, P.y, ped.x, ped.y - 10);
     if (d < bd) { bd = d; best = { kind: 'ped', obj: ped }; }
   }
@@ -2000,7 +1995,7 @@ function updateTears(dt) {
             if (o.hp <= 0) {
               room.obst.splice(room.obst.indexOf(o), 1);
               addSmoke(ox, oy, 4, '#7a5a34');
-              if (chance(0.35 + S.luck * 0.1)) room.pickups.push(mkPickup(chance(0.12) ? 'nickel' : 'coin', ox, oy));
+              if (chance(0.25 + S.luck * 0.1)) room.pickups.push(mkPickup(chance(0.12) ? 'nickel' : 'coin', ox, oy));
             }
           }
           dead = true; break;
@@ -2097,14 +2092,14 @@ function killEnemy(e) {
   if (e.type === 'spitter') {
     RUN.creeps.push({ x: e.x, y: e.y, r: 34, life: 4, kind: 'acid' });
   }
-  // 掉落（金币掉率上调，让前期商店有购买力）
+  // 掉落（房间数增多后金币掉率回调，避免一局积攒过多）
   const drop = e.elite ? 1 : 0;
   const roll = Math.random(), luck = S.luck + S.coinLuck * 0.2;
-  if (drop || roll < 0.45 + luck * 0.12) {
+  if (drop || roll < 0.30 + luck * 0.12) {
     room.pickups.push(mkPickup(chance(0.12) ? 'nickel' : 'coin', e.x, e.y));
-  } else if (roll < 0.52 + luck * 0.12) {
+  } else if (roll < 0.37 + luck * 0.12) {
     room.pickups.push(mkPickup(chance(0.5) ? 'bomb' : 'key', e.x, e.y));
-  } else if (roll < 0.58) {
+  } else if (roll < 0.43) {
     room.pickups.push(mkPickup(chance(0.5) ? 'halfheart' : 'soulheart', e.x, e.y));
   }
   // 新道具钩子：吸血（击杀回血）与腐尸（死亡留毒圈）
@@ -2234,7 +2229,7 @@ function explode(x, y, r, dmg, hurtPlayerToo) {
       const ox = tileCX(o.c), oy = tileCY(o.r);
       if (dist2(x, y, ox, oy) < r + 16) {
         if (o.kind === 'poop' && chance(0.4)) room.pickups.push(mkPickup('coin', ox, oy));
-        if (o.kind === 'fire' && chance(0.22)) room.pickups.push(mkPickup(chance(0.12) ? 'nickel' : 'coin', ox, oy));
+        if (o.kind === 'fire' && chance(0.16)) room.pickups.push(mkPickup(chance(0.12) ? 'nickel' : 'coin', ox, oy));
         room.obst.splice(i, 1);
         if (o.kind === 'tnt') {
           // 连锁爆炸：短引信延时
@@ -2948,6 +2943,13 @@ const BOSS_AI = {
         addSmoke(b.x, b.y, 6, '#c9b8d8');
         b.x = rnd(I.x + 80, I.x + I.w - 80); b.y = rnd(I.y + 80, I.y + I.h - 80);
         addSmoke(b.x, b.y, 6, '#c9b8d8'); SFX.tp();
+        // 现身提示圈：让玩家看清它去了哪，且现身期间可以被打
+        addPart({ x: b.x, y: b.y, life: 0.45, size: 8, col: '#e8d8ff', type: 'ring' });
+        b.state = 'reappear'; b.t = 0.4;
+      }
+    } else if (b.state === 'reappear') {
+      // 现身蓄力 0.4s（可被打、可预判走位），结束后才发射
+      if (b.t <= 0) {
         const n = b.phase === 3 ? 8 : 5;
         const a0 = Math.atan2(P.y - b.y, P.x - b.x);
         for (let k = 0; k < n; k++) fireEB(b.x, b.y, a0 + k / n * TAU, 195, { col: '#c98ace' });
@@ -3444,6 +3446,15 @@ function drawPickups(g, room) {
     if (pk.price > 0) drawPrice(g, x, pk.y + 14, pk.price);
   }
 }
+function wrapItemDesc(g, txt, maxW) {
+  const lines = []; let cur = '';
+  for (const ch of txt) {
+    if (g.measureText(cur + ch).width > maxW && cur) { lines.push(cur); cur = ch; }
+    else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
 function drawPeds(g, room) {
   for (const ped of room.peds) {
     if (!ped.item) continue;
@@ -3454,7 +3465,28 @@ function drawPeds(g, room) {
     g.shadowColor = 'rgba(255,220,120,0.6)'; g.shadowBlur = 12;
     g.drawImage(SPR.icon[it.icon], ped.x - 21, ped.y - 52 + bob, 42, 42);
     g.restore();
-    if (ped.price > 0) drawPrice(g, ped.x, ped.y + 22, ped.price);
+    // 常驻信息卡：道具名 + 效果说明 + 价格，方便直接比较选择
+    g.save();
+    g.font = '11px "Microsoft YaHei"';
+    const descLines = wrapItemDesc(g, it.desc, 118);
+    g.font = 'bold 12px "Microsoft YaHei"';
+    const hgt = 18 + descLines.length * 13 + (ped.price > 0 ? 15 : 0);
+    const bw = 138, bx = ped.x - bw / 2, by = ped.y + 18;
+    g.fillStyle = 'rgba(14,10,6,0.82)'; rr(g, bx, by, bw, hgt, 8); g.fill();
+    g.strokeStyle = ped.active ? 'rgba(190,150,255,0.5)' : 'rgba(255,220,120,0.4)'; g.lineWidth = 1;
+    rr(g, bx, by, bw, hgt, 8); g.stroke();
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    g.fillStyle = ped.active ? '#d8c2ff' : '#ffe9a8';
+    g.fillText(it.name, ped.x, by + 4);
+    g.font = '11px "Microsoft YaHei"';
+    g.fillStyle = 'rgba(235,228,210,0.85)';
+    descLines.forEach((ln, i2) => g.fillText(ln, ped.x, by + 19 + i2 * 13));
+    if (ped.price > 0) {
+      g.font = 'bold 12px "Microsoft YaHei"';
+      g.fillStyle = P.coins >= ped.price ? '#ffd94d' : '#ff8a8a';
+      g.fillText(ped.price + ' 金币', ped.x, by + 21 + descLines.length * 13);
+    }
+    g.restore();
   }
 }
 /* ---------- 世界总绘制 ---------- */
@@ -3471,7 +3503,7 @@ function drawWorld(g) {
   if (room.type === 'start' && RUN.floorIdx === 0 && RUN.stats.kills === 0) {
     g.font = '15px "Microsoft YaHei"'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillStyle = 'rgba(240,230,210,0.5)';
-    g.fillText('WASD 移动 · 方向键 八向射击 · E 炸弹 · 空格 主动道具', CFG.CENTER.x, CFG.CENTER.y + 90);
+    g.fillText('WASD 移动 · 方向键 八向射击 · E 炸弹 · 空格 拾取道具/主动', CFG.CENTER.x, CFG.CENTER.y + 90);
   }
   for (const c of RUN.creeps) {
     g.fillStyle = c.kind === 'acid' ? `rgba(120,200,60,${Math.min(0.35, c.life * 0.3)})` : `rgba(150,30,30,${Math.min(0.4, c.life * 0.3)})`;
@@ -3480,17 +3512,18 @@ function drawWorld(g) {
   drawObst(g, room);
   drawPeds(g, room);
   drawPickups(g, room);
-  // 空格购买提示
+  // 空格拾取/购买提示
   const buyT = shopBuyTarget(room);
   if (buyT) {
     const o = buyT.obj;
+    const free = buyT.kind === 'ped' && o.price <= 0;
     const hx = o.x, hy = buyT.kind === 'ped' ? o.y - 82 : o.y - 38;
     g.save();
     g.globalAlpha = 0.8 + Math.sin(G.t * 5) * 0.2;
     g.fillStyle = 'rgba(18,13,7,0.9)'; rr(g, hx - 46, hy - 13, 92, 24, 10); g.fill();
     g.strokeStyle = 'rgba(255,220,120,0.65)'; g.lineWidth = 1.5; rr(g, hx - 46, hy - 13, 92, 24, 10); g.stroke();
     g.fillStyle = '#ffe9a8'; g.font = 'bold 13px "Microsoft YaHei"'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText('空格 购买', hx, hy);
+    g.fillText(free ? '空格 拾取' : '空格 购买', hx, hy);
     g.restore();
   }
   for (const b of RUN.bombs) {
@@ -3789,7 +3822,7 @@ Screens.help = {
     g.textAlign = 'left';
     const L = [
       ['#ffd94d', '操作'],
-      ['#e8dcc0', '  WASD 移动 · 方向键 八向射击 · E 放置炸弹 · 空格 使用主动道具/购买商品'],
+      ['#e8dcc0', '  WASD 移动 · 方向键 八向射击 · E 放置炸弹 · 空格 拾取/购买道具、使用主动道具'],
       ['#e8dcc0', '  Esc 暂停 · M 静音 · 清空房间后房门开启'],
       ['#ffd94d', '目标'],
       ['#e8dcc0', '  逐层深入 8 层地牢（地窖→洞窟→深渊→母体），每层击败 Boss 后从地洞下潜，'],
@@ -4010,16 +4043,6 @@ Screens.win = {
 buildSprites();
 G.state = 'menu';
 requestAnimationFrame(loop);
-</script>
-<script>
-// Shift+Esc 返回主页（保留游戏原有 ESC 暂停/菜单功能不变）
-window.addEventListener('keydown', e => {
-  if (e.repeat) return;
-  if (e.shiftKey && (e.key === 'Escape' || e.code === 'Escape')) {
-    e.preventDefault();
-    location.href = '../../index.html';
-  }
-}, true);
 </script>
 
 

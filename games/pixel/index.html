@@ -167,6 +167,7 @@
         .cv-shade-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 5px; }
         .cv-shade-swatch { width: 100%; aspect-ratio: 1; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
         .cv-shade-swatch.base { border: 2px solid #fff; box-shadow: 0 0 0 2px var(--accent); }
+        .cv-shade-swatch.active { border: 2px solid #fff; box-shadow: 0 0 0 2px #e84393; }
         .cv-ramp-params { margin-top: 6px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: rgba(255,255,255,0.02); }
         .cv-param-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-sub); margin-top: 4px; }
         .cv-param-row:first-child { margin-top: 0; }
@@ -3822,6 +3823,7 @@ let CV_SIZE = 128;   // 画布边长 (可在「画布操作」中自定义 16~25
 const cvState = {
     tool: 'pencil',
     color: '#5fd3ff',
+    shadeBase: '#5fd3ff',   // 明暗变体 5 色的推导基准（点变体色块只选色、不改变色组，便于阴影/高光连续绘制）
     palette: ['#000000','#ffffff','#5fd3ff','#ffd23f','#ff5d8f','#7dff8a','#ff8800','#00b894',
               '#6c5ce7','#d63031','#0984e3','#fdcb6e','#e17055','#00cec9','#a29bfe','#636e72'],
     frames: [],          // ImageData[] (128×128)
@@ -4354,8 +4356,9 @@ function cvRenderPalette() {
     });
     cvRenderShades();
 }
-function cvSetColor(col) {
+function cvSetColor(col, fromShade) {
     cvState.color = col;
+    if (!fromShade) cvState.shadeBase = col;   // 点变体色块只选色，不重推 5 色组
     $('cvColorPicker').value = col;
     $('cvColorHex').value = col;
     cvRenderPalette();
@@ -4422,13 +4425,14 @@ function cvGenShades(hex, opts) {
 function cvRenderShades() {
     const row = $('cvShadeRow'); if (!row) return;
     const hue = +$('cvShadeHue').value, step = +$('cvShadeStep').value, sat = +$('cvShadeSat').value;
-    const shades = cvGenShades(cvState.color, { hue, step, sat });
+    const shades = cvGenShades(cvState.shadeBase, { hue, step, sat });
     row.innerHTML = '';
     shades.forEach((col, i) => {
         const s = document.createElement('div');
-        s.className = 'cv-shade-swatch' + (i === 2 ? ' base' : '');
+        const sel = col.toLowerCase() === cvState.color.toLowerCase();
+        s.className = 'cv-shade-swatch' + (i === 2 ? ' base' : '') + (sel ? ' active' : '');
         s.style.background = col; s.title = col + (i === 2 ? '（基色）' : (i < 2 ? '（暗色）' : '（亮色）'));
-        s.addEventListener('click', () => cvSetColor(col));
+        s.addEventListener('click', () => cvSetColor(col, true));
         row.appendChild(s);
     });
     $('cvShadeHueVal').textContent = hue + '°';
@@ -7547,16 +7551,6 @@ $('cvExportGif').addEventListener('click', () => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pixel-canvas.gif'; a.click();
     showToast('✅ 已导出 GIF (GIF89a + LZW，循环播放)');
 });
-</script>
-<script>
-// Shift+Esc 返回主页（保留画布模式原有 ESC 取消选区等功能不变）
-window.addEventListener('keydown', e => {
-  if (e.repeat) return;
-  if (e.shiftKey && (e.key === 'Escape' || e.code === 'Escape')) {
-    e.preventDefault();
-    location.href = '../../index.html';
-  }
-}, true);
 </script>
 </body>
 </html>
